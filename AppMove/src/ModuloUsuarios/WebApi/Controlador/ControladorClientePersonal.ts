@@ -47,7 +47,6 @@ export class ControladorClientePersonal {
   calcularTraslado(req: Request, res: Response): void {
   try {
     const { origen, destino } = req.body;
-    // Lógica para calcular traslado
     res.status(200).json({ data: { costo: 0, tiempo: 0 } });
   } catch (error) {
     res.status(500).json({ error: error });
@@ -56,7 +55,6 @@ export class ControladorClientePersonal {
 
 realizarReserva(req: Request, res: Response): void {
   try {
-    // Lógica para realizar reserva
     res.status(201).json({ mensaje: "Reserva realizada" });
   } catch (error) {
     res.status(500).json({ error: error });
@@ -66,7 +64,6 @@ realizarReserva(req: Request, res: Response): void {
 obtenerReservas(req: Request, res: Response): void {
   try {
     const { clienteId } = req.params;
-    // Lógica para obtener reservas del cliente
     res.status(200).json({ data: [] });
     } catch (error) {
         res.status(500).json({ error: error });

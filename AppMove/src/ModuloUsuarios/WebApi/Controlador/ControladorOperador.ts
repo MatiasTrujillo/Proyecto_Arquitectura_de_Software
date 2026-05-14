@@ -47,7 +47,6 @@ export class ControladorOperador {
   asignarReserva(req: Request, res: Response): void {
   try {
     const { reservaId } = req.params;
-    // Lógica para asignar reserva al operador
     res.status(200).json({ mensaje: "Reserva asignada" });
   } catch (error) {
     res.status(500).json({ error: error });
@@ -57,7 +56,6 @@ export class ControladorOperador {
 consultarTraslado(req: Request, res: Response): void {
   try {
     const { trasladoId } = req.params;
-    // Lógica para consultar traslado
     res.status(200).json({ data: {} });
   } catch (error) {
     res.status(500).json({ error: error });
@@ -67,7 +65,6 @@ consultarTraslado(req: Request, res: Response): void {
 reservaNoReconocida(req: Request, res: Response): void {
   try {
     const { reservaId } = req.params;
-    // Lógica para marcar reserva como no reconocida
     res.status(200).json({ mensaje: "Reserva marcada como no reconocida" });
   } catch (error) {
     res.status(500).json({ error: error });
