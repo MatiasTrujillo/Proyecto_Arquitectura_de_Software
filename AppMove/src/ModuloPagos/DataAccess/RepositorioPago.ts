@@ -1,6 +1,6 @@
-import { Pago } from "../Pago";
-import { EstadoPago } from "../EstadoPago";
-import { IRepositorioPago } from "../../IDataAccess/IRepositorioPago";
+import { Pago } from "../Domain/Pago";
+import { EstadoPago } from "../Domain/EstadoPago";
+import { IRepositorioPago } from "../IDataAccess/IRepositorioPago";
 
 export class RepositorioPago implements IRepositorioPago {
   private pagos: Pago[] = [];
@@ -24,10 +24,14 @@ export class RepositorioPago implements IRepositorioPago {
   }
 
   // Actualizar un pago
-  actualizarPago(id: number, fecha: Date, monto: number, estado: EstadoPago): Pago {
-    const pago = this.obtenerPagoPorId(id);
-    const pagoActualizado = new Pago(id, fecha, monto, estado);
+  actualizarPago(id: number, fecha: Date, monto: number, estado: EstadoPago): Pago | undefined {
     const index = this.pagos.findIndex(p => p.getId() === id);
+
+    if (index === -1) {
+      return undefined;
+    }
+
+    const pagoActualizado = new Pago(id, fecha, monto, estado);
     this.pagos[index] = pagoActualizado;
     return pagoActualizado;
   }
@@ -35,7 +39,16 @@ export class RepositorioPago implements IRepositorioPago {
   // Eliminar un pago
   eliminarPago(id: number): boolean {
     const index = this.pagos.findIndex(pago => pago.getId() === id);
+
+    if (index === -1) {
+      return false;
+    }
+
     this.pagos.splice(index, 1);
-    return index !== -1;
+    return true;
+  }
+
+  existe(id: number): boolean {
+    return this.pagos.some(pago => pago.getId() === id);
   }
 }
