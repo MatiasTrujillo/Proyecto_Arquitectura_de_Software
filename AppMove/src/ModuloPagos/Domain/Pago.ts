@@ -1,10 +1,12 @@
+import { EstadoPago } from "./EstadoPago";
+
 export class Pago {
   private id: number;
   private fecha: Date;
   private monto: number;
-  private estado: string; //EstadoPago
+  private estado: EstadoPago;
 
-  constructor(id: number, fecha:Date, monto:number, estado:string) {
+  constructor(id: number, fecha:Date, monto:number, estado:EstadoPago) {
     this.id = id;
     this.fecha = fecha;
     this.monto = monto;
