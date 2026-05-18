@@ -21,4 +21,28 @@ export class Incidente {
     this.estado = estado;
     this.severidad = severidad;
   }
+
+  getId(): string {
+    return this.id;
+  }
+
+  getDescripcion(): string {
+    return this.descripcion;
+  }
+
+  getFecha(): Date {
+    return this.fecha;
+  }
+
+  getReservaId(): string {
+    return this.reservaId;
+  }
+
+  getEstado(): string {
+    return this.estado;
+  }
+
+  getSeveridad(): string {
+    return this.severidad;
+  }
 }
