@@ -23,7 +23,7 @@ export class ServicioPago implements IServicioPago {
     const pago = this.repositorio.obtenerPagoPorId(idValido);
 
     if (!pago) {
-      throw new Error(`No se encontró el pago con id ${idValido}`);
+      throw new Error(`No se encontró el pago con id ${idValido}`); //hay que crear excepciones personalizadas para cada caso
     }
 
     return pago;
@@ -36,12 +36,12 @@ export class ServicioPago implements IServicioPago {
     const estadoValido = this.validarEstado(estado);
 
     if (!this.repositorio.existe(idValido)) {
-      throw new Error(`No se encontró el pago con id ${idValido}`);
+      throw new Error(`No se encontró el pago con id ${idValido}`); //hay que crear excepciones personalizadas para cada caso
     }
 
     const pagoActualizado = this.repositorio.actualizarPago(idValido, fechaValida, montoValido, estadoValido);
     if (!pagoActualizado) {
-      throw new Error(`No se pudo actualizar el pago con id ${idValido}`);
+      throw new Error(`No se pudo actualizar el pago con id ${idValido}`); //hay que crear excepciones personalizadas para cada caso
     }
 
     return pagoActualizado;
@@ -56,15 +56,15 @@ export class ServicioPago implements IServicioPago {
   }
 
   private validarId(id: number): number {
-    if (typeof id !== "number" || Number.isNaN(id) || !Number.isInteger(id) || id <= 0) {
-      throw new Error("Id de pago inválido");
+    if (typeof id !== "number" || Number.isNaN(id) || id <= 0) {
+      throw new Error("Id de pago inválido"); //hay que crear excepciones personalizadas para cada caso
     }
     return id;
   }
 
   private validarMonto(monto: number): number {
     if (typeof monto !== "number" || Number.isNaN(monto) || monto <= 0) {
-      throw new Error("Monto inválido. Debe ser un número mayor que cero.");
+      throw new Error("Monto inválido. Debe ser un número mayor que cero."); //hay que crear excepciones personalizadas para cada caso
     }
     return monto;
   }
@@ -73,18 +73,18 @@ export class ServicioPago implements IServicioPago {
     const valor = fecha instanceof Date ? fecha : new Date(fecha);
 
     if (Number.isNaN(valor.getTime())) {
-      throw new Error("Fecha inválida.");
+      throw new Error("Fecha inválida."); //hay que crear excepciones personalizadas para cada caso
     }
 
     return valor;
   }
 
   private validarEstado(estado: string): EstadoPago {
-    const valor = estado?.toString().toLowerCase();
+    const valor = estado.toString().toLowerCase();
     const estadosValidos = Object.values(EstadoPago) as string[];
 
     if (!estadosValidos.includes(valor)) {
-      throw new Error(`Estado inválido. Valores válidos: ${estadosValidos.join(", ")}`);
+      throw new Error(`Estado inválido. Valores válidos: ${estadosValidos.join(", ")}`); //hay que crear excepciones personalizadas para cada caso
     }
 
     return valor as EstadoPago;
