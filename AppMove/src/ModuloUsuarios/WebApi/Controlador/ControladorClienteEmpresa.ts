@@ -1,46 +1,62 @@
 import { Request, Response } from "express";
+import { ServicioClienteEmpresa } from "../../Servicio/ServicioClienteEmpresa";
+import { RepositorioClienteEmpresa } from "../../DataAccess/RepositorioClienteEmpresa";
+import { IServicioClienteEmpresa } from "../../IServicio/IServicioClienteEmpresa";
 
 export class ControladorClienteEmpresa {
+  private servicioClienteEmpresa: IServicioClienteEmpresa;
+
+  constructor(servicioClienteEmpresa?: IServicioClienteEmpresa) {
+    this.servicioClienteEmpresa = servicioClienteEmpresa ?? new ServicioClienteEmpresa(new RepositorioClienteEmpresa());
+  }
+
   crearClienteEmpresa(req: Request, res: Response): void {
     try {
-      res.status(201).json({ mensaje: "ClienteEmpresa creado" });
+      const { cedula, nombre } = req.body;
+      const clienteCreado = this.servicioClienteEmpresa.crearClienteEmpresa(cedula, nombre);
+      res.status(201).json({ data: this.mapClienteEmpresa(clienteCreado) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   obtenerClienteEmpresa(req: Request, res: Response): void {
     try {
-      res.status(200).json({ data: [] });
+      const clientes = this.servicioClienteEmpresa.obtenerClienteEmpresas();
+      res.status(200).json({ data: clientes.map(cliente => this.mapClienteEmpresa(cliente)) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   obtenerClienteEmpresaPorId(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      res.status(200).json({ data: {} });
+      const cliente = this.servicioClienteEmpresa.obtenerClienteEmpresaPorId(id);
+      res.status(200).json({ data: this.mapClienteEmpresa(cliente) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   actualizarClienteEmpresa(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      res.status(200).json({ mensaje: "ClienteEmpresa actualizado" });
+      const { cedula, nombre } = req.body;
+      const clienteActualizado = this.servicioClienteEmpresa.actualizarClienteEmpresa(id, cedula, nombre);
+      res.status(200).json({ data: this.mapClienteEmpresa(clienteActualizado) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   eliminarClienteEmpresa(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      res.status(204).json({ mensaje: "ClienteEmpresa eliminado" });
+      this.servicioClienteEmpresa.eliminarClienteEmpresa(id);
+      res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
@@ -72,33 +88,50 @@ export class ControladorClienteEmpresa {
     }
   }
 
-    asociarProducto(req: Request, res: Response): void {
+  asociarProducto(req: Request, res: Response): void {
     try {
       const { clienteId, productoId } = req.body;
-      // Lógica para asociar un producto a cliente empresa
       res.status(200).json({ mensaje: "Producto asociado al clienteEmpresa" });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   registrarOrigenFrecuente(req: Request, res: Response): void {
     try {
       const { clienteId, origen } = req.body;
-      // Lógica para registrar origen frecuente
       res.status(201).json({ mensaje: "Origen frecuente registrado" });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   registrarDestinoFrecuente(req: Request, res: Response): void {
     try {
       const { clienteId, destino } = req.body;
-      // Lógica para registrar destino frecuente
       res.status(201).json({ mensaje: "Destino frecuente registrado" });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
+  }
+
+  private mapClienteEmpresa(cliente: any) {
+    return {
+      id: cliente.getId(),
+      cedula: cliente.getCedula(),
+      nombre: cliente.getNombre(),
+      rol: cliente.obtenerRol(),
+    };
+  }
+
+  private manejarError(res: Response, error: unknown): void {
+    const mensaje = error instanceof Error ? error.message : String(error);
+
+    if (/no se encontr|no encontrado/i.test(mensaje)) {
+      res.status(404).json({ error: mensaje });
+      return;
+    }
+
+    res.status(400).json({ error: mensaje });
   }
 }
