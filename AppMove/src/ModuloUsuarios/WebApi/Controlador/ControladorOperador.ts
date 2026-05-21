@@ -1,73 +1,109 @@
 import { Request, Response } from "express";
+import { ServicioOperador } from "../../Servicio/ServicioOperador";
+import { RepositorioOperador } from "../../DataAccess/RepositorioOperador";
+import { IServicioOperador } from "../../IServicio/IServicioOperador";
 
 export class ControladorOperador {
+  private servicioOperador: IServicioOperador;
+
+  constructor(servicioOperador?: IServicioOperador) {
+    this.servicioOperador = servicioOperador ?? new ServicioOperador(new RepositorioOperador());
+  }
+
   crearOperador(req: Request, res: Response): void {
     try {
-      res.status(201).json({ mensaje: "Operador creado" });
+      const { cedula, nombre } = req.body;
+      const operadorCreado = this.servicioOperador.crearOperador(cedula, nombre);
+      res.status(201).json({ data: this.mapOperador(operadorCreado) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   obtenerOperador(req: Request, res: Response): void {
     try {
-      res.status(200).json({ data: [] });
+      const operadores = this.servicioOperador.obtenerOperadores();
+      res.status(200).json({ data: operadores.map(operador => this.mapOperador(operador)) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   obtenerOperadorPorId(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      res.status(200).json({ data: {} });
+      const operador = this.servicioOperador.obtenerOperadorPorId(id);
+      res.status(200).json({ data: this.mapOperador(operador) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   actualizarOperador(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      res.status(200).json({ mensaje: "Operador actualizado" });
+      const { cedula, nombre } = req.body;
+      const operadorActualizado = this.servicioOperador.actualizarOperador(id, cedula, nombre);
+      res.status(200).json({ data: this.mapOperador(operadorActualizado) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   eliminarOperador(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      res.status(204).json({ mensaje: "Operador eliminado" });
+      this.servicioOperador.eliminarOperador(id);
+      res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   asignarReserva(req: Request, res: Response): void {
-  try {
-    const { reservaId } = req.params;
-    res.status(200).json({ mensaje: "Reserva asignada" });
-  } catch (error) {
-    res.status(500).json({ error: error });
+    try {
+      const { reservaId } = req.params;
+      res.status(200).json({ mensaje: "Reserva asignada" });
+    } catch (error) {
+      this.manejarError(res, error);
+    }
   }
-}
 
-consultarTraslado(req: Request, res: Response): void {
-  try {
-    const { trasladoId } = req.params;
-    res.status(200).json({ data: {} });
-  } catch (error) {
-    res.status(500).json({ error: error });
+  consultarTraslado(req: Request, res: Response): void {
+    try {
+      const { trasladoId } = req.params;
+      res.status(200).json({ data: {} });
+    } catch (error) {
+      this.manejarError(res, error);
+    }
   }
-}
 
-reservaNoReconocida(req: Request, res: Response): void {
-  try {
-    const { reservaId } = req.params;
-    res.status(200).json({ mensaje: "Reserva marcada como no reconocida" });
-  } catch (error) {
-    res.status(500).json({ error: error });
+  reservaNoReconocida(req: Request, res: Response): void {
+    try {
+      const { reservaId } = req.params;
+      res.status(200).json({ mensaje: "Reserva marcada como no reconocida" });
+    } catch (error) {
+      this.manejarError(res, error);
+    }
   }
-}
+
+  private mapOperador(operador: any) {
+    return {
+      id: operador.getId(),
+      cedula: operador.getCedula(),
+      nombre: operador.getNombre(),
+      rol: operador.obtenerRol(),
+    };
+  }
+
+  private manejarError(res: Response, error: unknown): void {
+    const mensaje = error instanceof Error ? error.message : String(error);
+
+    if (/no se encontr|no encontrado/i.test(mensaje)) {
+      res.status(404).json({ error: mensaje });
+      return;
+    }
+
+    res.status(400).json({ error: mensaje });
+  }
 }
