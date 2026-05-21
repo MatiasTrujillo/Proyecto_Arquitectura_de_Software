@@ -1,52 +1,65 @@
 import { Request, Response } from "express";
+import { ServicioAdministrador } from "../../Servicio/ServicioAdministrador";
+import { RepositorioAdministrador } from "../../DataAccess/RepositorioAdministrador";
+import { IServicioAdministrador } from "../../IServicio/IServicioAdministrador";
 
 export class ControladorAdministrador {
+  private servicioAdministrador: IServicioAdministrador;
+
+  constructor(servicioAdministrador?: IServicioAdministrador) {
+    this.servicioAdministrador = servicioAdministrador ?? new ServicioAdministrador(new RepositorioAdministrador());
+  }
+
   // CRUD ADMINISTRADORES
   crearAdministrador(req: Request, res: Response): void {
     try {
-      // Lógica para crear administrador
-      res.status(201).json({ mensaje: "Administrador creado" });
+      const { cedula, nombre } = req.body;
+      const administradorCreado = this.servicioAdministrador.crearAdministrador(cedula, nombre);
+
+      res.status(201).json({ data: this.mapAdministrador(administradorCreado) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   obtenerAdministradores(req: Request, res: Response): void {
     try {
-      // Lógica para obtener administradores
-      res.status(200).json({ data: [] });
+      const administradores = this.servicioAdministrador.obtenerAdministradores();
+      res.status(200).json({ data: administradores.map(administrador => this.mapAdministrador(administrador)) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   obtenerAdministradorPorId(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      // Lógica para obtener administrador por ID
-      res.status(200).json({ data: {} });
+      const administrador = this.servicioAdministrador.obtenerAdministradorPorId(id);
+      res.status(200).json({ data: this.mapAdministrador(administrador) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   actualizarAdministrador(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      // Lógica para actualizar administrador
-      res.status(200).json({ mensaje: "Administrador actualizado" });
+      const { cedula, nombre } = req.body;
+      const administradorActualizado = this.servicioAdministrador.actualizarAdministrador(id, cedula, nombre);
+
+      res.status(200).json({ data: this.mapAdministrador(administradorActualizado) });
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
   eliminarAdministrador(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      // Lógica para eliminar administrador
-      res.status(204).json({ mensaje: "Administrador eliminado" });
+      this.servicioAdministrador.eliminarAdministrador(id);
+      res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: error });
+      this.manejarError(res, error);
     }
   }
 
@@ -138,5 +151,25 @@ export class ControladorAdministrador {
     } catch (error) {
         res.status(500).json({ error: error });
     }
+  }
+
+  private mapAdministrador(administrador: any) {
+    return {
+      id: administrador.getId(),
+      cedula: administrador.getCedula(),
+      nombre: administrador.getNombre(),
+      rol: administrador.obtenerRol(),
+    };
+  }
+
+  private manejarError(res: Response, error: unknown): void {
+    const mensaje = error instanceof Error ? error.message : String(error);
+
+    if (/no se encontr|no encontrado/i.test(mensaje)) {
+      res.status(404).json({ error: mensaje });
+      return;
     }
+
+    res.status(400).json({ error: mensaje });
+  }
 }
