@@ -49,11 +49,20 @@ function actualizarProductoTest() {
   const producto = repo.crearProducto("Old", 5, 1, "C1");
 
   const actualizado = repo.actualizarProducto(producto.getId(), "New", 99, 9, "C2");
+  // De correcto
   assert.ok(actualizado);
+  // Se actualicen correctamente todos los atributos
   assert.strictEqual(actualizado?.getDescripcion(), "New");
   assert.strictEqual(actualizado?.getValor(), 99);
   assert.strictEqual(actualizado?.getTamano(), 9);
   assert.strictEqual(actualizado?.getCategoria(), "C2");
+}
+
+function actualizarProductoInexistenteTest() {
+  const repo = new RepositorioProducto();
+
+  const actualizado = repo.actualizarProducto(999, "New", 99, 9, "C2");
+  assert.strictEqual(actualizado, undefined);
 }
 
 function eliminarProductoTest() {
@@ -61,6 +70,7 @@ function eliminarProductoTest() {
   const producto = repo.crearProducto("ToDelete", 1, 1, "C");
 
   assert.strictEqual(repo.eliminarProducto(producto.getId()), true);
+  // Verificamos que el producto ya no exista
   assert.strictEqual(repo.existe(producto.getId()), false);
   assert.strictEqual(repo.obtenerProductos().length, 0);
 }
@@ -71,6 +81,7 @@ const pruebas = [
   ["Obtener todos los productos", obtenerTodosLosProductosTest],
   ["Existe", existeTest],
   ["Actualizar producto", actualizarProductoTest],
+  ["Actualizar producto inexistente", actualizarProductoInexistenteTest],
   ["Eliminar producto", eliminarProductoTest],
 ] as const;
 
@@ -85,8 +96,4 @@ function ejecutarPruebas() {
       process.exit(1);
     }
   }
-}
-
-if (require.main === module) {
-  ejecutarPruebas();
 }
