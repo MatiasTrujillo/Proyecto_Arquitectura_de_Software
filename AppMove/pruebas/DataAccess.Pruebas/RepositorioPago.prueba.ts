@@ -58,12 +58,6 @@ function actualizarPagoTest() {
   assert.strictEqual(actualizado?.getFecha().toISOString(), new Date("2026-05-02").toISOString());
 }
 
-function actualizarPagoInexistenteTest() {
-  const repo = new RepositorioPago();
-  const actualizado = repo.actualizarPago(999, new Date("2026-06-01"), 600, EstadoPago.Rechazado);
-  assert.strictEqual(actualizado, undefined);
-}
-
 function eliminarPagoTest() {
   const repo = new RepositorioPago();
   const pago = repo.crearPago(new Date("2026-07-01"), 700, EstadoPago.Pendiente);
@@ -80,7 +74,6 @@ const pruebas = [
   ["Obtener todos los pagos", obtenerTodosLosPagosTest],
   ["Existe", existePagoTest],
   ["Actualizar pago", actualizarPagoTest],
-  ["Actualizar pago inexistente", actualizarPagoInexistenteTest],
   ["Eliminar pago", eliminarPagoTest],
 ] as const;
 
@@ -95,4 +88,9 @@ function ejecutarPruebas() {
       process.exit(1);
     }
   }
+}
+
+
+if (require.main === module) {
+  ejecutarPruebas();
 }

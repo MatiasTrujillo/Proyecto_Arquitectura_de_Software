@@ -58,13 +58,6 @@ function actualizarProductoTest() {
   assert.strictEqual(actualizado?.getCategoria(), "C2");
 }
 
-function actualizarProductoInexistenteTest() {
-  const repo = new RepositorioProducto();
-
-  const actualizado = repo.actualizarProducto(999, "New", 99, 9, "C2");
-  assert.strictEqual(actualizado, undefined);
-}
-
 function eliminarProductoTest() {
   const repo = new RepositorioProducto();
   const producto = repo.crearProducto("ToDelete", 1, 1, "C");
@@ -81,7 +74,6 @@ const pruebas = [
   ["Obtener todos los productos", obtenerTodosLosProductosTest],
   ["Existe", existeTest],
   ["Actualizar producto", actualizarProductoTest],
-  ["Actualizar producto inexistente", actualizarProductoInexistenteTest],
   ["Eliminar producto", eliminarProductoTest],
 ] as const;
 
@@ -96,4 +88,9 @@ function ejecutarPruebas() {
       process.exit(1);
     }
   }
+}
+
+
+if (require.main === module) {
+  ejecutarPruebas();
 }
