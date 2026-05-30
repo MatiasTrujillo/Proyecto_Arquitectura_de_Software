@@ -32,7 +32,7 @@ export class ControladorConductor {
   obtenerConductorPorId(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      const conductor = this.servicioConductor.obtenerConductorPorId(id);
+      const conductor = this.servicioConductor.obtenerConductorPorId(id as string);
       res.status(200).json({ data: this.mapConductor(conductor) });
     } catch (error) {
       this.manejarError(res, error);
@@ -43,7 +43,7 @@ export class ControladorConductor {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
-      const conductorActualizado = this.servicioConductor.actualizarConductor(id, cedula, nombre);
+      const conductorActualizado = this.servicioConductor.actualizarConductor(id as string, cedula, nombre);
       res.status(200).json({ data: this.mapConductor(conductorActualizado) });
     } catch (error) {
       this.manejarError(res, error);
@@ -53,7 +53,7 @@ export class ControladorConductor {
   eliminarConductor(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      this.servicioConductor.eliminarConductor(id);
+      this.servicioConductor.eliminarConductor(id as string);
       res.status(204).send();
     } catch (error) {
       this.manejarError(res, error);

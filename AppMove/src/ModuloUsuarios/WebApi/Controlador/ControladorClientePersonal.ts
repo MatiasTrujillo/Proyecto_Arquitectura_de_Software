@@ -32,7 +32,7 @@ export class ControladorClientePersonal {
   obtenerClientePersonalPorId(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      const cliente = this.servicioClientePersonal.obtenerClientePersonalPorId(id);
+      const cliente = this.servicioClientePersonal.obtenerClientePersonalPorId(id as string);
       res.status(200).json({ data: this.mapClientePersonal(cliente) });
     } catch (error) {
       this.manejarError(res, error);
@@ -43,7 +43,7 @@ export class ControladorClientePersonal {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
-      const clienteActualizado = this.servicioClientePersonal.actualizarClientePersonal(id, cedula, nombre);
+      const clienteActualizado = this.servicioClientePersonal.actualizarClientePersonal(id as string, cedula, nombre);
       res.status(200).json({ data: this.mapClientePersonal(clienteActualizado) });
     } catch (error) {
       this.manejarError(res, error);
@@ -53,7 +53,7 @@ export class ControladorClientePersonal {
   eliminarClientePersonal(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      this.servicioClientePersonal.eliminarClientePersonal(id);
+      this.servicioClientePersonal.eliminarClientePersonal(id as string);
       res.status(204).send();
     } catch (error) {
       this.manejarError(res, error);
