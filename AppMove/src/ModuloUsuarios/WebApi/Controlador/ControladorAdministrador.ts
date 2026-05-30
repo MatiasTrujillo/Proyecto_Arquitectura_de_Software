@@ -34,7 +34,7 @@ export class ControladorAdministrador {
   obtenerAdministradorPorId(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      const administrador = this.servicioAdministrador.obtenerAdministradorPorId(id);
+      const administrador = this.servicioAdministrador.obtenerAdministradorPorId(id as string);
       res.status(200).json({ data: this.mapAdministrador(administrador) });
     } catch (error) {
       this.manejarError(res, error);
@@ -45,7 +45,7 @@ export class ControladorAdministrador {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
-      const administradorActualizado = this.servicioAdministrador.actualizarAdministrador(id, cedula, nombre);
+      const administradorActualizado = this.servicioAdministrador.actualizarAdministrador(id as string, cedula, nombre);
 
       res.status(200).json({ data: this.mapAdministrador(administradorActualizado) });
     } catch (error) {
@@ -56,7 +56,7 @@ export class ControladorAdministrador {
   eliminarAdministrador(req: Request, res: Response): void {
     try {
       const { id } = req.params;
-      this.servicioAdministrador.eliminarAdministrador(id);
+      this.servicioAdministrador.eliminarAdministrador(id as string);
       res.status(204).send();
     } catch (error) {
       this.manejarError(res, error);
