@@ -5,5 +5,5 @@ export interface IServicioAdministrador {
   obtenerAdministradores(): Promise<AdministradorDTO[]>;
   obtenerAdministradorPorId(id: string): Promise<AdministradorDTO>;
   actualizarAdministrador(id: string, cedula: string, nombre: string): Promise<AdministradorDTO>;
-  eliminarAdministrador(id: string): void;
+  eliminarAdministrador(id: string): Promise<void>;
 }

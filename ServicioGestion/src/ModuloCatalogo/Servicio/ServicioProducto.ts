@@ -5,24 +5,24 @@ import { IServicioProducto } from "../IServicio/IServicioProducto";
 export class ServicioProducto implements IServicioProducto {
   constructor(private repositorio: IRepositorioProducto) {}
 
-  crearProducto(descripcion: string, valor: number, tamano: number, categoria: string): ProductoDTO {
+  async crearProducto(descripcion: string, valor: number, tamano: number, categoria: string): Promise<ProductoDTO> {
     const descripcionValida = this.validarDescripcion(descripcion);
     const valorValido = this.validarValor(valor);
     const tamanoValido = this.validarTamano(tamano);
     const categoriaValida = this.validarCategoria(categoria);
 
-    const producto = this.repositorio.crearProducto(descripcionValida, valorValido, tamanoValido, categoriaValida);
+    const producto = await this.repositorio.crearProducto(descripcionValida, valorValido, tamanoValido, categoriaValida);
     return ProductoDTO.fromEntity(producto);
   }
 
-  obtenerProductos(): ProductoDTO[] {
-    const productos = this.repositorio.obtenerProductos();
+  async obtenerProductos(): Promise<ProductoDTO[]> {
+    const productos = await this.repositorio.obtenerProductos();
     return productos.map(producto => ProductoDTO.fromEntity(producto));
   }
 
-  obtenerProductoPorId(id: number): ProductoDTO {
+  async obtenerProductoPorId(id: number): Promise<ProductoDTO> {
     const idValido = this.validarId(id);
-    const producto = this.repositorio.obtenerProductoPorId(idValido);
+    const producto = await this.repositorio.obtenerProductoPorId(idValido);
 
     if (!producto) {
       throw new Error(`No se encontró el producto con id ${idValido}`);
@@ -31,18 +31,18 @@ export class ServicioProducto implements IServicioProducto {
     return ProductoDTO.fromEntity(producto);
   }
 
-  actualizarProducto(id: number, descripcion: string, valor: number, tamano: number, categoria: string): ProductoDTO {
+  async actualizarProducto(id: number, descripcion: string, valor: number, tamano: number, categoria: string): Promise<ProductoDTO> {
     const idValido = this.validarId(id);
     const descripcionValida = this.validarDescripcion(descripcion);
     const valorValido = this.validarValor(valor);
     const tamanoValido = this.validarTamano(tamano);
     const categoriaValida = this.validarCategoria(categoria);
 
-    if (!this.repositorio.existe(idValido)) {
+    if (!await this.repositorio.existe(idValido)) {
       throw new Error(`No se encontró el producto con id ${idValido}`);
     }
 
-    const productoActualizado = this.repositorio.actualizarProducto(idValido, descripcionValida, valorValido, tamanoValido, categoriaValida);
+    const productoActualizado = await this.repositorio.actualizarProducto(idValido, descripcionValida, valorValido, tamanoValido, categoriaValida);
     if (!productoActualizado) {
       throw new Error(`No se pudo actualizar el producto con id ${idValido}`);
     }
@@ -50,14 +50,14 @@ export class ServicioProducto implements IServicioProducto {
     return ProductoDTO.fromEntity(productoActualizado);
   }
 
-  eliminarProducto(id: number): void {
+  async eliminarProducto(id: number): Promise<void> {
     const idValido = this.validarId(id);
 
-    if (!this.repositorio.existe(idValido)) {
+    if (!await this.repositorio.existe(idValido)) {
       throw new Error(`No se encontró el producto con id ${idValido}`);
-    } else {
-      this.repositorio.eliminarProducto(idValido);
     }
+
+    await this.repositorio.eliminarProducto(idValido);
   }
 
   private validarId(id: number): number {

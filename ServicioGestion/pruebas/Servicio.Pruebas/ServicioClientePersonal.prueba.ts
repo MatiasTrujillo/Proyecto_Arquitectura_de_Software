@@ -41,48 +41,48 @@ class RepositorioClientePersonalFalso {
   }
 }
 
-function crearClientePersonalPrueba() {
+async function crearClientePersonalPrueba() {
   const repositorio = new RepositorioClientePersonalFalso();
   const servicio = new ServicioClientePersonal(repositorio as any);
 
-  const cliente = servicio.crearClientePersonal("999", "Pedro");
+  const cliente = await servicio.crearClientePersonal("999", "Pedro");
   assert.strictEqual(cliente.cedula, "999");
 }
 
-function obtenerClientePersonalPorIdPrueba() {
+async function obtenerClientePersonalPorIdPrueba() {
   const repositorio = new RepositorioClientePersonalFalso();
   const servicio = new ServicioClientePersonal(repositorio as any);
   const cliente = repositorio.crearClientePersonal("888", "Ana");
 
-  const encontrado = servicio.obtenerClientePersonalPorId(cliente.getId());
+  const encontrado = await servicio.obtenerClientePersonalPorId(cliente.getId());
   assert.ok(encontrado);
   assert.strictEqual(encontrado.cedula, "888");
 
   let lanzo = false;
   try {
-    servicio.obtenerClientePersonalPorId("no");
+    await servicio.obtenerClientePersonalPorId("no");
   } catch (e) {
     lanzo = true;
   }
   assert.strictEqual(lanzo, true);
 }
 
-function actualizarClientePersonalPrueba() {
+async function actualizarClientePersonalPrueba() {
   const repositorio = new RepositorioClientePersonalFalso();
   const servicio = new ServicioClientePersonal(repositorio as any);
   const cliente = repositorio.crearClientePersonal("111", "Old");
 
-  const actualizado = servicio.actualizarClientePersonal(cliente.getId(), "222", "New");
+  const actualizado = await servicio.actualizarClientePersonal(cliente.getId(), "222", "New");
   assert.ok(actualizado);
   assert.strictEqual(actualizado.cedula, "222");
 }
 
-function eliminarClientePersonalPrueba() {
+async function eliminarClientePersonalPrueba() {
   const repositorio = new RepositorioClientePersonalFalso();
   const servicio = new ServicioClientePersonal(repositorio as any);
   const cliente = repositorio.crearClientePersonal("55", "X");
 
-  servicio.eliminarClientePersonal(cliente.getId());
+  await servicio.eliminarClientePersonal(cliente.getId());
   assert.strictEqual(repositorio.existe(cliente.getId()), false);
 }
 
@@ -93,10 +93,10 @@ const pruebas = [
   ["Eliminar cliente personal", eliminarClientePersonalPrueba],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);
@@ -107,5 +107,5 @@ function ejecutarPruebas() {
 }
 
 if (require.main === module) {
-  ejecutarPruebas();
+  void ejecutarPruebas();
 }

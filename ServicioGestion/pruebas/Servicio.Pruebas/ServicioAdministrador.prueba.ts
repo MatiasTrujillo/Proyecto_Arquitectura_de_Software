@@ -60,7 +60,7 @@ async function obtenerAdministradorPorIdPrueba() {
 
   let lanzo = false;
   try {
-    servicio.obtenerAdministradorPorId("no");
+    await servicio.obtenerAdministradorPorId("no");
   } catch (e) {
     lanzo = true;
   }
@@ -77,12 +77,12 @@ async function actualizarAdministradorPrueba() {
   assert.strictEqual(actualizado.cedula, "222");
 }
 
-function eliminarAdministradorPrueba() {
+async function eliminarAdministradorPrueba() {
   const repositorio = new RepositorioAdministradorFalso();
   const servicio = new ServicioAdministrador(repositorio as any);
   const administrador = repositorio.crearAdministrador("55", "X");
 
-  servicio.eliminarAdministrador(administrador.getId());
+  await servicio.eliminarAdministrador(administrador.getId());
   assert.strictEqual(repositorio.existe(administrador.getId()), false);
 }
 
@@ -93,10 +93,10 @@ const pruebas = [
   ["Eliminar administrador", eliminarAdministradorPrueba],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);
@@ -107,5 +107,5 @@ function ejecutarPruebas() {
 }
 
 if (require.main === module) {
-  ejecutarPruebas();
+  void ejecutarPruebas();
 }

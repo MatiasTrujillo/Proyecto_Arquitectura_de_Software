@@ -41,57 +41,57 @@ class RepositorioViajeFalso {
   }
 }
 
-function crearViajePrueba() {
+async function crearViajePrueba() {
   const repositorio = new RepositorioViajeFalso();
   const servicio = new ServicioViaje(repositorio as any);
 
-  const viaje = servicio.crearViaje("r1", "A", "B", "2024-01-01", "activo", "c1");
-  assert.strictEqual(viaje.getReservaId(), "r1");
+  const viaje = await servicio.crearViaje("r1", "A", "B", "2024-01-01", "activo", "c1");
+  assert.strictEqual(viaje.reservaId, "r1");
 }
 
-function obtenerViajePorIdPrueba() {
+async function obtenerViajePorIdPrueba() {
   const repositorio = new RepositorioViajeFalso();
   const servicio = new ServicioViaje(repositorio as any);
   const viaje = repositorio.crearViaje("r2", "X", "Y", new Date(), "ok", "c2");
 
-  const encontrado = servicio.obtenerViajePorId(viaje.getId());
+  const encontrado = await servicio.obtenerViajePorId(viaje.getId());
   assert.ok(encontrado);
 
   let lanzo = false;
   try {
-    servicio.obtenerViajePorId("no-existe");
+    await servicio.obtenerViajePorId("no-existe");
   } catch (e) {
     lanzo = true;
   }
   assert.strictEqual(lanzo, true);
 }
 
-function obtenerTodosLosViajesPrueba() {
+async function obtenerTodosLosViajesPrueba() {
   const repositorio = new RepositorioViajeFalso();
   const servicio = new ServicioViaje(repositorio as any);
   repositorio.crearViaje("r1", "A", "B", new Date(), "s", "c1");
   repositorio.crearViaje("r2", "C", "D", new Date(), "s", "c2");
 
-  const viajes = servicio.obtenerViajes();
+  const viajes = await servicio.obtenerViajes();
   assert.strictEqual(viajes.length, 2);
 }
 
-function actualizarViajePrueba() {
+async function actualizarViajePrueba() {
   const repositorio = new RepositorioViajeFalso();
   const servicio = new ServicioViaje(repositorio as any);
   const viaje = repositorio.crearViaje("r", "A", "B", new Date(), "s", "c");
 
-  const actualizado = servicio.actualizarViaje(viaje.getId(), "r-upd", "A2", "B2", new Date(), "s2", "c2");
+  const actualizado = await servicio.actualizarViaje(viaje.getId(), "r-upd", "A2", "B2", new Date(), "s2", "c2");
   assert.ok(actualizado);
-  assert.strictEqual(actualizado.getOrigen(), "A2");
+  assert.strictEqual(actualizado.origen, "A2");
 }
 
-function eliminarViajePrueba() {
+async function eliminarViajePrueba() {
   const repositorio = new RepositorioViajeFalso();
   const servicio = new ServicioViaje(repositorio as any);
   const viaje = repositorio.crearViaje("r", "o", "d", new Date(), "s", "c");
 
-  servicio.eliminarViaje(viaje.getId());
+  await servicio.eliminarViaje(viaje.getId());
   assert.strictEqual(repositorio.existe(viaje.getId()), false);
 }
 
@@ -103,10 +103,10 @@ const pruebas = [
   ["Eliminar viaje", eliminarViajePrueba],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);
@@ -117,5 +117,5 @@ function ejecutarPruebas() {
 }
 
 if (require.main === module) {
-  ejecutarPruebas();
+  void ejecutarPruebas();
 }

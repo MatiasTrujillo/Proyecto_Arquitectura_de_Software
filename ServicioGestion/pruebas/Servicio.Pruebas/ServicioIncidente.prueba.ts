@@ -41,47 +41,47 @@ class RepositorioIncidenteFalso {
   }
 }
 
-function crearIncidentePrueba() {
+async function crearIncidentePrueba() {
   const repositorio = new RepositorioIncidenteFalso();
   const servicio = new ServicioIncidente(repositorio as any);
 
-  const inc = servicio.crearIncidente("desc", "2024-01-01", "r1", "abierto", "alta");
-  assert.strictEqual(inc.getReservaId(), "r1");
+  const inc = await servicio.crearIncidente("desc", "2024-01-01", "r1", "abierto", "alta");
+  assert.strictEqual(inc.reservaId, "r1");
 }
 
-function obtenerIncidentePorIdPrueba() {
+async function obtenerIncidentePorIdPrueba() {
   const repositorio = new RepositorioIncidenteFalso();
   const servicio = new ServicioIncidente(repositorio as any);
   const incidente = repositorio.crearIncidente("d", new Date(), "r2", "ok", "media");
 
-  const encontrado = servicio.obtenerIncidentePorId(incidente.getId());
+  const encontrado = await servicio.obtenerIncidentePorId(incidente.getId());
   assert.ok(encontrado);
 
   let lanzo = false;
   try {
-    servicio.obtenerIncidentePorId("no");
+    await servicio.obtenerIncidentePorId("no");
   } catch (e) {
     lanzo = true;
   }
   assert.strictEqual(lanzo, true);
 }
 
-function actualizarIncidentePrueba() {
+async function actualizarIncidentePrueba() {
   const repositorio = new RepositorioIncidenteFalso();
   const servicio = new ServicioIncidente(repositorio as any);
   const incidente = repositorio.crearIncidente("d", new Date(), "r", "s", "baja");
 
-  const actualizado = servicio.actualizarIncidente(incidente.getId(), "d2", new Date(), "r", "s2", "alta");
+  const actualizado = await servicio.actualizarIncidente(incidente.getId(), "d2", new Date(), "r", "s2", "alta");
   assert.ok(actualizado);
-  assert.strictEqual(actualizado.getReservaId(), "r");
+  assert.strictEqual(actualizado.reservaId, "r");
 }
 
-function eliminarIncidentePrueba() {
+async function eliminarIncidentePrueba() {
   const repositorio = new RepositorioIncidenteFalso();
   const servicio = new ServicioIncidente(repositorio as any);
   const incidente = repositorio.crearIncidente("d", new Date(), "r", "s", "baja");
 
-  servicio.eliminarIncidente(incidente.getId());
+  await servicio.eliminarIncidente(incidente.getId());
   assert.strictEqual(repositorio.existe(incidente.getId()), false);
 }
 
@@ -92,10 +92,10 @@ const pruebas = [
   ["Eliminar incidente", eliminarIncidentePrueba],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);
@@ -106,5 +106,5 @@ function ejecutarPruebas() {
 }
 
 if (require.main === module) {
-  ejecutarPruebas();
+  void ejecutarPruebas();
 }

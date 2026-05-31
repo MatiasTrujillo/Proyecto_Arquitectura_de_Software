@@ -40,67 +40,66 @@ class RepositorioPagoFalso {
   }
 }
 
-function crearPagoPrueba() {
+async function crearPagoPrueba() {
   const repositorio = new RepositorioPagoFalso();
   const servicio = new ServicioPago(repositorio as any);
 
-  const pago = servicio.crearPago("2024-01-01", 100, "aceptado");
-  assert.strictEqual(pago.getId(), 1);
-  assert.strictEqual(pago.getMonto(), 100);
+  const pago = await servicio.crearPago("2024-01-01", 100, "aceptado");
+  assert.strictEqual(pago.id, 1);
+  assert.strictEqual(pago.monto, 100);
 }
 
-function obtenerPagoPorIdPrueba() {
+async function obtenerPagoPorIdPrueba() {
   const repositorio = new RepositorioPagoFalso();
   const servicio = new ServicioPago(repositorio as any);
   const pago = repositorio.crearPago(new Date(), 10, "pendiente");
 
-  const encontrado = servicio.obtenerPagoPorId(pago.getId());
+  const encontrado = await servicio.obtenerPagoPorId(pago.getId());
   assert.ok(encontrado);
 
   let lanzo = false;
   try {
-    servicio.obtenerPagoPorId(999);
+    await servicio.obtenerPagoPorId(999);
   } catch (e) {
     lanzo = true;
   }
   assert.strictEqual(lanzo, true);
 }
 
-function obtenerTodosLosPagosPrueba() {
+async function obtenerTodosLosPagosPrueba() {
   const repositorio = new RepositorioPagoFalso();
   const servicio = new ServicioPago(repositorio as any);
   repositorio.crearPago(new Date(), 1, "aceptado");
   repositorio.crearPago(new Date(), 2, "pendiente");
 
-  const pagos = servicio.obtenerPagos();
+  const pagos = await servicio.obtenerPagos();
   assert.strictEqual(pagos.length, 2);
 }
 
 function existePrueba() {
   const repositorio = new RepositorioPagoFalso();
-  const servicio = new ServicioPago(repositorio as any);
   const pago = repositorio.crearPago(new Date(), 5, "aceptado");
 
   assert.strictEqual(repositorio.existe(pago.getId()), true);
   assert.strictEqual(repositorio.existe(12345), false);
 }
 
-function actualizarPagoPrueba() {
+async function actualizarPagoPrueba() {
   const repositorio = new RepositorioPagoFalso();
   const servicio = new ServicioPago(repositorio as any);
   const pago = repositorio.crearPago(new Date(), 5, "aceptado");
 
-  const actualizado = servicio.actualizarPago(pago.getId(), new Date(), 99, "aceptado");
+  const actualizado = await servicio.actualizarPago(pago.getId(), new Date(), 99, "aceptado");
   assert.ok(actualizado);
-  assert.strictEqual(actualizado.getMonto(), 99);
+  assert.strictEqual(actualizado.monto, 99);
 }
 
-function eliminarPagoPrueba() {
+async function eliminarPagoPrueba() {
   const repositorio = new RepositorioPagoFalso();
   const servicio = new ServicioPago(repositorio as any);
   const pago = repositorio.crearPago(new Date(), 1, "aceptado");
 
-  servicio.eliminarPago(pago.getId());
+  await servicio.eliminarPago(pago.getId());
   assert.strictEqual(repositorio.existe(pago.getId()), false);
 }
 
@@ -113,10 +112,10 @@ const pruebas = [
   ["Eliminar pago", eliminarPagoPrueba],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);
@@ -127,5 +126,5 @@ function ejecutarPruebas() {
 }
 
 if (require.main === module) {
-  ejecutarPruebas();
+  void ejecutarPruebas();
 }

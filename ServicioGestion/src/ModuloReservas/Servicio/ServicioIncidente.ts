@@ -5,20 +5,20 @@ import { IServicioIncidente } from "../IServicio/IServicioIncidente";
 export class ServicioIncidente implements IServicioIncidente {
   constructor(private repositorio: IRepositorioIncidente) {}
 
-  crearIncidente(
+  async crearIncidente(
     descripcion: string,
     fecha: string | Date,
     reservaId: string,
     estado: string,
     severidad: string,
-  ): IncidenteDTO {
+  ): Promise<IncidenteDTO> {
     const descripcionValida = this.validarDescripcion(descripcion);
     const fechaValida = this.validarFecha(fecha);
     const reservaIdValido = this.validarId(reservaId);
     const estadoValido = this.validarEstado(estado);
     const severidadValida = this.validarSeveridad(severidad);
 
-    const incidente = this.repositorio.crearIncidente(
+    const incidente = await this.repositorio.crearIncidente(
       descripcionValida,
       fechaValida,
       reservaIdValido,
@@ -29,14 +29,14 @@ export class ServicioIncidente implements IServicioIncidente {
     return IncidenteDTO.fromEntity(incidente);
   }
 
-  obtenerIncidentes(): IncidenteDTO[] {
-    const incidentes = this.repositorio.obtenerIncidentes();
+  async obtenerIncidentes(): Promise<IncidenteDTO[]> {
+    const incidentes = await this.repositorio.obtenerIncidentes();
     return incidentes.map(incidente => IncidenteDTO.fromEntity(incidente));
   }
 
-  obtenerIncidentePorId(id: string): IncidenteDTO {
+  async obtenerIncidentePorId(id: string): Promise<IncidenteDTO> {
     const idValido = this.validarId(id);
-    const incidente = this.repositorio.obtenerIncidentePorId(idValido);
+    const incidente = await this.repositorio.obtenerIncidentePorId(idValido);
 
     if (!incidente) {
       throw new Error(`No se encontró el incidente con id ${idValido}`);
@@ -45,14 +45,14 @@ export class ServicioIncidente implements IServicioIncidente {
     return IncidenteDTO.fromEntity(incidente);
   }
 
-  actualizarIncidente(
+  async actualizarIncidente(
     id: string,
     descripcion: string,
     fecha: string | Date,
     reservaId: string,
     estado: string,
     severidad: string,
-  ): IncidenteDTO {
+  ): Promise<IncidenteDTO> {
     const idValido = this.validarId(id);
     const descripcionValida = this.validarDescripcion(descripcion);
     const fechaValida = this.validarFecha(fecha);
@@ -60,11 +60,11 @@ export class ServicioIncidente implements IServicioIncidente {
     const estadoValido = this.validarEstado(estado);
     const severidadValida = this.validarSeveridad(severidad);
 
-    if (!this.repositorio.existe(idValido)) {
+    if (!await this.repositorio.existe(idValido)) {
       throw new Error(`No se encontró el incidente con id ${idValido}`);
     }
 
-    const incidenteActualizado = this.repositorio.actualizarIncidente(
+    const incidenteActualizado = await this.repositorio.actualizarIncidente(
       idValido,
       descripcionValida,
       fechaValida,
@@ -80,10 +80,10 @@ export class ServicioIncidente implements IServicioIncidente {
     return IncidenteDTO.fromEntity(incidenteActualizado);
   }
 
-  eliminarIncidente(id: string): void {
+  async eliminarIncidente(id: string): Promise<void> {
     const idValido = this.validarId(id);
 
-    if (!this.repositorio.eliminarIncidente(idValido)) {
+    if (!await this.repositorio.eliminarIncidente(idValido)) {
       throw new Error(`No se encontró el incidente con id ${idValido}`);
     }
   }

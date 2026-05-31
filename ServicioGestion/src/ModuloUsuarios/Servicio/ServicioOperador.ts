@@ -5,47 +5,47 @@ import { IServicioOperador } from "../IServicio/IServicioOperador";
 export class ServicioOperador implements IServicioOperador {
   constructor(private repositorio: IRepositorioOperador) {}
 
-  crearOperador(cedula: string, nombre: string): OperadorDTO {
+  async crearOperador(cedula: string, nombre: string): Promise<OperadorDTO> {
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    const operador = this.repositorio.crearOperador(cedula, nombre);
+    const operador = await this.repositorio.crearOperador(cedula, nombre);
     return OperadorDTO.fromEntity(operador);
   }
 
-  obtenerOperadores(): OperadorDTO[] {
-    const operadores = this.repositorio.obtenerOperadores();
+  async obtenerOperadores(): Promise<OperadorDTO[]> {
+    const operadores = await this.repositorio.obtenerOperadores();
     return operadores.map(op => OperadorDTO.fromEntity(op));
   }
 
-  obtenerOperadorPorId(id: string): OperadorDTO {
+  async obtenerOperadorPorId(id: string): Promise<OperadorDTO> {
     this.validarId(id);
-    const operador = this.repositorio.obtenerOperadorPorId(id);
+    const operador = await this.repositorio.obtenerOperadorPorId(id);
     if (!operador) {
       throw new Error(`No se encontró el operador con id ${id}`);
     }
     return OperadorDTO.fromEntity(operador);
   }
 
-  actualizarOperador(id: string, cedula: string, nombre: string): OperadorDTO {
+  async actualizarOperador(id: string, cedula: string, nombre: string): Promise<OperadorDTO> {
     this.validarId(id);
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    if (!this.repositorio.existe(id)) {
+    if (!await this.repositorio.existe(id)) {
       throw new Error(`No se encontró el operador con id ${id}`);
     }
 
-    const operadorActualizado = this.repositorio.actualizarOperador(id, cedula, nombre);
+    const operadorActualizado = await this.repositorio.actualizarOperador(id, cedula, nombre);
     if (!operadorActualizado) {
       throw new Error(`No se pudo actualizar el operador con id ${id}`);
     }
     return OperadorDTO.fromEntity(operadorActualizado);
   }
 
-  eliminarOperador(id: string): void {
+  async eliminarOperador(id: string): Promise<void> {
     this.validarId(id);
-    if (!this.repositorio.eliminarOperador(id)) {
+    if (!await this.repositorio.eliminarOperador(id)) {
       throw new Error(`No se encontró el operador con id ${id}`);
     }
   }

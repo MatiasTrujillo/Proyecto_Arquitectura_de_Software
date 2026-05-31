@@ -8,9 +8,9 @@ export interface IServicioViaje {
     fecha: string | Date,
     estado: string,
     conductor: string,
-  ): ViajeDTO;
-  obtenerViajes(): ViajeDTO[];
-  obtenerViajePorId(id: string): ViajeDTO;
+  ): Promise<ViajeDTO>;
+  obtenerViajes(): Promise<ViajeDTO[]>;
+  obtenerViajePorId(id: string): Promise<ViajeDTO>;
   actualizarViaje(
     id: string,
     reservaId: string,
@@ -19,6 +19,6 @@ export interface IServicioViaje {
     fecha: string | Date,
     estado: string,
     conductor: string,
-  ): ViajeDTO;
-  eliminarViaje(id: string): void;
+  ): Promise<ViajeDTO>;
+  eliminarViaje(id: string): Promise<void>;
 }

@@ -40,67 +40,66 @@ class RepositorioProductoFalso {
   }
 }
 
-function crearProductoPrueba() {
+async function crearProductoPrueba() {
   const repositorio = new RepositorioProductoFalso();
   const servicio = new ServicioProducto(repositorio as any);
 
-  const producto = servicio.crearProducto("Prod A", 100, 10, "Cat1");
-  assert.strictEqual(producto.getId(), 1);
-  assert.strictEqual(producto.getDescripcion(), "Prod A");
+  const producto = await servicio.crearProducto("Prod A", 100, 10, "Cat1");
+  assert.strictEqual(producto.id, 1);
+  assert.strictEqual(producto.descripcion, "Prod A");
 }
 
-function obtenerProductoPorIdPrueba() {
+async function obtenerProductoPorIdPrueba() {
   const repositorio = new RepositorioProductoFalso();
   const servicio = new ServicioProducto(repositorio as any);
   const producto = repositorio.crearProducto("Prod B", 50, 5, "Cat2");
 
-  const encontrado = servicio.obtenerProductoPorId(producto.getId());
+  const encontrado = await servicio.obtenerProductoPorId(producto.getId());
   assert.ok(encontrado);
 
   let lanzo = false;
   try {
-    servicio.obtenerProductoPorId(999);
+    await servicio.obtenerProductoPorId(999);
   } catch (e) {
     lanzo = true;
   }
   assert.strictEqual(lanzo, true);
 }
 
-function obtenerTodosLosProductosPrueba() {
+async function obtenerTodosLosProductosPrueba() {
   const repositorio = new RepositorioProductoFalso();
   const servicio = new ServicioProducto(repositorio as any);
   repositorio.crearProducto("P1", 10, 1, "C");
   repositorio.crearProducto("P2", 20, 2, "C");
 
-  const productos = servicio.obtenerProductos();
+  const productos = await servicio.obtenerProductos();
   assert.strictEqual(productos.length, 2);
 }
 
 function existePrueba() {
   const repositorio = new RepositorioProductoFalso();
-  const servicio = new ServicioProducto(repositorio as any);
   const producto = repositorio.crearProducto("P3", 30, 3, "C");
 
   assert.strictEqual(repositorio.existe(producto.getId()), true);
   assert.strictEqual(repositorio.existe(12345), false);
 }
 
-function actualizarProductoPrueba() {
+async function actualizarProductoPrueba() {
   const repositorio = new RepositorioProductoFalso();
   const servicio = new ServicioProducto(repositorio as any);
   const producto = repositorio.crearProducto("Old", 5, 1, "C1");
 
-  const actualizado = servicio.actualizarProducto(producto.getId(), "New", 99, 9, "C2");
+  const actualizado = await servicio.actualizarProducto(producto.getId(), "New", 99, 9, "C2");
   assert.ok(actualizado);
-  assert.strictEqual(actualizado?.getDescripcion(), "New");
+  assert.strictEqual(actualizado.descripcion, "New");
 }
 
-function eliminarProductoPrueba() {
+async function eliminarProductoPrueba() {
   const repositorio = new RepositorioProductoFalso();
   const servicio = new ServicioProducto(repositorio as any);
   const producto = repositorio.crearProducto("ToDelete", 1, 1, "C");
 
-  servicio.eliminarProducto(producto.getId());
+  await servicio.eliminarProducto(producto.getId());
   assert.strictEqual(repositorio.existe(producto.getId()), false);
 }
 
@@ -113,10 +112,10 @@ const pruebas = [
   ["Eliminar producto", eliminarProductoPrueba],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);
@@ -127,5 +126,5 @@ function ejecutarPruebas() {
 }
 
 if (require.main === module) {
-  ejecutarPruebas();
+  void ejecutarPruebas();
 }

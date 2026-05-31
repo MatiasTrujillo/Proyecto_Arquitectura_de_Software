@@ -5,38 +5,38 @@ import { IServicioConductor } from "../IServicio/IServicioConductor";
 export class ServicioConductor implements IServicioConductor {
   constructor(private repositorio: IRepositorioConductor) {}
 
-  crearConductor(cedula: string, nombre: string): ConductorDTO {
+  async crearConductor(cedula: string, nombre: string): Promise<ConductorDTO> {
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    const conductor = this.repositorio.crearConductor(cedula, nombre);
+    const conductor = await this.repositorio.crearConductor(cedula, nombre);
     return ConductorDTO.fromEntity(conductor);
   }
 
-  obtenerConductores(): ConductorDTO[] {
-    const conductores = this.repositorio.obtenerConductores();
+  async obtenerConductores(): Promise<ConductorDTO[]> {
+    const conductores = await this.repositorio.obtenerConductores();
     return conductores.map(c => ConductorDTO.fromEntity(c));
   }
 
-  obtenerConductorPorId(id: string): ConductorDTO {
+  async obtenerConductorPorId(id: string): Promise<ConductorDTO> {
     this.validarId(id);
-    const conductor = this.repositorio.obtenerConductorPorId(id);
+    const conductor = await this.repositorio.obtenerConductorPorId(id);
     if (!conductor) {
       throw new Error(`No se encontró el conductor con id ${id}`);
     }
     return ConductorDTO.fromEntity(conductor);
   }
 
-  actualizarConductor(id: string, cedula: string, nombre: string): ConductorDTO {
+  async actualizarConductor(id: string, cedula: string, nombre: string): Promise<ConductorDTO> {
     this.validarId(id);
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    if (!this.repositorio.existe(id)) {
+    if (!await this.repositorio.existe(id)) {
       throw new Error(`No se encontró el conductor con id ${id}`);
     }
 
-    const conductorActualizado = this.repositorio.actualizarConductor(id, cedula, nombre);
+    const conductorActualizado = await this.repositorio.actualizarConductor(id, cedula, nombre);
     if (!conductorActualizado) {
       throw new Error(`No se pudo actualizar el conductor con id ${id}`);
     }
@@ -44,10 +44,10 @@ export class ServicioConductor implements IServicioConductor {
     return ConductorDTO.fromEntity(conductorActualizado);
   }
 
-  eliminarConductor(id: string): void {
+  async eliminarConductor(id: string): Promise<void> {
     this.validarId(id);
 
-    if (!this.repositorio.eliminarConductor(id)) {
+    if (!await this.repositorio.eliminarConductor(id)) {
       throw new Error(`No se encontró el conductor con id ${id}`);
     }
   }

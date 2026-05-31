@@ -41,48 +41,48 @@ class RepositorioOperadorFalso {
   }
 }
 
-function crearOperadorPrueba() {
+async function crearOperadorPrueba() {
   const repositorio = new RepositorioOperadorFalso();
   const servicio = new ServicioOperador(repositorio as any);
 
-  const operador = servicio.crearOperador("999", "Pedro");
+  const operador = await servicio.crearOperador("999", "Pedro");
   assert.strictEqual(operador.cedula, "999");
 }
 
-function obtenerOperadorPorIdPrueba() {
+async function obtenerOperadorPorIdPrueba() {
   const repositorio = new RepositorioOperadorFalso();
   const servicio = new ServicioOperador(repositorio as any);
   const operador = repositorio.crearOperador("888", "Ana");
 
-  const encontrado = servicio.obtenerOperadorPorId(operador.getId());
+  const encontrado = await servicio.obtenerOperadorPorId(operador.getId());
   assert.ok(encontrado);
   assert.strictEqual(encontrado.cedula, "888");
 
   let lanzo = false;
   try {
-    servicio.obtenerOperadorPorId("no");
+    await servicio.obtenerOperadorPorId("no");
   } catch (e) {
     lanzo = true;
   }
   assert.strictEqual(lanzo, true);
 }
 
-function actualizarOperadorPrueba() {
+async function actualizarOperadorPrueba() {
   const repositorio = new RepositorioOperadorFalso();
   const servicio = new ServicioOperador(repositorio as any);
   const operador = repositorio.crearOperador("111", "Old");
 
-  const actualizado = servicio.actualizarOperador(operador.getId(), "222", "New");
+  const actualizado = await servicio.actualizarOperador(operador.getId(), "222", "New");
   assert.ok(actualizado);
   assert.strictEqual(actualizado.cedula, "222");
 }
 
-function eliminarOperadorPrueba() {
+async function eliminarOperadorPrueba() {
   const repositorio = new RepositorioOperadorFalso();
   const servicio = new ServicioOperador(repositorio as any);
   const operador = repositorio.crearOperador("55", "X");
 
-  servicio.eliminarOperador(operador.getId());
+  await servicio.eliminarOperador(operador.getId());
   assert.strictEqual(repositorio.existe(operador.getId()), false);
 }
 
@@ -93,10 +93,10 @@ const pruebas = [
   ["Eliminar operador", eliminarOperadorPrueba],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);
@@ -107,5 +107,5 @@ function ejecutarPruebas() {
 }
 
 if (require.main === module) {
-  ejecutarPruebas();
+  void ejecutarPruebas();
 }

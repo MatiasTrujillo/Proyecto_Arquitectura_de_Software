@@ -7,9 +7,9 @@ export interface IServicioIncidente {
     reservaId: string,
     estado: string,
     severidad: string,
-  ): IncidenteDTO;
-  obtenerIncidentes(): IncidenteDTO[];
-  obtenerIncidentePorId(id: string): IncidenteDTO;
+  ): Promise<IncidenteDTO>;
+  obtenerIncidentes(): Promise<IncidenteDTO[]>;
+  obtenerIncidentePorId(id: string): Promise<IncidenteDTO>;
   actualizarIncidente(
     id: string,
     descripcion: string,
@@ -17,6 +17,6 @@ export interface IServicioIncidente {
     reservaId: string,
     estado: string,
     severidad: string,
-  ): IncidenteDTO;
-  eliminarIncidente(id: string): void;
+  ): Promise<IncidenteDTO>;
+  eliminarIncidente(id: string): Promise<void>;
 }
