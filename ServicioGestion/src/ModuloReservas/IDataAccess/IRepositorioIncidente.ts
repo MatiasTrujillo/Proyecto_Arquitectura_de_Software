@@ -7,9 +7,9 @@ export interface IRepositorioIncidente {
     reservaId: string,
     estado: string,
     severidad: string,
-  ): Incidente;
-  obtenerIncidentes(): Incidente[];
-  obtenerIncidentePorId(id: string): Incidente | undefined;
+  ): Promise<Incidente>;
+  obtenerIncidentes(): Promise<Incidente[]>;
+  obtenerIncidentePorId(id: string): Promise<Incidente | undefined>;
   actualizarIncidente(
     id: string,
     descripcion: string,
@@ -17,7 +17,7 @@ export interface IRepositorioIncidente {
     reservaId: string,
     estado: string,
     severidad: string,
-  ): Incidente | undefined;
-  eliminarIncidente(id: string): boolean;
-  existe(id: string): boolean;
+  ): Promise<Incidente | undefined>;
+  eliminarIncidente(id: string): Promise<boolean>;
+  existe(id: string): Promise<boolean>;
 }

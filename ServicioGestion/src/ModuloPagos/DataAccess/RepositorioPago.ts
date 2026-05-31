@@ -1,54 +1,47 @@
+import pool from '../../Shared/Database/DatabaseConnection';
 import { Pago } from "../Domain/Pago";
 import { EstadoPago } from "../Domain/EstadoPago";
 import { IRepositorioPago } from "../IDataAccess/IRepositorioPago";
 
 export class RepositorioPago implements IRepositorioPago {
-  private pagos: Pago[] = [];
-  private proximoId: number = 1;
-
-  // Crear un nuevo pago
-  crearPago(fecha: Date, monto: number, estado: EstadoPago): Pago {
-    const nuevoPago = new Pago(this.proximoId++, fecha, monto, estado);
-    this.pagos.push(nuevoPago);
-    return nuevoPago;
+  async crearPago(fecha: Date, monto: number, estado: EstadoPago): Promise<Pago> {
+    const res = await pool.query(
+      'INSERT INTO pago (fecha, monto, estado) VALUES ($1, $2, $3) RETURNING id, fecha, monto, estado',
+      [fecha.toISOString(), monto, estado]
+    );
+    const r = res.rows[0];
+    return new Pago(r.id, new Date(r.fecha), r.monto, r.estado as EstadoPago);
   }
 
-  // Obtener todos los pagos
-  obtenerPagos(): Pago[] {
-    return this.pagos;
+  async obtenerPagos(): Promise<Pago[]> {
+    const res = await pool.query('SELECT id, fecha, monto, estado FROM pago');
+    return res.rows.map((r: any) => new Pago(r.id, new Date(r.fecha), r.monto, r.estado as EstadoPago));
   }
 
-  // Obtener un pago por ID
-  obtenerPagoPorId(id: number): Pago | undefined {
-    return this.pagos.find(pago => pago.getId() === id);
+  async obtenerPagoPorId(id: number): Promise<Pago | undefined> {
+    const res = await pool.query('SELECT id, fecha, monto, estado FROM pago WHERE id = $1', [id]);
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Pago(r.id, new Date(r.fecha), r.monto, r.estado as EstadoPago);
   }
 
-  // Actualizar un pago
-  actualizarPago(id: number, fecha: Date, monto: number, estado: EstadoPago): Pago | undefined {
-    const index = this.pagos.findIndex(p => p.getId() === id);
-
-    if (index === -1) {
-      return undefined;
-    }
-
-    const pagoActualizado = new Pago(id, fecha, monto, estado);
-    this.pagos[index] = pagoActualizado;
-    return pagoActualizado;
+  async actualizarPago(id: number, fecha: Date, monto: number, estado: EstadoPago): Promise<Pago | undefined> {
+    const res = await pool.query(
+      'UPDATE pago SET fecha=$1, monto=$2, estado=$3 WHERE id=$4 RETURNING id, fecha, monto, estado',
+      [fecha.toISOString(), monto, estado, id]
+    );
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Pago(r.id, new Date(r.fecha), r.monto, r.estado as EstadoPago);
   }
 
-  // Eliminar un pago
-  eliminarPago(id: number): boolean {
-    const index = this.pagos.findIndex(pago => pago.getId() === id);
-
-    if (index === -1) {
-      return false;
-    }
-
-    this.pagos.splice(index, 1);
-    return true;
+  async eliminarPago(id: number): Promise<boolean> {
+    const res = await pool.query('DELETE FROM pago WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 
-  existe(id: number): boolean {
-    return this.pagos.some(pago => pago.getId() === id);
+  async existe(id: number): Promise<boolean> {
+    const res = await pool.query('SELECT 1 FROM pago WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 }

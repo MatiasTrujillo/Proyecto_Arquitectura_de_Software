@@ -1,38 +1,46 @@
+import pool from '../../Shared/Database/DatabaseConnection';
 import { Producto } from "../Dominio/Producto";
 import { IRepositorioProducto } from "../IDataAccess/IRepositorioProducto";
 
 export class RepositorioProducto implements IRepositorioProducto {
-  private productos: Producto[] = [];
-  private proximoId: number = 1;
-
-  crearProducto(descripcion: string, valor: number, tamano: number, categoria: string): Producto {
-    const nuevoProducto = new Producto(this.proximoId++, descripcion, valor, tamano, categoria);
-    this.productos.push(nuevoProducto);
-    return nuevoProducto;
+  async crearProducto(descripcion: string, valor: number, tamano: number, categoria: string): Promise<Producto> {
+    const res = await pool.query(
+      'INSERT INTO producto (descripcion, valor, tamano, categoria) VALUES ($1, $2, $3, $4) RETURNING id, descripcion, valor, tamano, categoria',
+      [descripcion, valor, tamano, categoria]
+    );
+    const r = res.rows[0];
+    return new Producto(r.id, r.descripcion, r.valor, r.tamano, r.categoria);
   }
 
-  obtenerProductos(): Producto[] {
-    return this.productos;
+  async obtenerProductos(): Promise<Producto[]> {
+    const res = await pool.query('SELECT id, descripcion, valor, tamano, categoria FROM producto');
+    return res.rows.map((r: any) => new Producto(r.id, r.descripcion, r.valor, r.tamano, r.categoria));
   }
 
-  obtenerProductoPorId(id: number): Producto | undefined {
-    return this.productos.find(producto => producto.getId() === id);
+  async obtenerProductoPorId(id: number): Promise<Producto | undefined> {
+    const res = await pool.query('SELECT id, descripcion, valor, tamano, categoria FROM producto WHERE id = $1', [id]);
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Producto(r.id, r.descripcion, r.valor, r.tamano, r.categoria);
   }
 
-  actualizarProducto(id: number, descripcion: string, valor: number, tamano: number, categoria: string): Producto | undefined {
-    const index = this.productos.findIndex(producto => producto.getId() === id);
-    const productoActualizado = new Producto(id, descripcion, valor, tamano, categoria);
-    this.productos[index] = productoActualizado;
-    return productoActualizado;
+  async actualizarProducto(id: number, descripcion: string, valor: number, tamano: number, categoria: string): Promise<Producto | undefined> {
+    const res = await pool.query(
+      'UPDATE producto SET descripcion=$1, valor=$2, tamano=$3, categoria=$4 WHERE id=$5 RETURNING id, descripcion, valor, tamano, categoria',
+      [descripcion, valor, tamano, categoria, id]
+    );
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Producto(r.id, r.descripcion, r.valor, r.tamano, r.categoria);
   }
 
-  eliminarProducto(id: number): boolean {
-    const index = this.productos.findIndex(producto => producto.getId() === id);
-    this.productos.splice(index, 1);
-    return true;
+  async eliminarProducto(id: number): Promise<boolean> {
+    const res = await pool.query('DELETE FROM producto WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 
-  existe(id: number): boolean {
-    return this.productos.some(producto => producto.getId() === id);
+  async existe(id: number): Promise<boolean> {
+    const res = await pool.query('SELECT 1 FROM producto WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 }

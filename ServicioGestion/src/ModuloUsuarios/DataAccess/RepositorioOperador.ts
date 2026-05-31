@@ -1,46 +1,46 @@
+import pool from '../../Shared/Database/DatabaseConnection';
 import { Operador } from "../Dominio/Operador";
 import { IRepositorioOperador } from "../IDataAccess/IRepositorioOperador";
 
 export class RepositorioOperador implements IRepositorioOperador {
-  private operadores: Operador[] = [];
-  private siguienteId: number = 1;
-
-  crearOperador(cedula: string, nombre: string): Operador {
-    const nuevoOperador = new Operador(String(this.siguienteId++), cedula, nombre);
-    this.operadores.push(nuevoOperador);
-    return nuevoOperador;
+  async crearOperador(cedula: string, nombre: string): Promise<Operador> {
+    const res = await pool.query(
+      'INSERT INTO operador (cedula, nombre) VALUES ($1, $2) RETURNING id, cedula, nombre',
+      [cedula, nombre]
+    );
+    const r = res.rows[0];
+    return new Operador(String(r.id), r.cedula, r.nombre);
   }
 
-  obtenerOperadores(): Operador[] {
-    return this.operadores;
+  async obtenerOperadores(): Promise<Operador[]> {
+    const res = await pool.query('SELECT id, cedula, nombre FROM operador');
+    return res.rows.map((r: any) => new Operador(String(r.id), r.cedula, r.nombre));
   }
 
-  obtenerOperadorPorId(id: string): Operador | undefined {
-    return this.operadores.find(operador => operador.getId() === id);
+  async obtenerOperadorPorId(id: string): Promise<Operador | undefined> {
+    const res = await pool.query('SELECT id, cedula, nombre FROM operador WHERE id = $1', [id]);
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Operador(String(r.id), r.cedula, r.nombre);
   }
 
-  actualizarOperador(id: string, cedula: string, nombre: string): Operador | undefined {
-    const index = this.operadores.findIndex(operador => operador.getId() === id);
-    if (index === -1) {
-      return undefined;
-    }
-
-    const operadorActualizado = new Operador(id, cedula, nombre);
-    this.operadores[index] = operadorActualizado;
-    return operadorActualizado;
+  async actualizarOperador(id: string, cedula: string, nombre: string): Promise<Operador | undefined> {
+    const res = await pool.query(
+      'UPDATE operador SET cedula = $1, nombre = $2 WHERE id = $3 RETURNING id, cedula, nombre',
+      [cedula, nombre, id]
+    );
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Operador(String(r.id), r.cedula, r.nombre);
   }
 
-  eliminarOperador(id: string): boolean {
-    const index = this.operadores.findIndex(operador => operador.getId() === id);
-    if (index === -1) {
-      return false;
-    }
-
-    this.operadores.splice(index, 1);
-    return true;
+  async eliminarOperador(id: string): Promise<boolean> {
+    const res = await pool.query('DELETE FROM operador WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 
-  existe(id: string): boolean {
-    return this.operadores.some(operador => operador.getId() === id);
+  async existe(id: string): Promise<boolean> {
+    const res = await pool.query('SELECT 1 FROM operador WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 }

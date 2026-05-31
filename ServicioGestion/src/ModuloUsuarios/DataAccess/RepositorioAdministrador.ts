@@ -1,48 +1,46 @@
-import { Administrador } from "../Dominio/Administrador";
-import { IRepositorioAdministrador } from "../IDataAccess/IRepositorioAdministrador";
+import pool from '../../Shared/Database/DatabaseConnection';
+import { Administrador } from '../Dominio/Administrador';
+import { IRepositorioAdministrador } from '../IDataAccess/IRepositorioAdministrador';
 
 export class RepositorioAdministrador implements IRepositorioAdministrador {
-  private administradores: Administrador[] = [];
-  private siguienteId: number = 1;
-
-  crearAdministrador(cedula: string, nombre: string): Administrador {
-    const nuevoAdministrador = new Administrador(String(this.siguienteId++), cedula, nombre);
-    this.administradores.push(nuevoAdministrador);
-    return nuevoAdministrador;
+  async crearAdministrador(cedula: string, nombre: string): Promise<Administrador> {
+    const res = await pool.query(
+      'INSERT INTO administrador (cedula, nombre) VALUES ($1, $2) RETURNING id, cedula, nombre',
+      [cedula, nombre]
+    );
+    const row = res.rows[0];
+    return new Administrador(String(row.id), row.cedula, row.nombre);
   }
 
-  obtenerAdministradores(): Administrador[] {
-    return this.administradores;
+  async obtenerAdministradores(): Promise<Administrador[]> {
+    const res = await pool.query('SELECT id, cedula, nombre FROM administrador');
+    return res.rows.map(r => new Administrador(String(r.id), r.cedula, r.nombre));
   }
 
-  obtenerAdministradorPorId(id: string): Administrador | undefined {
-    return this.administradores.find(administrador => administrador.getId() === id);
+  async obtenerAdministradorPorId(id: string): Promise<Administrador | undefined> {
+    const res = await pool.query('SELECT id, cedula, nombre FROM administrador WHERE id = $1', [id]);
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Administrador(String(r.id), r.cedula, r.nombre);
   }
 
-  actualizarAdministrador(id: string, cedula: string, nombre: string): Administrador | undefined {
-    const index = this.administradores.findIndex(administrador => administrador.getId() === id);
-
-    if (index === -1) {
-      return undefined;
-    }
-
-    const administradorActualizado = new Administrador(id, cedula, nombre);
-    this.administradores[index] = administradorActualizado;
-    return administradorActualizado;
+  async actualizarAdministrador(id: string, cedula: string, nombre: string): Promise<Administrador | undefined> {
+    const res = await pool.query(
+      'UPDATE administrador SET cedula = $1, nombre = $2 WHERE id = $3 RETURNING id, cedula, nombre',
+      [cedula, nombre, id]
+    );
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Administrador(String(r.id), r.cedula, r.nombre);
   }
 
-  eliminarAdministrador(id: string): boolean {
-    const index = this.administradores.findIndex(administrador => administrador.getId() === id);
-
-    if (index === -1) {
-      return false;
-    }
-
-    this.administradores.splice(index, 1);
-    return true;
+  async eliminarAdministrador(id: string): Promise<boolean> {
+    const res = await pool.query('DELETE FROM administrador WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 
-  existe(id: string): boolean {
-    return this.administradores.some(administrador => administrador.getId() === id);
+  async existe(id: string): Promise<boolean> {
+    const res = await pool.query('SELECT 1 FROM administrador WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 }

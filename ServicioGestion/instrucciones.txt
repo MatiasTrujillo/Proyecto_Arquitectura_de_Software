@@ -7,7 +7,10 @@ Buenas Practicas:
 -Codigo en español
 
 Arquitectura:
--Arquitectura global: Monolito modular + microservicios
--Actualmente estamos trabajando solo en el Monolito
--Los modulos del monolito son: ModuloCatalogo, ModuloPagos, ModuloReservas, ModuloUsuarios, ModuloVehiculos
--Los modulos deben estar desacoplados entre si, asi que usaremos el modulo Shared como intermediario
+-Arquitectura global: service-based, con 2 servicios: servicio de gestion y servicio de operaciones.
+-Actualmente estamos trabajando solo en el servicio de gestion.
+-Los modulos de este servicio son: ModuloCatalogo, ModuloPagos, ModuloReservas, ModuloUsuarios.
+-Los modulos deben estar desacoplados entre si, asi que usaremos el modulo Shared como intermediario.
+
+Aclaraciones:
+-Esto es para un proyecto universitario.

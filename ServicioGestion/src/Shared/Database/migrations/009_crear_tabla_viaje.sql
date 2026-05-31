@@ -1,0 +1,12 @@
+-- Migración 009: Crear tabla viaje
+
+CREATE TABLE IF NOT EXISTS viaje (
+  id SERIAL PRIMARY KEY,
+  reserva_id VARCHAR(100) NOT NULL,
+  origen VARCHAR(255) NOT NULL,
+  destino VARCHAR(255) NOT NULL,
+  fecha TIMESTAMP NOT NULL,
+  estado VARCHAR(50) NOT NULL,
+  conductor VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

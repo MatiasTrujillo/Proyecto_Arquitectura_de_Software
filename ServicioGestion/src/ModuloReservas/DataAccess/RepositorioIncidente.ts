@@ -1,74 +1,59 @@
+import pool from '../../Shared/Database/DatabaseConnection';
 import { Incidente } from "../Dominio/Incidente";
 import { IRepositorioIncidente } from "../IDataAccess/IRepositorioIncidente";
 
 export class RepositorioIncidente implements IRepositorioIncidente {
-  private incidentes: Incidente[] = [];
-  private proximoId: number = 1;
-
-  crearIncidente(
+  async crearIncidente(
     descripcion: string,
     fecha: Date,
     reservaId: string,
     estado: string,
     severidad: string,
-  ): Incidente {
-    const nuevoIncidente = new Incidente(
-      this.proximoId.toString(),
-      descripcion,
-      fecha,
-      reservaId,
-      estado,
-      severidad,
+  ): Promise<Incidente> {
+    const res = await pool.query(
+      'INSERT INTO incidente (descripcion, fecha, reserva_id, estado, severidad) VALUES ($1, $2, $3, $4, $5) RETURNING id, descripcion, fecha, reserva_id, estado, severidad',
+      [descripcion, fecha.toISOString(), reservaId, estado, severidad]
     );
-    this.proximoId += 1;
-    this.incidentes.push(nuevoIncidente);
-    return nuevoIncidente;
+    const r = res.rows[0];
+    return new Incidente(String(r.id), r.descripcion, new Date(r.fecha), r.reserva_id, r.estado, r.severidad);
   }
 
-  obtenerIncidentes(): Incidente[] {
-    return this.incidentes;
+  async obtenerIncidentes(): Promise<Incidente[]> {
+    const res = await pool.query('SELECT id, descripcion, fecha, reserva_id, estado, severidad FROM incidente');
+    return res.rows.map((r: any) => new Incidente(String(r.id), r.descripcion, new Date(r.fecha), r.reserva_id, r.estado, r.severidad));
   }
 
-  obtenerIncidentePorId(id: string): Incidente | undefined {
-    return this.incidentes.find(incidente => incidente.getId() === id);
+  async obtenerIncidentePorId(id: string): Promise<Incidente | undefined> {
+    const res = await pool.query('SELECT id, descripcion, fecha, reserva_id, estado, severidad FROM incidente WHERE id = $1', [id]);
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Incidente(String(r.id), r.descripcion, new Date(r.fecha), r.reserva_id, r.estado, r.severidad);
   }
 
-  actualizarIncidente(
+  async actualizarIncidente(
     id: string,
     descripcion: string,
     fecha: Date,
     reservaId: string,
     estado: string,
     severidad: string,
-  ): Incidente | undefined {
-    let incidenteActualizado: Incidente | undefined;
-
-    this.incidentes = this.incidentes.map(incidente => {
-      if (incidente.getId() !== id) {
-        return incidente;
-      }
-
-      incidenteActualizado = new Incidente(
-        id,
-        descripcion,
-        fecha,
-        reservaId,
-        estado,
-        severidad,
-      );
-      return incidenteActualizado;
-    });
-
-    return incidenteActualizado;
+  ): Promise<Incidente | undefined> {
+    const res = await pool.query(
+      'UPDATE incidente SET descripcion=$1, fecha=$2, reserva_id=$3, estado=$4, severidad=$5 WHERE id=$6 RETURNING id, descripcion, fecha, reserva_id, estado, severidad',
+      [descripcion, fecha.toISOString(), reservaId, estado, severidad, id]
+    );
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Incidente(String(r.id), r.descripcion, new Date(r.fecha), r.reserva_id, r.estado, r.severidad);
   }
 
-  eliminarIncidente(id: string): boolean {
-    const originalLength = this.incidentes.length;
-    this.incidentes = this.incidentes.filter(incidente => incidente.getId() !== id);
-    return this.incidentes.length !== originalLength;
+  async eliminarIncidente(id: string): Promise<boolean> {
+    const res = await pool.query('DELETE FROM incidente WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 
-  existe(id: string): boolean {
-    return this.incidentes.some(incidente => incidente.getId() === id);
+  async existe(id: string): Promise<boolean> {
+    const res = await pool.query('SELECT 1 FROM incidente WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 }

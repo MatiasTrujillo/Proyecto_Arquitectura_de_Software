@@ -1,46 +1,46 @@
 import { Conductor } from "../Dominio/Conductor";
+import pool from '../../Shared/Database/DatabaseConnection';
 import { IRepositorioConductor } from "../IDataAccess/IRepositorioConductor";
 
 export class RepositorioConductor implements IRepositorioConductor {
-  private conductores: Conductor[] = [];
-  private siguienteId: number = 1;
-
-  crearConductor(cedula: string, nombre: string): Conductor {
-    const nuevoConductor = new Conductor(String(this.siguienteId++), cedula, nombre);
-    this.conductores.push(nuevoConductor);
-    return nuevoConductor;
+  async crearConductor(cedula: string, nombre: string): Promise<Conductor> {
+    const res = await pool.query(
+      'INSERT INTO conductor (cedula, nombre) VALUES ($1, $2) RETURNING id, cedula, nombre',
+      [cedula, nombre]
+    );
+    const r = res.rows[0];
+    return new Conductor(String(r.id), r.cedula, r.nombre);
   }
 
-  obtenerConductores(): Conductor[] {
-    return this.conductores;
+  async obtenerConductores(): Promise<Conductor[]> {
+    const res = await pool.query('SELECT id, cedula, nombre FROM conductor');
+    return res.rows.map((r: any) => new Conductor(String(r.id), r.cedula, r.nombre));
   }
 
-  obtenerConductorPorId(id: string): Conductor | undefined {
-    return this.conductores.find(conductor => conductor.getId() === id);
+  async obtenerConductorPorId(id: string): Promise<Conductor | undefined> {
+    const res = await pool.query('SELECT id, cedula, nombre FROM conductor WHERE id = $1', [id]);
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Conductor(String(r.id), r.cedula, r.nombre);
   }
 
-  actualizarConductor(id: string, cedula: string, nombre: string): Conductor | undefined {
-    const index = this.conductores.findIndex(conductor => conductor.getId() === id);
-    if (index === -1) {
-      return undefined;
-    }
-
-    const conductorActualizado = new Conductor(id, cedula, nombre);
-    this.conductores[index] = conductorActualizado;
-    return conductorActualizado;
+  async actualizarConductor(id: string, cedula: string, nombre: string): Promise<Conductor | undefined> {
+    const res = await pool.query(
+      'UPDATE conductor SET cedula = $1, nombre = $2 WHERE id = $3 RETURNING id, cedula, nombre',
+      [cedula, nombre, id]
+    );
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new Conductor(String(r.id), r.cedula, r.nombre);
   }
 
-  eliminarConductor(id: string): boolean {
-    const index = this.conductores.findIndex(conductor => conductor.getId() === id);
-    if (index === -1) {
-      return false;
-    }
-
-    this.conductores.splice(index, 1);
-    return true;
+  async eliminarConductor(id: string): Promise<boolean> {
+    const res = await pool.query('DELETE FROM conductor WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 
-  existe(id: string): boolean {
-    return this.conductores.some(conductor => conductor.getId() === id);
+  async existe(id: string): Promise<boolean> {
+    const res = await pool.query('SELECT 1 FROM conductor WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 }
