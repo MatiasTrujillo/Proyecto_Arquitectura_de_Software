@@ -1,0 +1,13 @@
+Tecnologias:
+-Node.js
+-Typescript
+
+Buenas Practicas:
+-Seguir buenas practicas de clean code (Robert C. Martin)
+-Codigo en español
+
+Arquitectura:
+-Arquitectura global: Monolito modular + microservicios
+-Actualmente estamos trabajando solo en el Monolito
+-Los modulos del monolito son: ModuloCatalogo, ModuloPagos, ModuloReservas, ModuloUsuarios, ModuloVehiculos
+-Los modulos deben estar desacoplados entre si, asi que usaremos el modulo Shared como intermediario
