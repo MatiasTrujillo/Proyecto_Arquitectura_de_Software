@@ -14,7 +14,7 @@ export class ControladorClientePersonal {
     try {
       const { cedula, nombre } = req.body;
       const clienteCreado = this.servicioClientePersonal.crearClientePersonal(cedula, nombre);
-      res.status(201).json({ data: this.mapClientePersonal(clienteCreado) });
+      res.status(201).json({ data: clienteCreado });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -23,7 +23,7 @@ export class ControladorClientePersonal {
   obtenerClientePersonal(req: Request, res: Response): void {
     try {
       const clientes = this.servicioClientePersonal.obtenerClientePersonales();
-      res.status(200).json({ data: clientes.map(cliente => this.mapClientePersonal(cliente)) });
+      res.status(200).json({ data: clientes });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -33,7 +33,7 @@ export class ControladorClientePersonal {
     try {
       const { id } = req.params;
       const cliente = this.servicioClientePersonal.obtenerClientePersonalPorId(id as string);
-      res.status(200).json({ data: this.mapClientePersonal(cliente) });
+      res.status(200).json({ data: cliente });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -44,7 +44,7 @@ export class ControladorClientePersonal {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
       const clienteActualizado = this.servicioClientePersonal.actualizarClientePersonal(id as string, cedula, nombre);
-      res.status(200).json({ data: this.mapClientePersonal(clienteActualizado) });
+      res.status(200).json({ data: clienteActualizado });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -84,15 +84,6 @@ export class ControladorClientePersonal {
     } catch (error) {
       this.manejarError(res, error);
     }
-  }
-
-  private mapClientePersonal(cliente: any) {
-    return {
-      id: cliente.getId(),
-      cedula: cliente.getCedula(),
-      nombre: cliente.getNombre(),
-      rol: cliente.obtenerRol(),
-    };
   }
 
   private manejarError(res: Response, error: unknown): void {

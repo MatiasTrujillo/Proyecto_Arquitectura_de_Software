@@ -1,24 +1,26 @@
-import { Producto } from "../Dominio/Producto";
+import { ProductoDTO } from "../DTOs/ProductoDTO";
 import { IRepositorioProducto } from "../IDataAccess/IRepositorioProducto";
 import { IServicioProducto } from "../IServicio/IServicioProducto";
 
 export class ServicioProducto implements IServicioProducto {
   constructor(private repositorio: IRepositorioProducto) {}
 
-  crearProducto(descripcion: string, valor: number, tamano: number, categoria: string): Producto {
+  crearProducto(descripcion: string, valor: number, tamano: number, categoria: string): ProductoDTO {
     const descripcionValida = this.validarDescripcion(descripcion);
     const valorValido = this.validarValor(valor);
     const tamanoValido = this.validarTamano(tamano);
     const categoriaValida = this.validarCategoria(categoria);
 
-    return this.repositorio.crearProducto(descripcionValida, valorValido, tamanoValido, categoriaValida);
+    const producto = this.repositorio.crearProducto(descripcionValida, valorValido, tamanoValido, categoriaValida);
+    return ProductoDTO.fromEntity(producto);
   }
 
-  obtenerProductos(): Producto[] {
-    return this.repositorio.obtenerProductos();
+  obtenerProductos(): ProductoDTO[] {
+    const productos = this.repositorio.obtenerProductos();
+    return productos.map(producto => ProductoDTO.fromEntity(producto));
   }
 
-  obtenerProductoPorId(id: number): Producto {
+  obtenerProductoPorId(id: number): ProductoDTO {
     const idValido = this.validarId(id);
     const producto = this.repositorio.obtenerProductoPorId(idValido);
 
@@ -26,10 +28,10 @@ export class ServicioProducto implements IServicioProducto {
       throw new Error(`No se encontró el producto con id ${idValido}`);
     }
 
-    return producto;
+    return ProductoDTO.fromEntity(producto);
   }
 
-  actualizarProducto(id: number, descripcion: string, valor: number, tamano: number, categoria: string): Producto {
+  actualizarProducto(id: number, descripcion: string, valor: number, tamano: number, categoria: string): ProductoDTO {
     const idValido = this.validarId(id);
     const descripcionValida = this.validarDescripcion(descripcion);
     const valorValido = this.validarValor(valor);
@@ -45,7 +47,7 @@ export class ServicioProducto implements IServicioProducto {
       throw new Error(`No se pudo actualizar el producto con id ${idValido}`);
     }
 
-    return productoActualizado;
+    return ProductoDTO.fromEntity(productoActualizado);
   }
 
   eliminarProducto(id: number): void {
@@ -56,7 +58,6 @@ export class ServicioProducto implements IServicioProducto {
     } else {
       this.repositorio.eliminarProducto(idValido);
     }
-    
   }
 
   private validarId(id: number): number {

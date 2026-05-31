@@ -46,7 +46,7 @@ function crearClientePersonalPrueba() {
   const servicio = new ServicioClientePersonal(repositorio as any);
 
   const cliente = servicio.crearClientePersonal("999", "Pedro");
-  assert.strictEqual(cliente.getCedula(), "999");
+  assert.strictEqual(cliente.cedula, "999");
 }
 
 function obtenerClientePersonalPorIdPrueba() {
@@ -56,6 +56,7 @@ function obtenerClientePersonalPorIdPrueba() {
 
   const encontrado = servicio.obtenerClientePersonalPorId(cliente.getId());
   assert.ok(encontrado);
+  assert.strictEqual(encontrado.cedula, "888");
 
   let lanzo = false;
   try {
@@ -73,7 +74,7 @@ function actualizarClientePersonalPrueba() {
 
   const actualizado = servicio.actualizarClientePersonal(cliente.getId(), "222", "New");
   assert.ok(actualizado);
-  assert.strictEqual(actualizado.getCedula(), "222");
+  assert.strictEqual(actualizado.cedula, "222");
 }
 
 function eliminarClientePersonalPrueba() {

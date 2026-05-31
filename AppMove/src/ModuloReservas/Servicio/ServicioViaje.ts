@@ -1,6 +1,6 @@
-import { Viaje } from "../Dominio/Viaje";
 import { IRepositorioViaje } from "../IDataAccess/IRepositorioViaje";
 import { IServicioViaje } from "../IServicio/IServicioViaje";
+import { ViajeDTO } from "../DTOs/ViajeDTO";
 
 export class ServicioViaje implements IServicioViaje {
   constructor(private repositorio: IRepositorioViaje) {}
@@ -12,7 +12,7 @@ export class ServicioViaje implements IServicioViaje {
     fecha: string | Date,
     estado: string,
     conductor: string,
-  ): Viaje {
+  ): ViajeDTO {
     const reservaIdValido = this.validarTexto(reservaId, "ReservaId");
     const origenValido = this.validarTexto(origen, "Origen");
     const destinoValido = this.validarTexto(destino, "Destino");
@@ -20,7 +20,7 @@ export class ServicioViaje implements IServicioViaje {
     const estadoValido = this.validarTexto(estado, "Estado");
     const conductorValido = this.validarTexto(conductor, "Conductor");
 
-    return this.repositorio.crearViaje(
+    const viaje = this.repositorio.crearViaje(
       reservaIdValido,
       origenValido,
       destinoValido,
@@ -28,13 +28,16 @@ export class ServicioViaje implements IServicioViaje {
       estadoValido,
       conductorValido,
     );
+
+    return ViajeDTO.fromEntity(viaje);
   }
 
-  obtenerViajes(): Viaje[] {
-    return this.repositorio.obtenerViajes();
+  obtenerViajes(): ViajeDTO[] {
+    const viajes = this.repositorio.obtenerViajes();
+    return viajes.map(viaje => ViajeDTO.fromEntity(viaje));
   }
 
-  obtenerViajePorId(id: string): Viaje {
+  obtenerViajePorId(id: string): ViajeDTO {
     const idValido = this.validarTexto(id, "Id");
     const viaje = this.repositorio.obtenerViajePorId(idValido);
 
@@ -42,7 +45,7 @@ export class ServicioViaje implements IServicioViaje {
       throw new Error(`No se encontró el viaje con id ${idValido}`);
     }
 
-    return viaje;
+    return ViajeDTO.fromEntity(viaje);
   }
 
   actualizarViaje(
@@ -53,7 +56,7 @@ export class ServicioViaje implements IServicioViaje {
     fecha: string | Date,
     estado: string,
     conductor: string,
-  ): Viaje {
+  ): ViajeDTO {
     const idValido = this.validarTexto(id, "Id");
     const reservaIdValido = this.validarTexto(reservaId, "ReservaId");
     const origenValido = this.validarTexto(origen, "Origen");
@@ -80,7 +83,7 @@ export class ServicioViaje implements IServicioViaje {
       throw new Error(`No se pudo actualizar el viaje con id ${idValido}`);
     }
 
-    return viajeActualizado;
+    return ViajeDTO.fromEntity(viajeActualizado);
   }
 
   eliminarViaje(id: string): void {

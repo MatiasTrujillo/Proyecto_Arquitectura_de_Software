@@ -1,31 +1,33 @@
-import { Conductor } from "../Dominio/Conductor";
+import { ConductorDTO } from "../DTOs/ConductorDTO";
 import { IRepositorioConductor } from "../IDataAccess/IRepositorioConductor";
 import { IServicioConductor } from "../IServicio/IServicioConductor";
 
 export class ServicioConductor implements IServicioConductor {
   constructor(private repositorio: IRepositorioConductor) {}
 
-  crearConductor(cedula: string, nombre: string): Conductor {
+  crearConductor(cedula: string, nombre: string): ConductorDTO {
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    return this.repositorio.crearConductor(cedula, nombre);
+    const conductor = this.repositorio.crearConductor(cedula, nombre);
+    return ConductorDTO.fromEntity(conductor);
   }
 
-  obtenerConductores(): Conductor[] {
-    return this.repositorio.obtenerConductores();
+  obtenerConductores(): ConductorDTO[] {
+    const conductores = this.repositorio.obtenerConductores();
+    return conductores.map(c => ConductorDTO.fromEntity(c));
   }
 
-  obtenerConductorPorId(id: string): Conductor {
+  obtenerConductorPorId(id: string): ConductorDTO {
     this.validarId(id);
     const conductor = this.repositorio.obtenerConductorPorId(id);
     if (!conductor) {
       throw new Error(`No se encontró el conductor con id ${id}`);
     }
-    return conductor;
+    return ConductorDTO.fromEntity(conductor);
   }
 
-  actualizarConductor(id: string, cedula: string, nombre: string): Conductor {
+  actualizarConductor(id: string, cedula: string, nombre: string): ConductorDTO {
     this.validarId(id);
     this.validarCedula(cedula);
     this.validarNombre(nombre);
@@ -39,7 +41,7 @@ export class ServicioConductor implements IServicioConductor {
       throw new Error(`No se pudo actualizar el conductor con id ${id}`);
     }
 
-    return conductorActualizado;
+    return ConductorDTO.fromEntity(conductorActualizado);
   }
 
   eliminarConductor(id: string): void {

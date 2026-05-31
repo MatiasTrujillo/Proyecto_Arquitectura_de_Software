@@ -1,9 +1,9 @@
-import { Pago } from "../Domain/Pago";
+import { PagoDTO } from "../DTOs/PagoDTO";
 
 export interface IServicioPago {
-  crearPago(fecha: string | Date, monto: number, estado: string): Pago;
-  obtenerPagos(): Pago[];
-  obtenerPagoPorId(id: number): Pago;
-  actualizarPago(id: number, fecha: string | Date, monto: number, estado: string): Pago;
+  crearPago(fecha: string | Date, monto: number, estado: string): PagoDTO;
+  obtenerPagos(): PagoDTO[];
+  obtenerPagoPorId(id: number): PagoDTO;
+  actualizarPago(id: number, fecha: string | Date, monto: number, estado: string): PagoDTO;
   eliminarPago(id: number): void;
 }

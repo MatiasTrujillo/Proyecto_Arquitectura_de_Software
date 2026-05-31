@@ -1,46 +1,37 @@
 import assert from "assert";
 import { ControladorAdministrador } from "../../src/ModuloUsuarios/WebApi/Controlador/ControladorAdministrador";
+import { AdministradorDTO } from "../../src/ModuloUsuarios/DTOs/AdministradorDTO";
 import { crearRequestMock, crearResponseMock } from "./MockExpress";
 
 class ServicioAdministradorFalso {
-  private data: any[] = [];
+  private data: AdministradorDTO[] = [];
 
-  crearAdministrador(cedula: string, nombre: string) {
-    const administrador = {
-      getId: () => "1",
-      getCedula: () => cedula,
-      getNombre: () => nombre,
-      obtenerRol: () => "Administrador",
-    };
+  crearAdministrador(cedula: string, nombre: string): AdministradorDTO {
+    const administrador = new AdministradorDTO("" + (this.data.length + 1), cedula, nombre);
     this.data.push(administrador);
     return administrador;
   }
 
-  obtenerAdministradores() {
+  obtenerAdministradores(): AdministradorDTO[] {
     return this.data;
   }
 
-  obtenerAdministradorPorId(id: string) {
-    const encontrado = this.data.find((item) => item.getId() === id);
+  obtenerAdministradorPorId(id: string): AdministradorDTO {
+    const encontrado = this.data.find((item) => item.id === id);
     if (!encontrado) throw new Error("Administrador no encontrado");
     return encontrado;
   }
 
-  actualizarAdministrador(id: string, cedula: string, nombre: string) {
-    const index = this.data.findIndex((item) => item.getId() === id);
+  actualizarAdministrador(id: string, cedula: string, nombre: string): AdministradorDTO {
+    const index = this.data.findIndex((item) => item.id === id);
     if (index === -1) throw new Error("Administrador no encontrado");
-    const actualizado = {
-      getId: () => id,
-      getCedula: () => cedula,
-      getNombre: () => nombre,
-      obtenerRol: () => "Administrador",
-    };
+    const actualizado = new AdministradorDTO(id, cedula, nombre);
     this.data[index] = actualizado;
     return actualizado;
   }
 
-  eliminarAdministrador(id: string) {
-    const index = this.data.findIndex((item) => item.getId() === id);
+  eliminarAdministrador(id: string): void {
+    const index = this.data.findIndex((item) => item.id === id);
     if (index === -1) throw new Error("Administrador no encontrado");
     this.data.splice(index, 1);
   }
@@ -55,12 +46,9 @@ function crearAdministradorPrueba() {
   controlador.crearAdministrador(req as any, res as any);
 
   assert.strictEqual(res.statusCode, 201);
-  assert.deepStrictEqual(res.body.data, {
-    id: "1",
-    cedula: "123",
-    nombre: "Juan",
-    rol: "Administrador",
-  });
+  assert.strictEqual(res.body.data.cedula, "123");
+  assert.strictEqual(res.body.data.nombre, "Juan");
+  assert.strictEqual(res.body.data.rol, "Administrador");
 }
 
 function obtenerAdministradoresPrueba() {
@@ -74,14 +62,14 @@ function obtenerAdministradoresPrueba() {
 
   assert.strictEqual(res.statusCode, 200);
   assert.strictEqual(res.body.data.length, 1);
-  assert.strictEqual(res.body.data[0].cedula, administrador.getCedula());
+  assert.strictEqual(res.body.data[0].cedula, administrador.cedula);
 }
 
 function obtenerAdministradorPorIdPrueba() {
   const servicio = new ServicioAdministradorFalso();
   const administrador = servicio.crearAdministrador("555", "Pedro");
   const controlador = new ControladorAdministrador(servicio as any);
-  const req = crearRequestMock({ id: administrador.getId() }, {});
+  const req = crearRequestMock({ id: administrador.id }, {});
   const res = crearResponseMock();
 
   controlador.obtenerAdministradorPorId(req as any, res as any);
@@ -94,7 +82,7 @@ function actualizarAdministradorPrueba() {
   const servicio = new ServicioAdministradorFalso();
   const administrador = servicio.crearAdministrador("222", "Old");
   const controlador = new ControladorAdministrador(servicio as any);
-  const req = crearRequestMock({ id: administrador.getId() }, { cedula: "222", nombre: "New" });
+  const req = crearRequestMock({ id: administrador.id }, { cedula: "222", nombre: "New" });
   const res = crearResponseMock();
 
   controlador.actualizarAdministrador(req as any, res as any);
@@ -107,7 +95,7 @@ function eliminarAdministradorPrueba() {
   const servicio = new ServicioAdministradorFalso();
   const administrador = servicio.crearAdministrador("77", "X");
   const controlador = new ControladorAdministrador(servicio as any);
-  const req = crearRequestMock({ id: administrador.getId() }, {});
+  const req = crearRequestMock({ id: administrador.id }, {});
   const res = crearResponseMock();
 
   controlador.eliminarAdministrador(req as any, res as any);

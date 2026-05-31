@@ -1,9 +1,9 @@
-import { Operador } from "../Dominio/Operador";
+import { OperadorDTO } from "../DTOs/OperadorDTO";
 
 export interface IServicioOperador {
-  crearOperador(cedula: string, nombre: string): Operador;
-  obtenerOperadores(): Operador[];
-  obtenerOperadorPorId(id: string): Operador;
-  actualizarOperador(id: string, cedula: string, nombre: string): Operador;
+  crearOperador(cedula: string, nombre: string): OperadorDTO;
+  obtenerOperadores(): OperadorDTO[];
+  obtenerOperadorPorId(id: string): OperadorDTO;
+  actualizarOperador(id: string, cedula: string, nombre: string): OperadorDTO;
   eliminarOperador(id: string): void;
 }

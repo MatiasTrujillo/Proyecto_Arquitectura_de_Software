@@ -46,7 +46,7 @@ function crearAdministradorPrueba() {
   const servicio = new ServicioAdministrador(repositorio as any);
 
   const administrador = servicio.crearAdministrador("123", "Juan");
-  assert.strictEqual(administrador.getCedula(), "123");
+  assert.strictEqual(administrador.cedula, "123");
 }
 
 function obtenerAdministradorPorIdPrueba() {
@@ -56,6 +56,7 @@ function obtenerAdministradorPorIdPrueba() {
 
   const encontrado = servicio.obtenerAdministradorPorId(administrador.getId());
   assert.ok(encontrado);
+  assert.strictEqual(encontrado.cedula, "321");
 
   let lanzo = false;
   try {
@@ -73,7 +74,7 @@ function actualizarAdministradorPrueba() {
 
   const actualizado = servicio.actualizarAdministrador(administrador.getId(), "222", "New");
   assert.ok(actualizado);
-  assert.strictEqual(actualizado.getCedula(), "222");
+  assert.strictEqual(actualizado.cedula, "222");
 }
 
 function eliminarAdministradorPrueba() {

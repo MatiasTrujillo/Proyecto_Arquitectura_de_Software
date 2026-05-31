@@ -1,31 +1,33 @@
-import { Operador } from "../Dominio/Operador";
+import { OperadorDTO } from "../DTOs/OperadorDTO";
 import { IRepositorioOperador } from "../IDataAccess/IRepositorioOperador";
 import { IServicioOperador } from "../IServicio/IServicioOperador";
 
 export class ServicioOperador implements IServicioOperador {
   constructor(private repositorio: IRepositorioOperador) {}
 
-  crearOperador(cedula: string, nombre: string): Operador {
+  crearOperador(cedula: string, nombre: string): OperadorDTO {
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    return this.repositorio.crearOperador(cedula, nombre);
+    const operador = this.repositorio.crearOperador(cedula, nombre);
+    return OperadorDTO.fromEntity(operador);
   }
 
-  obtenerOperadores(): Operador[] {
-    return this.repositorio.obtenerOperadores();
+  obtenerOperadores(): OperadorDTO[] {
+    const operadores = this.repositorio.obtenerOperadores();
+    return operadores.map(op => OperadorDTO.fromEntity(op));
   }
 
-  obtenerOperadorPorId(id: string): Operador {
+  obtenerOperadorPorId(id: string): OperadorDTO {
     this.validarId(id);
     const operador = this.repositorio.obtenerOperadorPorId(id);
     if (!operador) {
       throw new Error(`No se encontró el operador con id ${id}`);
     }
-    return operador;
+    return OperadorDTO.fromEntity(operador);
   }
 
-  actualizarOperador(id: string, cedula: string, nombre: string): Operador {
+  actualizarOperador(id: string, cedula: string, nombre: string): OperadorDTO {
     this.validarId(id);
     this.validarCedula(cedula);
     this.validarNombre(nombre);
@@ -38,7 +40,7 @@ export class ServicioOperador implements IServicioOperador {
     if (!operadorActualizado) {
       throw new Error(`No se pudo actualizar el operador con id ${id}`);
     }
-    return operadorActualizado;
+    return OperadorDTO.fromEntity(operadorActualizado);
   }
 
   eliminarOperador(id: string): void {

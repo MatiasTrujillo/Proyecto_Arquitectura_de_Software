@@ -1,19 +1,21 @@
-import { DispositivoGPS } from "../Domain/DispositivoGPS";
+import { DispositivoGPSDTO } from "../DTOs/DispositivoGPSDTO";
 import { IRepositorioDispositivoGPS } from "../IDataAccess/IRepositorioDispositivoGPS";
 import { IServicioDispositivoGPS } from "../IServicio/IServicioDispositivoGPS";
 
 export class ServicioDispositivoGPS implements IServicioDispositivoGPS {
   constructor(private repositorio: IRepositorioDispositivoGPS) {}
 
-  crearDispositivoGPS(): DispositivoGPS {
-    return this.repositorio.crearDispositivoGPS();
+  crearDispositivoGPS(): DispositivoGPSDTO {
+    const dispositivo = this.repositorio.crearDispositivoGPS();
+    return DispositivoGPSDTO.fromEntity(dispositivo);
   }
 
-  obtenerDispositivosGPS(): DispositivoGPS[] {
-    return this.repositorio.obtenerDispositivosGPS();
+  obtenerDispositivosGPS(): DispositivoGPSDTO[] {
+    const dispositivos = this.repositorio.obtenerDispositivosGPS();
+    return dispositivos.map(d => DispositivoGPSDTO.fromEntity(d));
   }
 
-  obtenerDispositivoGPSPorId(id: number): DispositivoGPS {
+  obtenerDispositivoGPSPorId(id: number): DispositivoGPSDTO {
     const idValido = this.validarId(id);
     const dispositivo = this.repositorio.obtenerDispositivoGPSPorId(idValido);
 
@@ -21,10 +23,10 @@ export class ServicioDispositivoGPS implements IServicioDispositivoGPS {
       throw new Error(`No se encontró el dispositivo GPS con id ${idValido}`);
     }
 
-    return dispositivo;
+    return DispositivoGPSDTO.fromEntity(dispositivo);
   }
 
-  actualizarDispositivoGPS(id: number): DispositivoGPS {
+  actualizarDispositivoGPS(id: number): DispositivoGPSDTO {
     const idValido = this.validarId(id);
 
     if (!this.repositorio.existe(idValido)) {
@@ -36,7 +38,7 @@ export class ServicioDispositivoGPS implements IServicioDispositivoGPS {
       throw new Error(`No se pudo actualizar el dispositivo GPS con id ${idValido}`);
     }
 
-    return dispositivoActualizado;
+    return DispositivoGPSDTO.fromEntity(dispositivoActualizado);
   }
 
   eliminarDispositivoGPS(id: number): void {

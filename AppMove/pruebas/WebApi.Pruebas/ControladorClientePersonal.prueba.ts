@@ -1,46 +1,38 @@
 import assert from "assert";
 import { ControladorClientePersonal } from "../../src/ModuloUsuarios/WebApi/Controlador/ControladorClientePersonal";
+import { ClientePersonalDTO } from "../../src/ModuloUsuarios/DTOs/ClientePersonalDTO";
 import { crearRequestMock, crearResponseMock } from "./MockExpress";
 
 class ServicioClientePersonalFalso {
-  private data: any[] = [];
+  private data: ClientePersonalDTO[] = [];
+  private next = 1;
 
-  crearClientePersonal(cedula: string, nombre: string) {
-    const cliente = {
-      getId: () => "1",
-      getCedula: () => cedula,
-      getNombre: () => nombre,
-      obtenerRol: () => "ClientePersonal",
-    };
+  crearClientePersonal(cedula: string, nombre: string): ClientePersonalDTO {
+    const cliente = new ClientePersonalDTO(`${this.next++}`, cedula, nombre);
     this.data.push(cliente);
     return cliente;
   }
 
-  obtenerClientePersonales() {
+  obtenerClientePersonales(): ClientePersonalDTO[] {
     return this.data;
   }
 
-  obtenerClientePersonalPorId(id: string) {
-    const cliente = this.data.find((item) => item.getId() === id);
+  obtenerClientePersonalPorId(id: string): ClientePersonalDTO {
+    const cliente = this.data.find((item) => item.id === id);
     if (!cliente) throw new Error("Cliente personal no encontrado");
     return cliente;
   }
 
-  actualizarClientePersonal(id: string, cedula: string, nombre: string) {
-    const index = this.data.findIndex((item) => item.getId() === id);
+  actualizarClientePersonal(id: string, cedula: string, nombre: string): ClientePersonalDTO {
+    const index = this.data.findIndex((item) => item.id === id);
     if (index === -1) throw new Error("Cliente personal no encontrado");
-    const actualizado = {
-      getId: () => id,
-      getCedula: () => cedula,
-      getNombre: () => nombre,
-      obtenerRol: () => "ClientePersonal",
-    };
+    const actualizado = new ClientePersonalDTO(id, cedula, nombre);
     this.data[index] = actualizado;
     return actualizado;
   }
 
-  eliminarClientePersonal(id: string) {
-    const index = this.data.findIndex((item) => item.getId() === id);
+  eliminarClientePersonal(id: string): void {
+    const index = this.data.findIndex((item) => item.id === id);
     if (index === -1) throw new Error("Cliente personal no encontrado");
     this.data.splice(index, 1);
   }
@@ -74,7 +66,7 @@ function obtenerClientePersonalPorIdPrueba() {
   const servicio = new ServicioClientePersonalFalso();
   const cliente = servicio.crearClientePersonal("555", "Nora");
   const controlador = new ControladorClientePersonal(servicio as any);
-  const req = crearRequestMock({ id: cliente.getId() }, {});
+  const req = crearRequestMock({ id: cliente.id }, {});
   const res = crearResponseMock();
 
   controlador.obtenerClientePersonalPorId(req as any, res as any);
@@ -87,7 +79,7 @@ function actualizarClientePersonalPrueba() {
   const servicio = new ServicioClientePersonalFalso();
   const cliente = servicio.crearClientePersonal("666", "Old");
   const controlador = new ControladorClientePersonal(servicio as any);
-  const req = crearRequestMock({ id: cliente.getId() }, { cedula: "666", nombre: "New" });
+  const req = crearRequestMock({ id: cliente.id }, { cedula: "666", nombre: "New" });
   const res = crearResponseMock();
 
   controlador.actualizarClientePersonal(req as any, res as any);
@@ -100,7 +92,7 @@ function eliminarClientePersonalPrueba() {
   const servicio = new ServicioClientePersonalFalso();
   const cliente = servicio.crearClientePersonal("777", "X");
   const controlador = new ControladorClientePersonal(servicio as any);
-  const req = crearRequestMock({ id: cliente.getId() }, {});
+  const req = crearRequestMock({ id: cliente.id }, {});
   const res = crearResponseMock();
 
   controlador.eliminarClientePersonal(req as any, res as any);

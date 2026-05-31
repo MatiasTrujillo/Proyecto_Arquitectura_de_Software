@@ -1,9 +1,9 @@
-import { Producto } from "../Dominio/Producto";
+import { ProductoDTO } from "../DTOs/ProductoDTO";
 
 export interface IServicioProducto {
-  crearProducto(descripcion: string, valor: number, tamano: number, categoria: string): Producto;
-  obtenerProductos(): Producto[];
-  obtenerProductoPorId(id: number): Producto;
-  actualizarProducto(id: number, descripcion: string, valor: number, tamano: number, categoria: string): Producto;
+  crearProducto(descripcion: string, valor: number, tamano: number, categoria: string): ProductoDTO;
+  obtenerProductos(): ProductoDTO[];
+  obtenerProductoPorId(id: number): ProductoDTO;
+  actualizarProducto(id: number, descripcion: string, valor: number, tamano: number, categoria: string): ProductoDTO;
   eliminarProducto(id: number): void;
 }

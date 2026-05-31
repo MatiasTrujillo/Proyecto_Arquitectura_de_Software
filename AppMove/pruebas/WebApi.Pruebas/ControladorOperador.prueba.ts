@@ -1,46 +1,38 @@
 import assert from "assert";
 import { ControladorOperador } from "../../src/ModuloUsuarios/WebApi/Controlador/ControladorOperador";
+import { OperadorDTO } from "../../src/ModuloUsuarios/DTOs/OperadorDTO";
 import { crearRequestMock, crearResponseMock } from "./MockExpress";
 
 class ServicioOperadorFalso {
-  private data: any[] = [];
+  private data: OperadorDTO[] = [];
+  private next = 1;
 
-  crearOperador(cedula: string, nombre: string) {
-    const operador = {
-      getId: () => "1",
-      getCedula: () => cedula,
-      getNombre: () => nombre,
-      obtenerRol: () => "Operador",
-    };
+  crearOperador(cedula: string, nombre: string): OperadorDTO {
+    const operador = new OperadorDTO(`${this.next++}`, cedula, nombre);
     this.data.push(operador);
     return operador;
   }
 
-  obtenerOperadores() {
+  obtenerOperadores(): OperadorDTO[] {
     return this.data;
   }
 
-  obtenerOperadorPorId(id: string) {
-    const operador = this.data.find((item) => item.getId() === id);
+  obtenerOperadorPorId(id: string): OperadorDTO {
+    const operador = this.data.find((item) => item.id === id);
     if (!operador) throw new Error("Operador no encontrado");
     return operador;
   }
 
-  actualizarOperador(id: string, cedula: string, nombre: string) {
-    const index = this.data.findIndex((item) => item.getId() === id);
+  actualizarOperador(id: string, cedula: string, nombre: string): OperadorDTO {
+    const index = this.data.findIndex((item) => item.id === id);
     if (index === -1) throw new Error("Operador no encontrado");
-    const actualizado = {
-      getId: () => id,
-      getCedula: () => cedula,
-      getNombre: () => nombre,
-      obtenerRol: () => "Operador",
-    };
+    const actualizado = new OperadorDTO(id, cedula, nombre);
     this.data[index] = actualizado;
     return actualizado;
   }
 
-  eliminarOperador(id: string) {
-    const index = this.data.findIndex((item) => item.getId() === id);
+  eliminarOperador(id: string): void {
+    const index = this.data.findIndex((item) => item.id === id);
     if (index === -1) throw new Error("Operador no encontrado");
     this.data.splice(index, 1);
   }
@@ -74,7 +66,7 @@ function obtenerOperadorPorIdPrueba() {
   const servicio = new ServicioOperadorFalso();
   const operador = servicio.crearOperador("222", "Carlos");
   const controlador = new ControladorOperador(servicio as any);
-  const req = crearRequestMock({ id: operador.getId() }, {});
+  const req = crearRequestMock({ id: operador.id }, {});
   const res = crearResponseMock();
 
   controlador.obtenerOperadorPorId(req as any, res as any);
@@ -87,7 +79,7 @@ function actualizarOperadorPrueba() {
   const servicio = new ServicioOperadorFalso();
   const operador = servicio.crearOperador("333", "Old");
   const controlador = new ControladorOperador(servicio as any);
-  const req = crearRequestMock({ id: operador.getId() }, { cedula: "333", nombre: "New" });
+  const req = crearRequestMock({ id: operador.id }, { cedula: "333", nombre: "New" });
   const res = crearResponseMock();
 
   controlador.actualizarOperador(req as any, res as any);
@@ -100,7 +92,7 @@ function eliminarOperadorPrueba() {
   const servicio = new ServicioOperadorFalso();
   const operador = servicio.crearOperador("444", "X");
   const controlador = new ControladorOperador(servicio as any);
-  const req = crearRequestMock({ id: operador.getId() }, {});
+  const req = crearRequestMock({ id: operador.id }, {});
   const res = crearResponseMock();
 
   controlador.eliminarOperador(req as any, res as any);

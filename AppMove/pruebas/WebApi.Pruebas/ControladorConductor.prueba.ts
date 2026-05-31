@@ -1,46 +1,38 @@
 import assert from "assert";
 import { ControladorConductor } from "../../src/ModuloUsuarios/WebApi/Controlador/ControladorConductor";
+import { ConductorDTO } from "../../src/ModuloUsuarios/DTOs/ConductorDTO";
 import { crearRequestMock, crearResponseMock } from "./MockExpress";
 
 class ServicioConductorFalso {
-  private data: any[] = [];
+  private data: ConductorDTO[] = [];
+  private next = 1;
 
-  crearConductor(cedula: string, nombre: string) {
-    const conductor = {
-      getId: () => "1",
-      getCedula: () => cedula,
-      getNombre: () => nombre,
-      obtenerRol: () => "Conductor",
-    };
+  crearConductor(cedula: string, nombre: string): ConductorDTO {
+    const conductor = new ConductorDTO(`${this.next++}`, cedula, nombre);
     this.data.push(conductor);
     return conductor;
   }
 
-  obtenerConductores() {
+  obtenerConductores(): ConductorDTO[] {
     return this.data;
   }
 
-  obtenerConductorPorId(id: string) {
-    const conductor = this.data.find((item) => item.getId() === id);
+  obtenerConductorPorId(id: string): ConductorDTO {
+    const conductor = this.data.find((item) => item.id === id);
     if (!conductor) throw new Error("Conductor no encontrado");
     return conductor;
   }
 
-  actualizarConductor(id: string, cedula: string, nombre: string) {
-    const index = this.data.findIndex((item) => item.getId() === id);
+  actualizarConductor(id: string, cedula: string, nombre: string): ConductorDTO {
+    const index = this.data.findIndex((item) => item.id === id);
     if (index === -1) throw new Error("Conductor no encontrado");
-    const actualizado = {
-      getId: () => id,
-      getCedula: () => cedula,
-      getNombre: () => nombre,
-      obtenerRol: () => "Conductor",
-    };
+    const actualizado = new ConductorDTO(id, cedula, nombre);
     this.data[index] = actualizado;
     return actualizado;
   }
 
-  eliminarConductor(id: string) {
-    const index = this.data.findIndex((item) => item.getId() === id);
+  eliminarConductor(id: string): void {
+    const index = this.data.findIndex((item) => item.id === id);
     if (index === -1) throw new Error("Conductor no encontrado");
     this.data.splice(index, 1);
   }
@@ -74,7 +66,7 @@ function obtenerConductorPorIdPrueba() {
   const servicio = new ServicioConductorFalso();
   const conductor = servicio.crearConductor("101", "Iván");
   const controlador = new ControladorConductor(servicio as any);
-  const req = crearRequestMock({ id: conductor.getId() }, {});
+  const req = crearRequestMock({ id: conductor.id }, {});
   const res = crearResponseMock();
 
   controlador.obtenerConductorPorId(req as any, res as any);
@@ -87,7 +79,7 @@ function actualizarConductorPrueba() {
   const servicio = new ServicioConductorFalso();
   const conductor = servicio.crearConductor("202", "Old");
   const controlador = new ControladorConductor(servicio as any);
-  const req = crearRequestMock({ id: conductor.getId() }, { cedula: "202", nombre: "New" });
+  const req = crearRequestMock({ id: conductor.id }, { cedula: "202", nombre: "New" });
   const res = crearResponseMock();
 
   controlador.actualizarConductor(req as any, res as any);
@@ -100,7 +92,7 @@ function eliminarConductorPrueba() {
   const servicio = new ServicioConductorFalso();
   const conductor = servicio.crearConductor("303", "X");
   const controlador = new ControladorConductor(servicio as any);
-  const req = crearRequestMock({ id: conductor.getId() }, {});
+  const req = crearRequestMock({ id: conductor.id }, {});
   const res = crearResponseMock();
 
   controlador.eliminarConductor(req as any, res as any);

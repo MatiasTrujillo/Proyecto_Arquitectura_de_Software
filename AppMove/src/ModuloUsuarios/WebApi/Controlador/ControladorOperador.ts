@@ -14,7 +14,7 @@ export class ControladorOperador {
     try {
       const { cedula, nombre } = req.body;
       const operadorCreado = this.servicioOperador.crearOperador(cedula, nombre);
-      res.status(201).json({ data: this.mapOperador(operadorCreado) });
+      res.status(201).json({ data: operadorCreado });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -23,7 +23,7 @@ export class ControladorOperador {
   obtenerOperador(req: Request, res: Response): void {
     try {
       const operadores = this.servicioOperador.obtenerOperadores();
-      res.status(200).json({ data: operadores.map(operador => this.mapOperador(operador)) });
+      res.status(200).json({ data: operadores });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -33,7 +33,7 @@ export class ControladorOperador {
     try {
       const { id } = req.params;
       const operador = this.servicioOperador.obtenerOperadorPorId(id as string);
-      res.status(200).json({ data: this.mapOperador(operador) });
+      res.status(200).json({ data: operador });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -44,7 +44,7 @@ export class ControladorOperador {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
       const operadorActualizado = this.servicioOperador.actualizarOperador(id as string, cedula, nombre);
-      res.status(200).json({ data: this.mapOperador(operadorActualizado) });
+      res.status(200).json({ data: operadorActualizado });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -85,15 +85,6 @@ export class ControladorOperador {
     } catch (error) {
       this.manejarError(res, error);
     }
-  }
-
-  private mapOperador(operador: any) {
-    return {
-      id: operador.getId(),
-      cedula: operador.getCedula(),
-      nombre: operador.getNombre(),
-      rol: operador.obtenerRol(),
-    };
   }
 
   private manejarError(res: Response, error: unknown): void {

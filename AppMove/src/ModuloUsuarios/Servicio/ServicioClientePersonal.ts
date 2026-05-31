@@ -1,31 +1,33 @@
-import { ClientePersonal } from "../Dominio/ClientePersonal";
+import { ClientePersonalDTO } from "../DTOs/ClientePersonalDTO";
 import { IRepositorioClientePersonal } from "../IDataAccess/IRepositorioClientePersonal";
 import { IServicioClientePersonal } from "../IServicio/IServicioClientePersonal";
 
 export class ServicioClientePersonal implements IServicioClientePersonal {
   constructor(private repositorio: IRepositorioClientePersonal) {}
 
-  crearClientePersonal(cedula: string, nombre: string): ClientePersonal {
+  crearClientePersonal(cedula: string, nombre: string): ClientePersonalDTO {
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    return this.repositorio.crearClientePersonal(cedula, nombre);
+    const cliente = this.repositorio.crearClientePersonal(cedula, nombre);
+    return ClientePersonalDTO.fromEntity(cliente);
   }
 
-  obtenerClientePersonales(): ClientePersonal[] {
-    return this.repositorio.obtenerClientePersonales();
+  obtenerClientePersonales(): ClientePersonalDTO[] {
+    const clientes = this.repositorio.obtenerClientePersonales();
+    return clientes.map(c => ClientePersonalDTO.fromEntity(c));
   }
 
-  obtenerClientePersonalPorId(id: string): ClientePersonal {
+  obtenerClientePersonalPorId(id: string): ClientePersonalDTO {
     this.validarId(id);
     const cliente = this.repositorio.obtenerClientePersonalPorId(id);
     if (!cliente) {
       throw new Error(`No se encontró el cliente personal con id ${id}`);
     }
-    return cliente;
+    return ClientePersonalDTO.fromEntity(cliente);
   }
 
-  actualizarClientePersonal(id: string, cedula: string, nombre: string): ClientePersonal {
+  actualizarClientePersonal(id: string, cedula: string, nombre: string): ClientePersonalDTO {
     this.validarId(id);
     this.validarCedula(cedula);
     this.validarNombre(nombre);
@@ -39,7 +41,7 @@ export class ServicioClientePersonal implements IServicioClientePersonal {
       throw new Error(`No se pudo actualizar el cliente personal con id ${id}`);
     }
 
-    return clienteActualizado;
+    return ClientePersonalDTO.fromEntity(clienteActualizado);
   }
 
   eliminarClientePersonal(id: string): void {

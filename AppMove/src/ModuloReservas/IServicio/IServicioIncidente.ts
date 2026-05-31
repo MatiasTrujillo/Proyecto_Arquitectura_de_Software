@@ -1,4 +1,4 @@
-import { Incidente } from "../Dominio/Incidente";
+import { IncidenteDTO } from "../DTOs/IncidenteDTO";
 
 export interface IServicioIncidente {
   crearIncidente(
@@ -7,9 +7,9 @@ export interface IServicioIncidente {
     reservaId: string,
     estado: string,
     severidad: string,
-  ): Incidente;
-  obtenerIncidentes(): Incidente[];
-  obtenerIncidentePorId(id: string): Incidente;
+  ): IncidenteDTO;
+  obtenerIncidentes(): IncidenteDTO[];
+  obtenerIncidentePorId(id: string): IncidenteDTO;
   actualizarIncidente(
     id: string,
     descripcion: string,
@@ -17,6 +17,6 @@ export interface IServicioIncidente {
     reservaId: string,
     estado: string,
     severidad: string,
-  ): Incidente;
+  ): IncidenteDTO;
   eliminarIncidente(id: string): void;
 }

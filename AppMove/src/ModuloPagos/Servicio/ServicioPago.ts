@@ -1,24 +1,25 @@
-import { Pago } from "../Domain/Pago";
-import { EstadoPago } from "../Domain/EstadoPago";
+import { PagoDTO } from "../DTOs/PagoDTO";
 import { IRepositorioPago } from "../IDataAccess/IRepositorioPago";
 import { IServicioPago } from "../IServicio/IServicioPago";
 
 export class ServicioPago implements IServicioPago {
   constructor(private repositorio: IRepositorioPago) {}
 
-  crearPago(fecha: string | Date, monto: number, estado: string): Pago {
+  crearPago(fecha: string | Date, monto: number, estado: string): PagoDTO {
     const fechaValida = this.validarFecha(fecha);
     const montoValido = this.validarMonto(monto);
     const estadoValido = this.validarEstado(estado);
 
-    return this.repositorio.crearPago(fechaValida, montoValido, estadoValido);
+    const pago = this.repositorio.crearPago(fechaValida, montoValido, estadoValido as any);
+    return PagoDTO.fromEntity(pago);
   }
 
-  obtenerPagos(): Pago[] {
-    return this.repositorio.obtenerPagos();
+  obtenerPagos(): PagoDTO[] {
+    const pagos = this.repositorio.obtenerPagos();
+    return pagos.map(pago => PagoDTO.fromEntity(pago));
   }
 
-  obtenerPagoPorId(id: number): Pago {
+  obtenerPagoPorId(id: number): PagoDTO {
     const idValido = this.validarId(id);
     const pago = this.repositorio.obtenerPagoPorId(idValido);
 
@@ -26,10 +27,10 @@ export class ServicioPago implements IServicioPago {
       throw new Error(`No se encontró el pago con id ${idValido}`); //hay que crear excepciones personalizadas para cada caso
     }
 
-    return pago;
+    return PagoDTO.fromEntity(pago);
   }
 
-  actualizarPago(id: number, fecha: string | Date, monto: number, estado: string): Pago {
+  actualizarPago(id: number, fecha: string | Date, monto: number, estado: string): PagoDTO {
     const idValido = this.validarId(id);
     const fechaValida = this.validarFecha(fecha);
     const montoValido = this.validarMonto(monto);
@@ -39,12 +40,12 @@ export class ServicioPago implements IServicioPago {
       throw new Error(`No se encontró el pago con id ${idValido}`); //hay que crear excepciones personalizadas para cada caso
     }
 
-    const pagoActualizado = this.repositorio.actualizarPago(idValido, fechaValida, montoValido, estadoValido);
+    const pagoActualizado = this.repositorio.actualizarPago(idValido, fechaValida, montoValido, estadoValido as any);
     if (!pagoActualizado) {
       throw new Error(`No se pudo actualizar el pago con id ${idValido}`); //hay que crear excepciones personalizadas para cada caso
     }
 
-    return pagoActualizado;
+    return PagoDTO.fromEntity(pagoActualizado);
   }
 
   eliminarPago(id: number): void {
@@ -79,14 +80,11 @@ export class ServicioPago implements IServicioPago {
     return valor;
   }
 
-  private validarEstado(estado: string): EstadoPago {
-    const valor = estado.toString().toLowerCase();
-    const estadosValidos = Object.values(EstadoPago) as string[];
-
-    if (!estadosValidos.includes(valor)) {
-      throw new Error(`Estado inválido. Valores válidos: ${estadosValidos.join(", ")}`); //hay que crear excepciones personalizadas para cada caso
+  private validarEstado(estado: string): string {
+    if (!estado || typeof estado !== "string" || estado.trim().length === 0) {
+      throw new Error("Estado inválido. Debe ser un texto no vacío.");
     }
 
-    return valor as EstadoPago;
+    return estado.trim();
   }
 }

@@ -46,7 +46,7 @@ function crearOperadorPrueba() {
   const servicio = new ServicioOperador(repositorio as any);
 
   const operador = servicio.crearOperador("999", "Pedro");
-  assert.strictEqual(operador.getCedula(), "999");
+  assert.strictEqual(operador.cedula, "999");
 }
 
 function obtenerOperadorPorIdPrueba() {
@@ -56,6 +56,7 @@ function obtenerOperadorPorIdPrueba() {
 
   const encontrado = servicio.obtenerOperadorPorId(operador.getId());
   assert.ok(encontrado);
+  assert.strictEqual(encontrado.cedula, "888");
 
   let lanzo = false;
   try {
@@ -73,7 +74,7 @@ function actualizarOperadorPrueba() {
 
   const actualizado = servicio.actualizarOperador(operador.getId(), "222", "New");
   assert.ok(actualizado);
-  assert.strictEqual(actualizado.getCedula(), "222");
+  assert.strictEqual(actualizado.cedula, "222");
 }
 
 function eliminarOperadorPrueba() {

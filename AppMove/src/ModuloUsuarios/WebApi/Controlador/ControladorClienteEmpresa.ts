@@ -14,7 +14,7 @@ export class ControladorClienteEmpresa {
     try {
       const { cedula, nombre } = req.body;
       const clienteCreado = this.servicioClienteEmpresa.crearClienteEmpresa(cedula, nombre);
-      res.status(201).json({ data: this.mapClienteEmpresa(clienteCreado) });
+      res.status(201).json({ data: clienteCreado });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -23,7 +23,7 @@ export class ControladorClienteEmpresa {
   obtenerClienteEmpresa(req: Request, res: Response): void {
     try {
       const clientes = this.servicioClienteEmpresa.obtenerClienteEmpresas();
-      res.status(200).json({ data: clientes.map(cliente => this.mapClienteEmpresa(cliente)) });
+      res.status(200).json({ data: clientes });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -33,7 +33,7 @@ export class ControladorClienteEmpresa {
     try {
       const { id } = req.params;
       const cliente = this.servicioClienteEmpresa.obtenerClienteEmpresaPorId(id as string);
-      res.status(200).json({ data: this.mapClienteEmpresa(cliente) });
+      res.status(200).json({ data: cliente });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -44,7 +44,7 @@ export class ControladorClienteEmpresa {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
       const clienteActualizado = this.servicioClienteEmpresa.actualizarClienteEmpresa(id as string, cedula, nombre);
-      res.status(200).json({ data: this.mapClienteEmpresa(clienteActualizado) });
+      res.status(200).json({ data: clienteActualizado });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -113,15 +113,6 @@ export class ControladorClienteEmpresa {
     } catch (error) {
       this.manejarError(res, error);
     }
-  }
-
-  private mapClienteEmpresa(cliente: any) {
-    return {
-      id: cliente.getId(),
-      cedula: cliente.getCedula(),
-      nombre: cliente.getNombre(),
-      rol: cliente.obtenerRol(),
-    };
   }
 
   private manejarError(res: Response, error: unknown): void {

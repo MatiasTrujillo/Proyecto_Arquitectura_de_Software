@@ -14,7 +14,7 @@ export class ControladorConductor {
     try {
       const { cedula, nombre } = req.body;
       const conductorCreado = this.servicioConductor.crearConductor(cedula, nombre);
-      res.status(201).json({ data: this.mapConductor(conductorCreado) });
+      res.status(201).json({ data: conductorCreado });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -23,7 +23,7 @@ export class ControladorConductor {
   obtenerConductor(req: Request, res: Response): void {
     try {
       const conductores = this.servicioConductor.obtenerConductores();
-      res.status(200).json({ data: conductores.map(conductor => this.mapConductor(conductor)) });
+      res.status(200).json({ data: conductores });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -33,7 +33,7 @@ export class ControladorConductor {
     try {
       const { id } = req.params;
       const conductor = this.servicioConductor.obtenerConductorPorId(id as string);
-      res.status(200).json({ data: this.mapConductor(conductor) });
+      res.status(200).json({ data: conductor });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -44,7 +44,7 @@ export class ControladorConductor {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
       const conductorActualizado = this.servicioConductor.actualizarConductor(id as string, cedula, nombre);
-      res.status(200).json({ data: this.mapConductor(conductorActualizado) });
+      res.status(200).json({ data: conductorActualizado });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -61,15 +61,6 @@ export class ControladorConductor {
   }
 
   //TODO: Crear endpoints para IniciarTraslado y FinalizarTraslado
-
-  private mapConductor(conductor: any) {
-    return {
-      id: conductor.getId(),
-      cedula: conductor.getCedula(),
-      nombre: conductor.getNombre(),
-      rol: conductor.obtenerRol(),
-    };
-  }
 
   private manejarError(res: Response, error: unknown): void {
     const mensaje = error instanceof Error ? error.message : String(error);

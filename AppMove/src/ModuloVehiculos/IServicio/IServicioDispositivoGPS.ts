@@ -1,9 +1,9 @@
-import { DispositivoGPS } from "../Domain/DispositivoGPS";
+import { DispositivoGPSDTO } from "../DTOs/DispositivoGPSDTO";
 
 export interface IServicioDispositivoGPS {
-  crearDispositivoGPS(): DispositivoGPS;
-  obtenerDispositivosGPS(): DispositivoGPS[];
-  obtenerDispositivoGPSPorId(id: number): DispositivoGPS;
-  actualizarDispositivoGPS(id: number): DispositivoGPS;
+  crearDispositivoGPS(): DispositivoGPSDTO;
+  obtenerDispositivosGPS(): DispositivoGPSDTO[];
+  obtenerDispositivoGPSPorId(id: number): DispositivoGPSDTO;
+  actualizarDispositivoGPS(id: number): DispositivoGPSDTO;
   eliminarDispositivoGPS(id: number): void;
 }

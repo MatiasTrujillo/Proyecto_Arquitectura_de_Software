@@ -1,4 +1,4 @@
-import { Incidente } from "../Dominio/Incidente";
+import { IncidenteDTO } from "../DTOs/IncidenteDTO";
 import { IRepositorioIncidente } from "../IDataAccess/IRepositorioIncidente";
 import { IServicioIncidente } from "../IServicio/IServicioIncidente";
 
@@ -11,27 +11,30 @@ export class ServicioIncidente implements IServicioIncidente {
     reservaId: string,
     estado: string,
     severidad: string,
-  ): Incidente {
+  ): IncidenteDTO {
     const descripcionValida = this.validarDescripcion(descripcion);
     const fechaValida = this.validarFecha(fecha);
     const reservaIdValido = this.validarId(reservaId);
     const estadoValido = this.validarEstado(estado);
     const severidadValida = this.validarSeveridad(severidad);
 
-    return this.repositorio.crearIncidente(
+    const incidente = this.repositorio.crearIncidente(
       descripcionValida,
       fechaValida,
       reservaIdValido,
       estadoValido,
       severidadValida,
     );
+
+    return IncidenteDTO.fromEntity(incidente);
   }
 
-  obtenerIncidentes(): Incidente[] {
-    return this.repositorio.obtenerIncidentes();
+  obtenerIncidentes(): IncidenteDTO[] {
+    const incidentes = this.repositorio.obtenerIncidentes();
+    return incidentes.map(incidente => IncidenteDTO.fromEntity(incidente));
   }
 
-  obtenerIncidentePorId(id: string): Incidente {
+  obtenerIncidentePorId(id: string): IncidenteDTO {
     const idValido = this.validarId(id);
     const incidente = this.repositorio.obtenerIncidentePorId(idValido);
 
@@ -39,7 +42,7 @@ export class ServicioIncidente implements IServicioIncidente {
       throw new Error(`No se encontró el incidente con id ${idValido}`);
     }
 
-    return incidente;
+    return IncidenteDTO.fromEntity(incidente);
   }
 
   actualizarIncidente(
@@ -49,7 +52,7 @@ export class ServicioIncidente implements IServicioIncidente {
     reservaId: string,
     estado: string,
     severidad: string,
-  ): Incidente {
+  ): IncidenteDTO {
     const idValido = this.validarId(id);
     const descripcionValida = this.validarDescripcion(descripcion);
     const fechaValida = this.validarFecha(fecha);
@@ -74,7 +77,7 @@ export class ServicioIncidente implements IServicioIncidente {
       throw new Error(`No se pudo actualizar el incidente con id ${idValido}`);
     }
 
-    return incidenteActualizado;
+    return IncidenteDTO.fromEntity(incidenteActualizado);
   }
 
   eliminarIncidente(id: string): void {

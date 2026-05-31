@@ -46,7 +46,7 @@ function crearConductorPrueba() {
   const servicio = new ServicioConductor(repositorio as any);
 
   const conductor = servicio.crearConductor("999", "Pedro");
-  assert.strictEqual(conductor.getCedula(), "999");
+  assert.strictEqual(conductor.cedula, "999");
 }
 
 function obtenerConductorPorIdPrueba() {
@@ -56,6 +56,7 @@ function obtenerConductorPorIdPrueba() {
 
   const encontrado = servicio.obtenerConductorPorId(conductor.getId());
   assert.ok(encontrado);
+  assert.strictEqual(encontrado.cedula, "888");
 
   let lanzo = false;
   try {
@@ -73,7 +74,7 @@ function actualizarConductorPrueba() {
 
   const actualizado = servicio.actualizarConductor(conductor.getId(), "222", "New");
   assert.ok(actualizado);
-  assert.strictEqual(actualizado.getCedula(), "222");
+  assert.strictEqual(actualizado.cedula, "222");
 }
 
 function eliminarConductorPrueba() {

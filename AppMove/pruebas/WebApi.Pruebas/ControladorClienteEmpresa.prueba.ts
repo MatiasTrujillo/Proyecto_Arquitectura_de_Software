@@ -1,46 +1,38 @@
 import assert from "assert";
 import { ControladorClienteEmpresa } from "../../src/ModuloUsuarios/WebApi/Controlador/ControladorClienteEmpresa";
+import { ClienteEmpresaDTO } from "../../src/ModuloUsuarios/DTOs/ClienteEmpresaDTO";
 import { crearRequestMock, crearResponseMock } from "./MockExpress";
 
 class ServicioClienteEmpresaFalso {
-  private data: any[] = [];
+  private data: ClienteEmpresaDTO[] = [];
+  private next = 1;
 
-  crearClienteEmpresa(cedula: string, nombre: string) {
-    const cliente = {
-      getId: () => "1",
-      getCedula: () => cedula,
-      getNombre: () => nombre,
-      obtenerRol: () => "ClienteEmpresa",
-    };
+  crearClienteEmpresa(cedula: string, nombre: string): ClienteEmpresaDTO {
+    const cliente = new ClienteEmpresaDTO(`${this.next++}`, cedula, nombre);
     this.data.push(cliente);
     return cliente;
   }
 
-  obtenerClienteEmpresas() {
+  obtenerClienteEmpresas(): ClienteEmpresaDTO[] {
     return this.data;
   }
 
-  obtenerClienteEmpresaPorId(id: string) {
-    const cliente = this.data.find((item) => item.getId() === id);
+  obtenerClienteEmpresaPorId(id: string): ClienteEmpresaDTO {
+    const cliente = this.data.find((item) => item.id === id);
     if (!cliente) throw new Error("Cliente empresa no encontrado");
     return cliente;
   }
 
-  actualizarClienteEmpresa(id: string, cedula: string, nombre: string) {
-    const index = this.data.findIndex((item) => item.getId() === id);
+  actualizarClienteEmpresa(id: string, cedula: string, nombre: string): ClienteEmpresaDTO {
+    const index = this.data.findIndex((item) => item.id === id);
     if (index === -1) throw new Error("Cliente empresa no encontrado");
-    const actualizado = {
-      getId: () => id,
-      getCedula: () => cedula,
-      getNombre: () => nombre,
-      obtenerRol: () => "ClienteEmpresa",
-    };
+    const actualizado = new ClienteEmpresaDTO(id, cedula, nombre);
     this.data[index] = actualizado;
     return actualizado;
   }
 
-  eliminarClienteEmpresa(id: string) {
-    const index = this.data.findIndex((item) => item.getId() === id);
+  eliminarClienteEmpresa(id: string): void {
+    const index = this.data.findIndex((item) => item.id === id);
     if (index === -1) throw new Error("Cliente empresa no encontrado");
     this.data.splice(index, 1);
   }
@@ -74,7 +66,7 @@ function obtenerClienteEmpresaPorIdPrueba() {
   const servicio = new ServicioClienteEmpresaFalso();
   const cliente = servicio.crearClienteEmpresa("222", "Empresa Y");
   const controlador = new ControladorClienteEmpresa(servicio as any);
-  const req = crearRequestMock({ id: cliente.getId() }, {});
+  const req = crearRequestMock({ id: cliente.id }, {});
   const res = crearResponseMock();
 
   controlador.obtenerClienteEmpresaPorId(req as any, res as any);
@@ -87,7 +79,7 @@ function actualizarClienteEmpresaPrueba() {
   const servicio = new ServicioClienteEmpresaFalso();
   const cliente = servicio.crearClienteEmpresa("333", "Old");
   const controlador = new ControladorClienteEmpresa(servicio as any);
-  const req = crearRequestMock({ id: cliente.getId() }, { cedula: "333", nombre: "New" });
+  const req = crearRequestMock({ id: cliente.id }, { cedula: "333", nombre: "New" });
   const res = crearResponseMock();
 
   controlador.actualizarClienteEmpresa(req as any, res as any);
@@ -100,7 +92,7 @@ function eliminarClienteEmpresaPrueba() {
   const servicio = new ServicioClienteEmpresaFalso();
   const cliente = servicio.crearClienteEmpresa("444", "X");
   const controlador = new ControladorClienteEmpresa(servicio as any);
-  const req = crearRequestMock({ id: cliente.getId() }, {});
+  const req = crearRequestMock({ id: cliente.id }, {});
   const res = crearResponseMock();
 
   controlador.eliminarClienteEmpresa(req as any, res as any);

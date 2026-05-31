@@ -1,9 +1,9 @@
-import { ClienteEmpresa } from "../Dominio/ClienteEmpresa";
+import { ClienteEmpresaDTO } from "../DTOs/ClienteEmpresaDTO";
 
 export interface IServicioClienteEmpresa {
-  crearClienteEmpresa(cedula: string, nombre: string): ClienteEmpresa;
-  obtenerClienteEmpresas(): ClienteEmpresa[];
-  obtenerClienteEmpresaPorId(id: string): ClienteEmpresa;
-  actualizarClienteEmpresa(id: string, cedula: string, nombre: string): ClienteEmpresa;
+  crearClienteEmpresa(cedula: string, nombre: string): ClienteEmpresaDTO;
+  obtenerClienteEmpresas(): ClienteEmpresaDTO[];
+  obtenerClienteEmpresaPorId(id: string): ClienteEmpresaDTO;
+  actualizarClienteEmpresa(id: string, cedula: string, nombre: string): ClienteEmpresaDTO;
   eliminarClienteEmpresa(id: string): void;
 }

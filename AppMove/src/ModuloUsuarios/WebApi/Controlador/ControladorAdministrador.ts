@@ -16,7 +16,7 @@ export class ControladorAdministrador {
       const { cedula, nombre } = req.body;
       const administradorCreado = this.servicioAdministrador.crearAdministrador(cedula, nombre);
 
-      res.status(201).json({ data: this.mapAdministrador(administradorCreado) });
+      res.status(201).json({ data: administradorCreado });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -25,7 +25,7 @@ export class ControladorAdministrador {
   obtenerAdministradores(req: Request, res: Response): void {
     try {
       const administradores = this.servicioAdministrador.obtenerAdministradores();
-      res.status(200).json({ data: administradores.map(administrador => this.mapAdministrador(administrador)) });
+      res.status(200).json({ data: administradores });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -35,7 +35,7 @@ export class ControladorAdministrador {
     try {
       const { id } = req.params;
       const administrador = this.servicioAdministrador.obtenerAdministradorPorId(id as string);
-      res.status(200).json({ data: this.mapAdministrador(administrador) });
+      res.status(200).json({ data: administrador });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -47,7 +47,7 @@ export class ControladorAdministrador {
       const { cedula, nombre } = req.body;
       const administradorActualizado = this.servicioAdministrador.actualizarAdministrador(id as string, cedula, nombre);
 
-      res.status(200).json({ data: this.mapAdministrador(administradorActualizado) });
+      res.status(200).json({ data: administradorActualizado });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -151,15 +151,6 @@ export class ControladorAdministrador {
     } catch (error) {
         res.status(500).json({ error: error });
     }
-  }
-
-  private mapAdministrador(administrador: any) {
-    return {
-      id: administrador.getId(),
-      cedula: administrador.getCedula(),
-      nombre: administrador.getNombre(),
-      rol: administrador.obtenerRol(),
-    };
   }
 
   private manejarError(res: Response, error: unknown): void {

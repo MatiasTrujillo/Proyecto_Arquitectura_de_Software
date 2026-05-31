@@ -63,10 +63,10 @@ export class ControladorPago {
 
   private mapPago(pago: any) {
     return {
-      id: pago.getId(),
-      fecha: pago.getFecha(),
-      monto: pago.getMonto(),
-      estado: pago.getEstado(),
+      id: pago.id,
+      fecha: pago.fecha,
+      monto: pago.monto,
+      estado: pago.estado,
     };
   }
 

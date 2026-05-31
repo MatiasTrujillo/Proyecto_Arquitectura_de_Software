@@ -1,22 +1,24 @@
-import { Administrador } from "../Dominio/Administrador";
+import { AdministradorDTO } from "../DTOs/AdministradorDTO";
 import { IRepositorioAdministrador } from "../IDataAccess/IRepositorioAdministrador";
 import { IServicioAdministrador } from "../IServicio/IServicioAdministrador";
 
 export class ServicioAdministrador implements IServicioAdministrador {
   constructor(private repositorio: IRepositorioAdministrador) {}
 
-  crearAdministrador(cedula: string, nombre: string): Administrador {
+  crearAdministrador(cedula: string, nombre: string): AdministradorDTO {
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    return this.repositorio.crearAdministrador(cedula, nombre);
+    const administrador = this.repositorio.crearAdministrador(cedula, nombre);
+    return AdministradorDTO.fromEntity(administrador);
   }
 
-  obtenerAdministradores(): Administrador[] {
-    return this.repositorio.obtenerAdministradores();
+  obtenerAdministradores(): AdministradorDTO[] {
+    const administradores = this.repositorio.obtenerAdministradores();
+    return administradores.map(admin => AdministradorDTO.fromEntity(admin));
   }
 
-  obtenerAdministradorPorId(id: string): Administrador {
+  obtenerAdministradorPorId(id: string): AdministradorDTO {
     this.validarId(id);
     const administrador = this.repositorio.obtenerAdministradorPorId(id);
 
@@ -24,10 +26,10 @@ export class ServicioAdministrador implements IServicioAdministrador {
       throw new Error(`No se encontró el administrador con id ${id}`);
     }
 
-    return administrador;
+    return AdministradorDTO.fromEntity(administrador);
   }
 
-  actualizarAdministrador(id: string, cedula: string, nombre: string): Administrador {
+  actualizarAdministrador(id: string, cedula: string, nombre: string): AdministradorDTO {
     this.validarId(id);
     this.validarCedula(cedula);
     this.validarNombre(nombre);
@@ -41,7 +43,7 @@ export class ServicioAdministrador implements IServicioAdministrador {
       throw new Error(`No se pudo actualizar el administrador con id ${id}`);
     }
 
-    return administradorActualizado;
+    return AdministradorDTO.fromEntity(administradorActualizado);
   }
 
   eliminarAdministrador(id: string): void {

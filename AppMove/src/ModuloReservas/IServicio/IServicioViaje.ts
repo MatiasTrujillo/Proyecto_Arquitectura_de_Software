@@ -1,4 +1,4 @@
-import { Viaje } from "../Dominio/Viaje";
+import { ViajeDTO } from "../DTOs/ViajeDTO";
 
 export interface IServicioViaje {
   crearViaje(
@@ -8,9 +8,9 @@ export interface IServicioViaje {
     fecha: string | Date,
     estado: string,
     conductor: string,
-  ): Viaje;
-  obtenerViajes(): Viaje[];
-  obtenerViajePorId(id: string): Viaje;
+  ): ViajeDTO;
+  obtenerViajes(): ViajeDTO[];
+  obtenerViajePorId(id: string): ViajeDTO;
   actualizarViaje(
     id: string,
     reservaId: string,
@@ -19,6 +19,6 @@ export interface IServicioViaje {
     fecha: string | Date,
     estado: string,
     conductor: string,
-  ): Viaje;
+  ): ViajeDTO;
   eliminarViaje(id: string): void;
 }
