@@ -1,0 +1,11 @@
+-- Migración 006: Crear tabla producto
+
+CREATE TABLE IF NOT EXISTS producto (
+  id SERIAL PRIMARY KEY,
+  descripcion VARCHAR(500) NOT NULL,
+  valor INTEGER NOT NULL,
+  tamano INTEGER NOT NULL,
+  categoria VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

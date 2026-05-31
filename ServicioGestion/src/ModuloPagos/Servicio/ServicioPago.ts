@@ -5,23 +5,23 @@ import { IServicioPago } from "../IServicio/IServicioPago";
 export class ServicioPago implements IServicioPago {
   constructor(private repositorio: IRepositorioPago) {}
 
-  crearPago(fecha: string | Date, monto: number, estado: string): PagoDTO {
+  async crearPago(fecha: string | Date, monto: number, estado: string): Promise<PagoDTO> {
     const fechaValida = this.validarFecha(fecha);
     const montoValido = this.validarMonto(monto);
     const estadoValido = this.validarEstado(estado);
 
-    const pago = this.repositorio.crearPago(fechaValida, montoValido, estadoValido as any);
+    const pago = await this.repositorio.crearPago(fechaValida, montoValido, estadoValido as any);
     return PagoDTO.fromEntity(pago);
   }
 
-  obtenerPagos(): PagoDTO[] {
-    const pagos = this.repositorio.obtenerPagos();
+  async obtenerPagos(): Promise<PagoDTO[]> {
+    const pagos = await this.repositorio.obtenerPagos();
     return pagos.map(pago => PagoDTO.fromEntity(pago));
   }
 
-  obtenerPagoPorId(id: number): PagoDTO {
+  async obtenerPagoPorId(id: number): Promise<PagoDTO> {
     const idValido = this.validarId(id);
-    const pago = this.repositorio.obtenerPagoPorId(idValido);
+    const pago = await this.repositorio.obtenerPagoPorId(idValido);
 
     if (!pago) {
       throw new Error(`No se encontró el pago con id ${idValido}`); //hay que crear excepciones personalizadas para cada caso
@@ -30,17 +30,17 @@ export class ServicioPago implements IServicioPago {
     return PagoDTO.fromEntity(pago);
   }
 
-  actualizarPago(id: number, fecha: string | Date, monto: number, estado: string): PagoDTO {
+  async actualizarPago(id: number, fecha: string | Date, monto: number, estado: string): Promise<PagoDTO> {
     const idValido = this.validarId(id);
     const fechaValida = this.validarFecha(fecha);
     const montoValido = this.validarMonto(monto);
     const estadoValido = this.validarEstado(estado);
 
-    if (!this.repositorio.existe(idValido)) {
+    if (!await this.repositorio.existe(idValido)) {
       throw new Error(`No se encontró el pago con id ${idValido}`); //hay que crear excepciones personalizadas para cada caso
     }
 
-    const pagoActualizado = this.repositorio.actualizarPago(idValido, fechaValida, montoValido, estadoValido as any);
+    const pagoActualizado = await this.repositorio.actualizarPago(idValido, fechaValida, montoValido, estadoValido as any);
     if (!pagoActualizado) {
       throw new Error(`No se pudo actualizar el pago con id ${idValido}`); //hay que crear excepciones personalizadas para cada caso
     }
@@ -48,10 +48,10 @@ export class ServicioPago implements IServicioPago {
     return PagoDTO.fromEntity(pagoActualizado);
   }
 
-  eliminarPago(id: number): void {
+  async eliminarPago(id: number): Promise<void> {
     const idValido = this.validarId(id);
 
-    if (!this.repositorio.eliminarPago(idValido)) {
+    if (!await this.repositorio.eliminarPago(idValido)) {
       throw new Error(`No se encontró el pago con id ${idValido}`);
     }
   }

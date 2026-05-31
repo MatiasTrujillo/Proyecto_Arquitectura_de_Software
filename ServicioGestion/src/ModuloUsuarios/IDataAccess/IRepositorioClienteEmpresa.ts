@@ -1,10 +1,10 @@
 import { ClienteEmpresa } from "../Dominio/ClienteEmpresa";
 
 export interface IRepositorioClienteEmpresa {
-  crearClienteEmpresa(cedula: string, nombre: string): ClienteEmpresa;
-  obtenerClienteEmpresas(): ClienteEmpresa[];
-  obtenerClienteEmpresaPorId(id: string): ClienteEmpresa | undefined;
-  actualizarClienteEmpresa(id: string, cedula: string, nombre: string): ClienteEmpresa | undefined;
-  eliminarClienteEmpresa(id: string): boolean;
-  existe(id: string): boolean;
+  crearClienteEmpresa(cedula: string, nombre: string): Promise<ClienteEmpresa>;
+  obtenerClienteEmpresas(): Promise<ClienteEmpresa[]>;
+  obtenerClienteEmpresaPorId(id: string): Promise<ClienteEmpresa | undefined>;
+  actualizarClienteEmpresa(id: string, cedula: string, nombre: string): Promise<ClienteEmpresa | undefined>;
+  eliminarClienteEmpresa(id: string): Promise<boolean>;
+  existe(id: string): Promise<boolean>;
 }

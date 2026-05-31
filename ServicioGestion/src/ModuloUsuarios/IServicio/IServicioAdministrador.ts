@@ -1,9 +1,9 @@
 import { AdministradorDTO } from "../DTOs/AdministradorDTO";
 
 export interface IServicioAdministrador {
-  crearAdministrador(cedula: string, nombre: string): AdministradorDTO;
-  obtenerAdministradores(): AdministradorDTO[];
-  obtenerAdministradorPorId(id: string): AdministradorDTO;
-  actualizarAdministrador(id: string, cedula: string, nombre: string): AdministradorDTO;
-  eliminarAdministrador(id: string): void;
+  crearAdministrador(cedula: string, nombre: string): Promise<AdministradorDTO>;
+  obtenerAdministradores(): Promise<AdministradorDTO[]>;
+  obtenerAdministradorPorId(id: string): Promise<AdministradorDTO>;
+  actualizarAdministrador(id: string, cedula: string, nombre: string): Promise<AdministradorDTO>;
+  eliminarAdministrador(id: string): Promise<void>;
 }

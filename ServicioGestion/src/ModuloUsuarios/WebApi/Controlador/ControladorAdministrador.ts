@@ -14,7 +14,7 @@ export class ControladorAdministrador {
   crearAdministrador(req: Request, res: Response): void {
     try {
       const { cedula, nombre } = req.body;
-      const administradorCreado = this.servicioAdministrador.crearAdministrador(cedula, nombre);
+      const administradorCreado = this.servicioAdministrador.crearAdministrador(cedula, nombre); //aca await no es necesario porque no se usa una funcion con adminCreado
 
       res.status(201).json({ data: administradorCreado });
     } catch (error) {

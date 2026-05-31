@@ -1,46 +1,46 @@
-import { ClientePersonal } from "../Dominio/ClientePersonal";
+import pool from '../../Shared/Database/DatabaseConnection';
 import { IRepositorioClientePersonal } from "../IDataAccess/IRepositorioClientePersonal";
+import { ClientePersonal } from "../Dominio/ClientePersonal";
 
 export class RepositorioClientePersonal implements IRepositorioClientePersonal {
-  private clientes: ClientePersonal[] = [];
-  private siguienteId: number = 1;
-
-  crearClientePersonal(cedula: string, nombre: string): ClientePersonal {
-    const nuevoCliente = new ClientePersonal(String(this.siguienteId++), cedula, nombre);
-    this.clientes.push(nuevoCliente);
-    return nuevoCliente;
+  async crearClientePersonal(cedula: string, nombre: string): Promise<ClientePersonal> {
+    const res = await pool.query(
+      'INSERT INTO cliente_personal (cedula, nombre) VALUES ($1, $2) RETURNING id, cedula, nombre',
+      [cedula, nombre]
+    );
+    const r = res.rows[0];
+    return new ClientePersonal(String(r.id), r.cedula, r.nombre);
   }
 
-  obtenerClientePersonales(): ClientePersonal[] {
-    return this.clientes;
+  async obtenerClientePersonales(): Promise<ClientePersonal[]> {
+    const res = await pool.query('SELECT id, cedula, nombre FROM cliente_personal');
+    return res.rows.map((r: any) => new ClientePersonal(String(r.id), r.cedula, r.nombre));
   }
 
-  obtenerClientePersonalPorId(id: string): ClientePersonal | undefined {
-    return this.clientes.find(cliente => cliente.getId() === id);
+  async obtenerClientePersonalPorId(id: string): Promise<ClientePersonal | undefined> {
+    const res = await pool.query('SELECT id, cedula, nombre FROM cliente_personal WHERE id = $1', [id]);
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new ClientePersonal(String(r.id), r.cedula, r.nombre);
   }
 
-  actualizarClientePersonal(id: string, cedula: string, nombre: string): ClientePersonal | undefined {
-    const indice = this.clientes.findIndex(cliente => cliente.getId() === id);
-    if (indice === -1) {
-      return undefined;
-    }
-
-    const clienteActualizado = new ClientePersonal(id, cedula, nombre);
-    this.clientes[indice] = clienteActualizado;
-    return clienteActualizado;
+  async actualizarClientePersonal(id: string, cedula: string, nombre: string): Promise<ClientePersonal | undefined> {
+    const res = await pool.query(
+      'UPDATE cliente_personal SET cedula = $1, nombre = $2 WHERE id = $3 RETURNING id, cedula, nombre',
+      [cedula, nombre, id]
+    );
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new ClientePersonal(String(r.id), r.cedula, r.nombre);
   }
 
-  eliminarClientePersonal(id: string): boolean {
-    const indice = this.clientes.findIndex(cliente => cliente.getId() === id);
-    if (indice === -1) {
-      return false;
-    }
-
-    this.clientes.splice(indice, 1);
-    return true;
+  async eliminarClientePersonal(id: string): Promise<boolean> {
+    const res = await pool.query('DELETE FROM cliente_personal WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 
-  existe(id: string): boolean {
-    return this.clientes.some(cliente => cliente.getId() === id);
+  async existe(id: string): Promise<boolean> {
+    const res = await pool.query('SELECT 1 FROM cliente_personal WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 }

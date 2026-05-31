@@ -1,0 +1,17 @@
+# Variables de entorno (contienen credenciales)
+.env
+.env.local
+.env.*.local
+
+# Dependencias
+node_modules/
+dist/
+
+# Archivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

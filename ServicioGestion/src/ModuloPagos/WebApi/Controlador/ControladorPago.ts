@@ -9,10 +9,11 @@ export class ControladorPago {
   constructor(servicioPago?: IServicioPago) {
     this.servicioPago = servicioPago ?? new ServicioPago(new RepositorioPago());
   }
-  crearPago(req: Request, res: Response): void {
+
+  async crearPago(req: Request, res: Response): Promise<void> {
     try {
       const { fecha, monto, estado } = req.body;
-      const pagoCreado = this.servicioPago.crearPago(fecha, monto, estado);
+      const pagoCreado = await this.servicioPago.crearPago(fecha, monto, estado); //este await es necesario porque esta .mapPago
 
       res.status(201).json({ data: this.mapPago(pagoCreado) });
     } catch (error) {
@@ -20,30 +21,30 @@ export class ControladorPago {
     }
   }
 
-  obtenerPago(req: Request, res: Response): void {
+  async obtenerPago(req: Request, res: Response): Promise<void> {
     try {
-      const pagos = this.servicioPago.obtenerPagos();
+      const pagos = await this.servicioPago.obtenerPagos();
       res.status(200).json({ data: pagos.map(pago => this.mapPago(pago)) });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  obtenerPagoPorId(req: Request, res: Response): void {
+  async obtenerPagoPorId(req: Request, res: Response): Promise<void> {
     try {
       const id = Number(req.params.id);
-      const pago = this.servicioPago.obtenerPagoPorId(id);
+      const pago = await this.servicioPago.obtenerPagoPorId(id);
       res.status(200).json({ data: this.mapPago(pago) });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  actualizarPago(req: Request, res: Response): void {
+  async actualizarPago(req: Request, res: Response): Promise<void> {
     try {
       const id = Number(req.params.id);
       const { fecha, monto, estado } = req.body;
-      const pagoActualizado = this.servicioPago.actualizarPago(id, fecha, monto, estado);
+      const pagoActualizado = await this.servicioPago.actualizarPago(id, fecha, monto, estado);
 
       res.status(200).json({ data: this.mapPago(pagoActualizado) });
     } catch (error) {
@@ -51,10 +52,10 @@ export class ControladorPago {
     }
   }
 
-  eliminarPago(req: Request, res: Response): void {
+  async eliminarPago(req: Request, res: Response): Promise<void> {
     try {
       const id = Number(req.params.id);
-      this.servicioPago.eliminarPago(id);
+      await this.servicioPago.eliminarPago(id);
       res.status(204).send();
     } catch (error) {
       this.manejarError(res, error);

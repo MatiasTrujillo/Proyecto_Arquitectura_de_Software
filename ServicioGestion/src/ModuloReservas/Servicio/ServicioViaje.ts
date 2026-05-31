@@ -5,14 +5,14 @@ import { ViajeDTO } from "../DTOs/ViajeDTO";
 export class ServicioViaje implements IServicioViaje {
   constructor(private repositorio: IRepositorioViaje) {}
 
-  crearViaje(
+  async crearViaje(
     reservaId: string,
     origen: string,
     destino: string,
     fecha: string | Date,
     estado: string,
     conductor: string,
-  ): ViajeDTO {
+  ): Promise<ViajeDTO> {
     const reservaIdValido = this.validarTexto(reservaId, "ReservaId");
     const origenValido = this.validarTexto(origen, "Origen");
     const destinoValido = this.validarTexto(destino, "Destino");
@@ -20,7 +20,7 @@ export class ServicioViaje implements IServicioViaje {
     const estadoValido = this.validarTexto(estado, "Estado");
     const conductorValido = this.validarTexto(conductor, "Conductor");
 
-    const viaje = this.repositorio.crearViaje(
+    const viaje = await this.repositorio.crearViaje(
       reservaIdValido,
       origenValido,
       destinoValido,
@@ -32,14 +32,14 @@ export class ServicioViaje implements IServicioViaje {
     return ViajeDTO.fromEntity(viaje);
   }
 
-  obtenerViajes(): ViajeDTO[] {
-    const viajes = this.repositorio.obtenerViajes();
+  async obtenerViajes(): Promise<ViajeDTO[]> {
+    const viajes = await this.repositorio.obtenerViajes();
     return viajes.map(viaje => ViajeDTO.fromEntity(viaje));
   }
 
-  obtenerViajePorId(id: string): ViajeDTO {
+  async obtenerViajePorId(id: string): Promise<ViajeDTO> {
     const idValido = this.validarTexto(id, "Id");
-    const viaje = this.repositorio.obtenerViajePorId(idValido);
+    const viaje = await this.repositorio.obtenerViajePorId(idValido);
 
     if (!viaje) {
       throw new Error(`No se encontró el viaje con id ${idValido}`);
@@ -48,7 +48,7 @@ export class ServicioViaje implements IServicioViaje {
     return ViajeDTO.fromEntity(viaje);
   }
 
-  actualizarViaje(
+  async actualizarViaje(
     id: string,
     reservaId: string,
     origen: string,
@@ -56,7 +56,7 @@ export class ServicioViaje implements IServicioViaje {
     fecha: string | Date,
     estado: string,
     conductor: string,
-  ): ViajeDTO {
+  ): Promise<ViajeDTO> {
     const idValido = this.validarTexto(id, "Id");
     const reservaIdValido = this.validarTexto(reservaId, "ReservaId");
     const origenValido = this.validarTexto(origen, "Origen");
@@ -65,11 +65,11 @@ export class ServicioViaje implements IServicioViaje {
     const estadoValido = this.validarTexto(estado, "Estado");
     const conductorValido = this.validarTexto(conductor, "Conductor");
 
-    if (!this.repositorio.existe(idValido)) {
+    if (!await this.repositorio.existe(idValido)) {
       throw new Error(`No se encontró el viaje con id ${idValido}`);
     }
 
-    const viajeActualizado = this.repositorio.actualizarViaje(
+    const viajeActualizado = await this.repositorio.actualizarViaje(
       idValido,
       reservaIdValido,
       origenValido,
@@ -86,10 +86,10 @@ export class ServicioViaje implements IServicioViaje {
     return ViajeDTO.fromEntity(viajeActualizado);
   }
 
-  eliminarViaje(id: string): void {
+  async eliminarViaje(id: string): Promise<void> {
     const idValido = this.validarTexto(id, "Id");
 
-    if (!this.repositorio.eliminarViaje(idValido)) {
+    if (!await this.repositorio.eliminarViaje(idValido)) {
       throw new Error(`No se encontró el viaje con id ${idValido}`);
     }
   }

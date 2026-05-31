@@ -8,9 +8,9 @@ export interface IRepositorioViaje {
     fecha: Date,
     estado: string,
     conductor: string,
-  ): Viaje;
-  obtenerViajes(): Viaje[];
-  obtenerViajePorId(id: string): Viaje | undefined;
+  ): Promise<Viaje>;
+  obtenerViajes(): Promise<Viaje[]>;
+  obtenerViajePorId(id: string): Promise<Viaje | undefined>;
   actualizarViaje(
     id: string,
     reservaId: string,
@@ -19,7 +19,7 @@ export interface IRepositorioViaje {
     fecha: Date,
     estado: string,
     conductor: string,
-  ): Viaje | undefined;
-  eliminarViaje(id: string): boolean;
-  existe(id: string): boolean;
+  ): Promise<Viaje | undefined>;
+  eliminarViaje(id: string): Promise<boolean>;
+  existe(id: string): Promise<boolean>;
 }

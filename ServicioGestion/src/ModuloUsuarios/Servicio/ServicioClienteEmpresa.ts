@@ -5,38 +5,38 @@ import { IServicioClienteEmpresa } from "../IServicio/IServicioClienteEmpresa";
 export class ServicioClienteEmpresa implements IServicioClienteEmpresa {
   constructor(private repositorio: IRepositorioClienteEmpresa) {}
 
-  crearClienteEmpresa(cedula: string, nombre: string): ClienteEmpresaDTO {
+  async crearClienteEmpresa(cedula: string, nombre: string): Promise<ClienteEmpresaDTO> {
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    const cliente = this.repositorio.crearClienteEmpresa(cedula, nombre);
+    const cliente = await this.repositorio.crearClienteEmpresa(cedula, nombre);
     return ClienteEmpresaDTO.fromEntity(cliente);
   }
 
-  obtenerClienteEmpresas(): ClienteEmpresaDTO[] {
-    const clientes = this.repositorio.obtenerClienteEmpresas();
+  async obtenerClienteEmpresas(): Promise<ClienteEmpresaDTO[]> {
+    const clientes = await this.repositorio.obtenerClienteEmpresas();
     return clientes.map(c => ClienteEmpresaDTO.fromEntity(c));
   }
 
-  obtenerClienteEmpresaPorId(id: string): ClienteEmpresaDTO {
+  async obtenerClienteEmpresaPorId(id: string): Promise<ClienteEmpresaDTO> {
     this.validarId(id);
-    const cliente = this.repositorio.obtenerClienteEmpresaPorId(id);
+    const cliente = await this.repositorio.obtenerClienteEmpresaPorId(id);
     if (!cliente) {
       throw new Error(`No se encontró el cliente empresa con id ${id}`);
     }
     return ClienteEmpresaDTO.fromEntity(cliente);
   }
 
-  actualizarClienteEmpresa(id: string, cedula: string, nombre: string): ClienteEmpresaDTO {
+  async actualizarClienteEmpresa(id: string, cedula: string, nombre: string): Promise<ClienteEmpresaDTO> {
     this.validarId(id);
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    if (!this.repositorio.existe(id)) {
+    if (!await this.repositorio.existe(id)) {
       throw new Error(`No se encontró el cliente empresa con id ${id}`);
     }
 
-    const clienteActualizado = this.repositorio.actualizarClienteEmpresa(id, cedula, nombre);
+    const clienteActualizado = await this.repositorio.actualizarClienteEmpresa(id, cedula, nombre);
     if (!clienteActualizado) {
       throw new Error(`No se pudo actualizar el cliente empresa con id ${id}`);
     }
@@ -44,10 +44,10 @@ export class ServicioClienteEmpresa implements IServicioClienteEmpresa {
     return ClienteEmpresaDTO.fromEntity(clienteActualizado);
   }
 
-  eliminarClienteEmpresa(id: string): void {
+  async eliminarClienteEmpresa(id: string): Promise<void> {
     this.validarId(id);
 
-    if (!this.repositorio.eliminarClienteEmpresa(id)) {
+    if (!await this.repositorio.eliminarClienteEmpresa(id)) {
       throw new Error(`No se encontró el cliente empresa con id ${id}`);
     }
   }

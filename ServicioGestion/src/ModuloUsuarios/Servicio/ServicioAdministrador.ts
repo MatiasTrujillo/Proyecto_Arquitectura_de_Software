@@ -5,22 +5,22 @@ import { IServicioAdministrador } from "../IServicio/IServicioAdministrador";
 export class ServicioAdministrador implements IServicioAdministrador {
   constructor(private repositorio: IRepositorioAdministrador) {}
 
-  crearAdministrador(cedula: string, nombre: string): AdministradorDTO {
+  async crearAdministrador(cedula: string, nombre: string): Promise<AdministradorDTO> {
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    const administrador = this.repositorio.crearAdministrador(cedula, nombre);
+    const administrador = await this.repositorio.crearAdministrador(cedula, nombre);
     return AdministradorDTO.fromEntity(administrador);
   }
 
-  obtenerAdministradores(): AdministradorDTO[] {
-    const administradores = this.repositorio.obtenerAdministradores();
+  async obtenerAdministradores(): Promise<AdministradorDTO[]> {
+    const administradores = await this.repositorio.obtenerAdministradores();
     return administradores.map(admin => AdministradorDTO.fromEntity(admin));
   }
 
-  obtenerAdministradorPorId(id: string): AdministradorDTO {
+  async obtenerAdministradorPorId(id: string): Promise<AdministradorDTO> {
     this.validarId(id);
-    const administrador = this.repositorio.obtenerAdministradorPorId(id);
+    const administrador = await this.repositorio.obtenerAdministradorPorId(id);
 
     if (!administrador) {
       throw new Error(`No se encontró el administrador con id ${id}`);
@@ -29,16 +29,16 @@ export class ServicioAdministrador implements IServicioAdministrador {
     return AdministradorDTO.fromEntity(administrador);
   }
 
-  actualizarAdministrador(id: string, cedula: string, nombre: string): AdministradorDTO {
+  async actualizarAdministrador(id: string, cedula: string, nombre: string): Promise<AdministradorDTO> {
     this.validarId(id);
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    if (!this.repositorio.existe(id)) {
+    if (!await this.repositorio.existe(id)) {
       throw new Error(`No se encontró el administrador con id ${id}`);
     }
 
-    const administradorActualizado = this.repositorio.actualizarAdministrador(id, cedula, nombre);
+    const administradorActualizado = await this.repositorio.actualizarAdministrador(id, cedula, nombre);
     if (!administradorActualizado) {
       throw new Error(`No se pudo actualizar el administrador con id ${id}`);
     }
@@ -46,10 +46,10 @@ export class ServicioAdministrador implements IServicioAdministrador {
     return AdministradorDTO.fromEntity(administradorActualizado);
   }
 
-  eliminarAdministrador(id: string): void {
+  async eliminarAdministrador(id: string): Promise<void> {
     this.validarId(id);
 
-    if (!this.repositorio.eliminarAdministrador(id)) {
+    if (!await this.repositorio.eliminarAdministrador(id)) {
       throw new Error(`No se encontró el administrador con id ${id}`);
     }
   }

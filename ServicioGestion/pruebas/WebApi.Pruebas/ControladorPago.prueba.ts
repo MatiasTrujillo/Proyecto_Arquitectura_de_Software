@@ -5,10 +5,10 @@ import { crearRequestMock, crearResponseMock } from "./MockExpress";
 class ServicioPagoFalso {
   crearPago(fecha: string, monto: number, estado: string) {
     return {
-      getId: () => 1,
-      getFecha: () => fecha,
-      getMonto: () => monto,
-      getEstado: () => estado,
+      id: 1,
+      fecha,
+      monto,
+      estado,
     };
   }
 
@@ -31,12 +31,12 @@ class ServicioPagoFalso {
   }
 }
 
-function crearPagoPrueba() {
+async function crearPagoPrueba() {
   const controlador = new ControladorPago(new ServicioPagoFalso() as any);
   const req = crearRequestMock({}, { fecha: "2026-01-01", monto: 250, estado: "COMPLETADO" });
   const res = crearResponseMock();
 
-  controlador.crearPago(req as any, res as any);
+  await controlador.crearPago(req as any, res as any);
 
   assert.strictEqual(res.statusCode, 201);
   assert.deepStrictEqual(res.body.data, {
@@ -47,45 +47,45 @@ function crearPagoPrueba() {
   });
 }
 
-function obtenerPagosPrueba() {
+async function obtenerPagosPrueba() {
   const controlador = new ControladorPago(new ServicioPagoFalso() as any);
   const req = crearRequestMock();
   const res = crearResponseMock();
 
-  controlador.obtenerPago(req as any, res as any);
+  await controlador.obtenerPago(req as any, res as any);
 
   assert.strictEqual(res.statusCode, 200);
   assert.strictEqual(res.body.data.length, 1);
 }
 
-function obtenerPagoPorIdPrueba() {
+async function obtenerPagoPorIdPrueba() {
   const controlador = new ControladorPago(new ServicioPagoFalso() as any);
   const req = crearRequestMock({ id: "1" }, {});
   const res = crearResponseMock();
 
-  controlador.obtenerPagoPorId(req as any, res as any);
+  await controlador.obtenerPagoPorId(req as any, res as any);
 
   assert.strictEqual(res.statusCode, 200);
   assert.strictEqual(res.body.data.monto, 100);
 }
 
-function actualizarPagoPrueba() {
+async function actualizarPagoPrueba() {
   const controlador = new ControladorPago(new ServicioPagoFalso() as any);
   const req = crearRequestMock({ id: "1" }, { fecha: "2026-02-02", monto: 500, estado: "APROBADO" });
   const res = crearResponseMock();
 
-  controlador.actualizarPago(req as any, res as any);
+  await controlador.actualizarPago(req as any, res as any);
 
   assert.strictEqual(res.statusCode, 200);
   assert.strictEqual(res.body.data.estado, "APROBADO");
 }
 
-function eliminarPagoPrueba() {
+async function eliminarPagoPrueba() {
   const controlador = new ControladorPago(new ServicioPagoFalso() as any);
   const req = crearRequestMock({ id: "1" }, {});
   const res = crearResponseMock();
 
-  controlador.eliminarPago(req as any, res as any);
+  await controlador.eliminarPago(req as any, res as any);
 
   assert.strictEqual(res.statusCode, 204);
 }
@@ -98,10 +98,10 @@ const pruebas = [
   ["Eliminar pago", eliminarPagoPrueba],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);

@@ -1,9 +1,9 @@
 import { PagoDTO } from "../DTOs/PagoDTO";
 
 export interface IServicioPago {
-  crearPago(fecha: string | Date, monto: number, estado: string): PagoDTO;
-  obtenerPagos(): PagoDTO[];
-  obtenerPagoPorId(id: number): PagoDTO;
-  actualizarPago(id: number, fecha: string | Date, monto: number, estado: string): PagoDTO;
-  eliminarPago(id: number): void;
+  crearPago(fecha: string | Date, monto: number, estado: string): Promise<PagoDTO>;
+  obtenerPagos(): Promise<PagoDTO[]>;
+  obtenerPagoPorId(id: number): Promise<PagoDTO>;
+  actualizarPago(id: number, fecha: string | Date, monto: number, estado: string): Promise<PagoDTO>;
+  eliminarPago(id: number): Promise<void>;
 }

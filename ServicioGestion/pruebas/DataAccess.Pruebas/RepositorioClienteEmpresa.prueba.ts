@@ -1,60 +1,66 @@
 import assert from "assert";
+import pool from "../../src/Shared/Database/DatabaseConnection";
 import { RepositorioClienteEmpresa } from "../../src/ModuloUsuarios/DataAccess/RepositorioClienteEmpresa";
 
-function crearClienteEmpresaTest() {
+async function limpiarBD() {
+  await pool.query('DELETE FROM cliente_empresa');
+  await pool.query('ALTER SEQUENCE cliente_empresa_id_seq RESTART WITH 1');
+}
+
+async function crearClienteEmpresaTest() {
   const repo = new RepositorioClienteEmpresa();
-  const c = repo.crearClienteEmpresa("123", "Empresa SA");
+  const c = await repo.crearClienteEmpresa("123", "Empresa SA");
 
   assert.strictEqual(c.getId(), "1");
   assert.strictEqual(c.getCedula(), "123");
   assert.strictEqual(c.getNombre(), "Empresa SA");
 }
 
-function obtenerClienteEmpresaPorIdTest() {
+async function obtenerClienteEmpresaPorIdTest() {
   const repo = new RepositorioClienteEmpresa();
-  const c = repo.crearClienteEmpresa("11", "E");
+  const c = await repo.crearClienteEmpresa("11", "E");
 
-  const encontrado = repo.obtenerClienteEmpresaPorId(c.getId());
+  const encontrado = await repo.obtenerClienteEmpresaPorId(c.getId());
   assert.ok(encontrado);
   assert.strictEqual(encontrado?.getCedula(), "11");
-  assert.strictEqual(repo.obtenerClienteEmpresaPorId("999"), undefined);
+  assert.strictEqual(await repo.obtenerClienteEmpresaPorId("999"), undefined);
 }
 
-function obtenerTodosLosClientesTest() {
+async function obtenerTodosLosClientesTest() {
   const repo = new RepositorioClienteEmpresa();
-  repo.crearClienteEmpresa("1", "A");
-  repo.crearClienteEmpresa("2", "B");
+  await repo.crearClienteEmpresa("1", "A");
+  await repo.crearClienteEmpresa("2", "B");
 
-  const list = repo.obtenerClienteEmpresas();
+  const list = await repo.obtenerClienteEmpresas();
   assert.strictEqual(list.length, 2);
   assert.ok(list.some(x => x.getCedula() === "1"));
 }
 
-function existeClienteTest() {
+async function existeClienteTest() {
   const repo = new RepositorioClienteEmpresa();
-  const c = repo.crearClienteEmpresa("9", "X");
+  const c = await repo.crearClienteEmpresa("9", "X");
 
-  assert.strictEqual(repo.existe(c.getId()), true);
-  assert.strictEqual(repo.existe("999"), false);
+  assert.strictEqual(await repo.existe(c.getId()), true);
+  assert.strictEqual(await repo.existe("999"), false);
 }
 
-function actualizarClienteTest() {
+async function actualizarClienteTest() {
   const repo = new RepositorioClienteEmpresa();
-  const c = repo.crearClienteEmpresa("old", "Old");
+  const c = await repo.crearClienteEmpresa("old", "Old");
 
-  const actualizado = repo.actualizarClienteEmpresa(c.getId(), "new", "New");
+  const actualizado = await repo.actualizarClienteEmpresa(c.getId(), "new", "New");
   assert.ok(actualizado);
   assert.strictEqual(actualizado?.getCedula(), "new");
   assert.strictEqual(actualizado?.getNombre(), "New");
 }
 
-function eliminarClienteTest() {
+async function eliminarClienteTest() {
   const repo = new RepositorioClienteEmpresa();
-  const c = repo.crearClienteEmpresa("del", "D");
+  const c = await repo.crearClienteEmpresa("del", "D");
 
-  assert.strictEqual(repo.eliminarClienteEmpresa(c.getId()), true);
-  assert.strictEqual(repo.existe(c.getId()), false);
-  assert.strictEqual(repo.obtenerClienteEmpresas().length, 0);
+  assert.strictEqual(await repo.eliminarClienteEmpresa(c.getId()), true);
+  assert.strictEqual(await repo.existe(c.getId()), false);
+  assert.strictEqual((await repo.obtenerClienteEmpresas()).length, 0);
 }
 
 const pruebas = [
@@ -66,16 +72,21 @@ const pruebas = [
   ["Eliminar cliente", eliminarClienteTest],
 ] as const;
 
-function ejecutarPruebas() {
-  for (const [nombre, prueba] of pruebas) {
-    try {
-      prueba();
-      console.log(`✅ ${nombre}`);
-    } catch (error) {
-      console.error(`❌ ${nombre}`);
-      console.error(error);
-      process.exit(1);
+async function ejecutarPruebas() {
+  try {
+    for (const [nombre, prueba] of pruebas) {
+      try {
+        await limpiarBD();
+        await prueba();
+        console.log(`✅ ${nombre}`);
+      } catch (error) {
+        console.error(`❌ ${nombre}`);
+        console.error(error);
+        process.exit(1);
+      }
     }
+  } finally {
+    await pool.end();
   }
 }
 

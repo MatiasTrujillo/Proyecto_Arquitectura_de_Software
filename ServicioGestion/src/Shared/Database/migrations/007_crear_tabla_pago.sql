@@ -1,0 +1,9 @@
+-- Migración 007: Crear tabla pago
+
+CREATE TABLE IF NOT EXISTS pago (
+  id SERIAL PRIMARY KEY,
+  fecha TIMESTAMP NOT NULL,
+  monto INTEGER NOT NULL,
+  estado VARCHAR(50) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

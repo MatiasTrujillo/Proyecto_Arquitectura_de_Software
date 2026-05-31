@@ -41,48 +41,48 @@ class RepositorioAdministradorFalso {
   }
 }
 
-function crearAdministradorPrueba() {
+async function crearAdministradorPrueba() {
   const repositorio = new RepositorioAdministradorFalso();
   const servicio = new ServicioAdministrador(repositorio as any);
 
-  const administrador = servicio.crearAdministrador("123", "Juan");
+  const administrador = await servicio.crearAdministrador("123", "Juan");
   assert.strictEqual(administrador.cedula, "123");
 }
 
-function obtenerAdministradorPorIdPrueba() {
+async function obtenerAdministradorPorIdPrueba() {
   const repositorio = new RepositorioAdministradorFalso();
   const servicio = new ServicioAdministrador(repositorio as any);
   const administrador = repositorio.crearAdministrador("321", "Ana");
 
-  const encontrado = servicio.obtenerAdministradorPorId(administrador.getId());
+  const encontrado = await servicio.obtenerAdministradorPorId(administrador.getId());
   assert.ok(encontrado);
   assert.strictEqual(encontrado.cedula, "321");
 
   let lanzo = false;
   try {
-    servicio.obtenerAdministradorPorId("no");
+    await servicio.obtenerAdministradorPorId("no");
   } catch (e) {
     lanzo = true;
   }
   assert.strictEqual(lanzo, true);
 }
 
-function actualizarAdministradorPrueba() {
+async function actualizarAdministradorPrueba() {
   const repositorio = new RepositorioAdministradorFalso();
   const servicio = new ServicioAdministrador(repositorio as any);
   const administrador = repositorio.crearAdministrador("111", "Old");
 
-  const actualizado = servicio.actualizarAdministrador(administrador.getId(), "222", "New");
+  const actualizado = await servicio.actualizarAdministrador(administrador.getId(), "222", "New");
   assert.ok(actualizado);
   assert.strictEqual(actualizado.cedula, "222");
 }
 
-function eliminarAdministradorPrueba() {
+async function eliminarAdministradorPrueba() {
   const repositorio = new RepositorioAdministradorFalso();
   const servicio = new ServicioAdministrador(repositorio as any);
   const administrador = repositorio.crearAdministrador("55", "X");
 
-  servicio.eliminarAdministrador(administrador.getId());
+  await servicio.eliminarAdministrador(administrador.getId());
   assert.strictEqual(repositorio.existe(administrador.getId()), false);
 }
 
@@ -93,10 +93,10 @@ const pruebas = [
   ["Eliminar administrador", eliminarAdministradorPrueba],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);
@@ -107,5 +107,5 @@ function ejecutarPruebas() {
 }
 
 if (require.main === module) {
-  ejecutarPruebas();
+  void ejecutarPruebas();
 }

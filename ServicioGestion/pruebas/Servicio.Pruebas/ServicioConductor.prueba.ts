@@ -41,48 +41,48 @@ class RepositorioConductorFalso {
   }
 }
 
-function crearConductorPrueba() {
+async function crearConductorPrueba() {
   const repositorio = new RepositorioConductorFalso();
   const servicio = new ServicioConductor(repositorio as any);
 
-  const conductor = servicio.crearConductor("999", "Pedro");
+  const conductor = await servicio.crearConductor("999", "Pedro");
   assert.strictEqual(conductor.cedula, "999");
 }
 
-function obtenerConductorPorIdPrueba() {
+async function obtenerConductorPorIdPrueba() {
   const repositorio = new RepositorioConductorFalso();
   const servicio = new ServicioConductor(repositorio as any);
   const conductor = repositorio.crearConductor("888", "Ana");
 
-  const encontrado = servicio.obtenerConductorPorId(conductor.getId());
+  const encontrado = await servicio.obtenerConductorPorId(conductor.getId());
   assert.ok(encontrado);
   assert.strictEqual(encontrado.cedula, "888");
 
   let lanzo = false;
   try {
-    servicio.obtenerConductorPorId("no");
+    await servicio.obtenerConductorPorId("no");
   } catch (e) {
     lanzo = true;
   }
   assert.strictEqual(lanzo, true);
 }
 
-function actualizarConductorPrueba() {
+async function actualizarConductorPrueba() {
   const repositorio = new RepositorioConductorFalso();
   const servicio = new ServicioConductor(repositorio as any);
   const conductor = repositorio.crearConductor("111", "Old");
 
-  const actualizado = servicio.actualizarConductor(conductor.getId(), "222", "New");
+  const actualizado = await servicio.actualizarConductor(conductor.getId(), "222", "New");
   assert.ok(actualizado);
   assert.strictEqual(actualizado.cedula, "222");
 }
 
-function eliminarConductorPrueba() {
+async function eliminarConductorPrueba() {
   const repositorio = new RepositorioConductorFalso();
   const servicio = new ServicioConductor(repositorio as any);
   const conductor = repositorio.crearConductor("55", "X");
 
-  servicio.eliminarConductor(conductor.getId());
+  await servicio.eliminarConductor(conductor.getId());
   assert.strictEqual(repositorio.existe(conductor.getId()), false);
 }
 
@@ -93,10 +93,10 @@ const pruebas = [
   ["Eliminar conductor", eliminarConductorPrueba],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);
@@ -107,5 +107,5 @@ function ejecutarPruebas() {
 }
 
 if (require.main === module) {
-  ejecutarPruebas();
+  void ejecutarPruebas();
 }

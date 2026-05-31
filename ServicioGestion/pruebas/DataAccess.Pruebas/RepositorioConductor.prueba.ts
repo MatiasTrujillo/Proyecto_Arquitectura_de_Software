@@ -1,60 +1,66 @@
 import assert from "assert";
+import pool from "../../src/Shared/Database/DatabaseConnection";
 import { RepositorioConductor } from "../../src/ModuloUsuarios/DataAccess/RepositorioConductor";
 
-function crearConductorTest() {
+async function limpiarBD() {
+  await pool.query('DELETE FROM conductor');
+  await pool.query('ALTER SEQUENCE conductor_id_seq RESTART WITH 1');
+}
+
+async function crearConductorTest() {
   const repo = new RepositorioConductor();
-  const c = repo.crearConductor("123", "Conductor");
+  const c = await repo.crearConductor("123", "Conductor");
 
   assert.strictEqual(c.getId(), "1");
   assert.strictEqual(c.getCedula(), "123");
   assert.strictEqual(c.getNombre(), "Conductor");
 }
 
-function obtenerConductorPorIdTest() {
+async function obtenerConductorPorIdTest() {
   const repo = new RepositorioConductor();
-  const c = repo.crearConductor("11", "P");
+  const c = await repo.crearConductor("11", "P");
 
-  const encontrado = repo.obtenerConductorPorId(c.getId());
+  const encontrado = await repo.obtenerConductorPorId(c.getId());
   assert.ok(encontrado);
   assert.strictEqual(encontrado?.getCedula(), "11");
-  assert.strictEqual(repo.obtenerConductorPorId("999"), undefined);
+  assert.strictEqual(await repo.obtenerConductorPorId("999"), undefined);
 }
 
-function obtenerTodosLosConductoresTest() {
+async function obtenerTodosLosConductoresTest() {
   const repo = new RepositorioConductor();
-  repo.crearConductor("1", "A");
-  repo.crearConductor("2", "B");
+  await repo.crearConductor("1", "A");
+  await repo.crearConductor("2", "B");
 
-  const list = repo.obtenerConductores();
+  const list = await repo.obtenerConductores();
   assert.strictEqual(list.length, 2);
   assert.ok(list.some(x => x.getCedula() === "1"));
 }
 
-function existeConductorTest() {
+async function existeConductorTest() {
   const repo = new RepositorioConductor();
-  const c = repo.crearConductor("9", "X");
+  const c = await repo.crearConductor("9", "X");
 
-  assert.strictEqual(repo.existe(c.getId()), true);
-  assert.strictEqual(repo.existe("999"), false);
+  assert.strictEqual(await repo.existe(c.getId()), true);
+  assert.strictEqual(await repo.existe("999"), false);
 }
 
-function actualizarConductorTest() {
+async function actualizarConductorTest() {
   const repo = new RepositorioConductor();
-  const c = repo.crearConductor("old", "Old");
+  const c = await repo.crearConductor("old", "Old");
 
-  const actualizado = repo.actualizarConductor(c.getId(), "new", "New");
+  const actualizado = await repo.actualizarConductor(c.getId(), "new", "New");
   assert.ok(actualizado);
   assert.strictEqual(actualizado?.getCedula(), "new");
   assert.strictEqual(actualizado?.getNombre(), "New");
 }
 
-function eliminarConductorTest() {
+async function eliminarConductorTest() {
   const repo = new RepositorioConductor();
-  const c = repo.crearConductor("del", "D");
+  const c = await repo.crearConductor("del", "D");
 
-  assert.strictEqual(repo.eliminarConductor(c.getId()), true);
-  assert.strictEqual(repo.existe(c.getId()), false);
-  assert.strictEqual(repo.obtenerConductores().length, 0);
+  assert.strictEqual(await repo.eliminarConductor(c.getId()), true);
+  assert.strictEqual(await repo.existe(c.getId()), false);
+  assert.strictEqual((await repo.obtenerConductores()).length, 0);
 }
 
 const pruebas = [
@@ -66,16 +72,21 @@ const pruebas = [
   ["Eliminar conductor", eliminarConductorTest],
 ] as const;
 
-function ejecutarPruebas() {
-  for (const [nombre, prueba] of pruebas) {
-    try {
-      prueba();
-      console.log(`✅ ${nombre}`);
-    } catch (error) {
-      console.error(`❌ ${nombre}`);
-      console.error(error);
-      process.exit(1);
+async function ejecutarPruebas() {
+  try {
+    for (const [nombre, prueba] of pruebas) {
+      try {
+        await limpiarBD();
+        await prueba();
+        console.log(`✅ ${nombre}`);
+      } catch (error) {
+        console.error(`❌ ${nombre}`);
+        console.error(error);
+        process.exit(1);
+      }
     }
+  } finally {
+    await pool.end();
   }
 }
 
