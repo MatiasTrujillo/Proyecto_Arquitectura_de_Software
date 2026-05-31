@@ -1,60 +1,66 @@
 import assert from "assert";
+import pool from "../../src/Shared/Database/DatabaseConnection";
 import { RepositorioOperador } from "../../src/ModuloUsuarios/DataAccess/RepositorioOperador";
 
-function crearOperadorTest() {
+async function limpiarBD() {
+  await pool.query('DELETE FROM operador');
+  await pool.query('ALTER SEQUENCE operador_id_seq RESTART WITH 1');
+}
+
+async function crearOperadorTest() {
   const repo = new RepositorioOperador();
-  const c = repo.crearOperador("123", "Operador");
+  const c = await repo.crearOperador("123", "Operador");
 
   assert.strictEqual(c.getId(), "1");
   assert.strictEqual(c.getCedula(), "123");
   assert.strictEqual(c.getNombre(), "Operador");
 }
 
-function obtenerOperadorPorIdTest() {
+async function obtenerOperadorPorIdTest() {
   const repo = new RepositorioOperador();
-  const c = repo.crearOperador("11", "P");
+  const c = await repo.crearOperador("11", "P");
 
-  const encontrado = repo.obtenerOperadorPorId(c.getId());
+  const encontrado = await repo.obtenerOperadorPorId(c.getId());
   assert.ok(encontrado);
   assert.strictEqual(encontrado?.getCedula(), "11");
-  assert.strictEqual(repo.obtenerOperadorPorId("999"), undefined);
+  assert.strictEqual(await repo.obtenerOperadorPorId("999"), undefined);
 }
 
-function obtenerTodosLosOperadoresTest() {
+async function obtenerTodosLosOperadoresTest() {
   const repo = new RepositorioOperador();
-  repo.crearOperador("1", "A");
-  repo.crearOperador("2", "B");
+  await repo.crearOperador("1", "A");
+  await repo.crearOperador("2", "B");
 
-  const list = repo.obtenerOperadores();
+  const list = await repo.obtenerOperadores();
   assert.strictEqual(list.length, 2);
   assert.ok(list.some(x => x.getCedula() === "1"));
 }
 
-function existeOperadorTest() {
+async function existeOperadorTest() {
   const repo = new RepositorioOperador();
-  const c = repo.crearOperador("9", "X");
+  const c = await repo.crearOperador("9", "X");
 
-  assert.strictEqual(repo.existe(c.getId()), true);
-  assert.strictEqual(repo.existe("999"), false);
+  assert.strictEqual(await repo.existe(c.getId()), true);
+  assert.strictEqual(await repo.existe("999"), false);
 }
 
-function actualizarOperadorTest() {
+async function actualizarOperadorTest() {
   const repo = new RepositorioOperador();
-  const c = repo.crearOperador("old", "Old");
+  const c = await repo.crearOperador("old", "Old");
 
-  const actualizado = repo.actualizarOperador(c.getId(), "new", "New");
+  const actualizado = await repo.actualizarOperador(c.getId(), "new", "New");
   assert.ok(actualizado);
   assert.strictEqual(actualizado?.getCedula(), "new");
   assert.strictEqual(actualizado?.getNombre(), "New");
 }
 
-function eliminarOperadorTest() {
+async function eliminarOperadorTest() {
   const repo = new RepositorioOperador();
-  const c = repo.crearOperador("del", "D");
+  const c = await repo.crearOperador("del", "D");
 
-  assert.strictEqual(repo.eliminarOperador(c.getId()), true);
-  assert.strictEqual(repo.existe(c.getId()), false);
-  assert.strictEqual(repo.obtenerOperadores().length, 0);
+  assert.strictEqual(await repo.eliminarOperador(c.getId()), true);
+  assert.strictEqual(await repo.existe(c.getId()), false);
+  assert.strictEqual((await repo.obtenerOperadores()).length, 0);
 }
 
 const pruebas = [
@@ -66,16 +72,21 @@ const pruebas = [
   ["Eliminar operador", eliminarOperadorTest],
 ] as const;
 
-function ejecutarPruebas() {
-  for (const [nombre, prueba] of pruebas) {
-    try {
-      prueba();
-      console.log(`✅ ${nombre}`);
-    } catch (error) {
-      console.error(`❌ ${nombre}`);
-      console.error(error);
-      process.exit(1);
+async function ejecutarPruebas() {
+  try {
+    for (const [nombre, prueba] of pruebas) {
+      try {
+        await limpiarBD();
+        await prueba();
+        console.log(`✅ ${nombre}`);
+      } catch (error) {
+        console.error(`❌ ${nombre}`);
+        console.error(error);
+        process.exit(1);
+      }
     }
+  } finally {
+    await pool.end();
   }
 }
 

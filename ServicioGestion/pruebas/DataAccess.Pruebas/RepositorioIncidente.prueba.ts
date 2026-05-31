@@ -1,9 +1,15 @@
 import assert from "assert";
+import pool from "../../src/Shared/Database/DatabaseConnection";
 import { RepositorioIncidente } from "../../src/ModuloReservas/DataAccess/RepositorioIncidente";
 
-function crearIncidenteTest() {
+async function limpiarBD() {
+  await pool.query('DELETE FROM incidente');
+  await pool.query('ALTER SEQUENCE incidente_id_seq RESTART WITH 1');
+}
+
+async function crearIncidenteTest() {
   const repo = new RepositorioIncidente();
-  const incidente = repo.crearIncidente("Desc", new Date("2026-01-01"), "R1", "Abierto", "Alta");
+  const incidente = await repo.crearIncidente("Desc", new Date("2026-01-01"), "R1", "Abierto", "Alta");
 
   assert.strictEqual(incidente.getId(), "1");
   assert.strictEqual(incidente.getDescripcion(), "Desc");
@@ -13,53 +19,53 @@ function crearIncidenteTest() {
   assert.strictEqual(incidente.getSeveridad(), "Alta");
 }
 
-function obtenerIncidentePorIdTest() {
+async function obtenerIncidentePorIdTest() {
   const repo = new RepositorioIncidente();
-  const incidente = repo.crearIncidente("X", new Date("2026-02-01"), "R2", "Cerrado", "Baja");
+  const incidente = await repo.crearIncidente("X", new Date("2026-02-01"), "R2", "Cerrado", "Baja");
 
-  const encontrado = repo.obtenerIncidentePorId(incidente.getId());
+  const encontrado = await repo.obtenerIncidentePorId(incidente.getId());
   assert.ok(encontrado);
   assert.strictEqual(encontrado?.getDescripcion(), "X");
-  assert.strictEqual(repo.obtenerIncidentePorId("999"), undefined);
+  assert.strictEqual(await repo.obtenerIncidentePorId("999"), undefined);
 }
 
-function obtenerTodosLosIncidentesTest() {
+async function obtenerTodosLosIncidentesTest() {
   const repo = new RepositorioIncidente();
-  repo.crearIncidente("A", new Date("2026-03-01"), "R3", "Abierto", "Media");
-  repo.crearIncidente("B", new Date("2026-03-02"), "R4", "Abierto", "Baja");
+  await repo.crearIncidente("A", new Date("2026-03-01"), "R3", "Abierto", "Media");
+  await repo.crearIncidente("B", new Date("2026-03-02"), "R4", "Abierto", "Baja");
 
-  const incidentes = repo.obtenerIncidentes();
+  const incidentes = await repo.obtenerIncidentes();
   assert.strictEqual(incidentes.length, 2);
   assert.ok(incidentes.some(i => i.getDescripcion() === "A"));
   assert.ok(incidentes.some(i => i.getDescripcion() === "B"));
 }
 
-function existeIncidenteTest() {
+async function existeIncidenteTest() {
   const repo = new RepositorioIncidente();
-  const incidente = repo.crearIncidente("E", new Date("2026-04-01"), "R5", "Abierto", "Alta");
+  const incidente = await repo.crearIncidente("E", new Date("2026-04-01"), "R5", "Abierto", "Alta");
 
-  assert.strictEqual(repo.existe(incidente.getId()), true);
-  assert.strictEqual(repo.existe("999"), false);
+  assert.strictEqual(await repo.existe(incidente.getId()), true);
+  assert.strictEqual(await repo.existe("999"), false);
 }
 
-function actualizarIncidenteTest() {
+async function actualizarIncidenteTest() {
   const repo = new RepositorioIncidente();
-  const incidente = repo.crearIncidente("Old", new Date("2026-05-01"), "R6", "Abierto", "Baja");
+  const incidente = await repo.crearIncidente("Old", new Date("2026-05-01"), "R6", "Abierto", "Baja");
 
-  const actualizado = repo.actualizarIncidente(incidente.getId(), "New", new Date("2026-05-02"), "R6", "Cerrado", "Alta");
+  const actualizado = await repo.actualizarIncidente(incidente.getId(), "New", new Date("2026-05-02"), "R6", "Cerrado", "Alta");
   assert.ok(actualizado);
   assert.strictEqual(actualizado?.getDescripcion(), "New");
   assert.strictEqual(actualizado?.getEstado(), "Cerrado");
   assert.strictEqual(actualizado?.getSeveridad(), "Alta");
 }
 
-function eliminarIncidenteTest() {
+async function eliminarIncidenteTest() {
   const repo = new RepositorioIncidente();
-  const incidente = repo.crearIncidente("ToDel", new Date("2026-07-01"), "R7", "Abierto", "Media");
+  const incidente = await repo.crearIncidente("ToDel", new Date("2026-07-01"), "R7", "Abierto", "Media");
 
-  assert.strictEqual(repo.eliminarIncidente(incidente.getId()), true);
-  assert.strictEqual(repo.existe(incidente.getId()), false);
-  assert.strictEqual(repo.obtenerIncidentes().length, 0);
+  assert.strictEqual(await repo.eliminarIncidente(incidente.getId()), true);
+  assert.strictEqual(await repo.existe(incidente.getId()), false);
+  assert.strictEqual((await repo.obtenerIncidentes()).length, 0);
 }
 
 const pruebas = [
@@ -71,16 +77,21 @@ const pruebas = [
   ["Eliminar incidente", eliminarIncidenteTest],
 ] as const;
 
-function ejecutarPruebas() {
-  for (const [nombre, prueba] of pruebas) {
-    try {
-      prueba();
-      console.log(`✅ ${nombre}`);
-    } catch (error) {
-      console.error(`❌ ${nombre}`);
-      console.error(error);
-      process.exit(1);
+async function ejecutarPruebas() {
+  try {
+    for (const [nombre, prueba] of pruebas) {
+      try {
+        await limpiarBD();
+        await prueba();
+        console.log(`✅ ${nombre}`);
+      } catch (error) {
+        console.error(`❌ ${nombre}`);
+        console.error(error);
+        process.exit(1);
+      }
     }
+  } finally {
+    await pool.end();
   }
 }
 

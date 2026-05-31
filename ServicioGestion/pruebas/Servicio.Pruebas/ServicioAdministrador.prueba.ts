@@ -41,20 +41,20 @@ class RepositorioAdministradorFalso {
   }
 }
 
-function crearAdministradorPrueba() {
+async function crearAdministradorPrueba() {
   const repositorio = new RepositorioAdministradorFalso();
   const servicio = new ServicioAdministrador(repositorio as any);
 
-  const administrador = servicio.crearAdministrador("123", "Juan");
+  const administrador = await servicio.crearAdministrador("123", "Juan");
   assert.strictEqual(administrador.cedula, "123");
 }
 
-function obtenerAdministradorPorIdPrueba() {
+async function obtenerAdministradorPorIdPrueba() {
   const repositorio = new RepositorioAdministradorFalso();
   const servicio = new ServicioAdministrador(repositorio as any);
   const administrador = repositorio.crearAdministrador("321", "Ana");
 
-  const encontrado = servicio.obtenerAdministradorPorId(administrador.getId());
+  const encontrado = await servicio.obtenerAdministradorPorId(administrador.getId());
   assert.ok(encontrado);
   assert.strictEqual(encontrado.cedula, "321");
 
@@ -67,12 +67,12 @@ function obtenerAdministradorPorIdPrueba() {
   assert.strictEqual(lanzo, true);
 }
 
-function actualizarAdministradorPrueba() {
+async function actualizarAdministradorPrueba() {
   const repositorio = new RepositorioAdministradorFalso();
   const servicio = new ServicioAdministrador(repositorio as any);
   const administrador = repositorio.crearAdministrador("111", "Old");
 
-  const actualizado = servicio.actualizarAdministrador(administrador.getId(), "222", "New");
+  const actualizado = await servicio.actualizarAdministrador(administrador.getId(), "222", "New");
   assert.ok(actualizado);
   assert.strictEqual(actualizado.cedula, "222");
 }

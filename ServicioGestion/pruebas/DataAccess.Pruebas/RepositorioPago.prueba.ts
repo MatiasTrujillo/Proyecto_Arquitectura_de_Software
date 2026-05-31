@@ -1,71 +1,71 @@
 import assert from "assert";
+import pool from "../../src/Shared/Database/DatabaseConnection";
 import { RepositorioPago } from "../../src/ModuloPagos/DataAccess/RepositorioPago";
 import { EstadoPago } from "../../src/ModuloPagos/Domain/EstadoPago";
 
-function crearPagoTest() {
-  const repo = new RepositorioPago();
-  const pago = repo.crearPago(new Date("2026-01-01"), 100, EstadoPago.Pendiente);
+async function limpiarBD() {
+  await pool.query('DELETE FROM pago');
+  await pool.query('ALTER SEQUENCE pago_id_seq RESTART WITH 1');
+}
 
-  // Verificar que al crear un pago, se guardan todos sus campos correctamente
+async function crearPagoTest() {
+  const repo = new RepositorioPago();
+  const pago = await repo.crearPago(new Date("2026-01-01"), 100, EstadoPago.Pendiente);
+
   assert.strictEqual(pago.getId(), 1);
   assert.strictEqual(pago.getMonto(), 100);
   assert.strictEqual(pago.getFecha().toISOString(), new Date("2026-01-01").toISOString());
   assert.strictEqual(pago.getEstado(), EstadoPago.Pendiente);
 }
 
-function obtenerPagoPorIdTest() {
+async function obtenerPagoPorIdTest() {
   const repo = new RepositorioPago();
-  const pago = repo.crearPago(new Date("2026-02-01"), 150, EstadoPago.Aceptado);
+  const pago = await repo.crearPago(new Date("2026-02-01"), 150, EstadoPago.Aceptado);
 
-  const encontrado = repo.obtenerPagoPorId(pago.getId());
+  const encontrado = await repo.obtenerPagoPorId(pago.getId());
   assert.ok(encontrado);
   assert.strictEqual(encontrado?.getMonto(), 150);
   assert.strictEqual(encontrado?.getEstado(), EstadoPago.Aceptado);
-  // Caso en que la id no exista, debe retornar undefined
-  assert.strictEqual(repo.obtenerPagoPorId(999), undefined);
+  assert.strictEqual(await repo.obtenerPagoPorId(999), undefined);
 }
 
-function obtenerTodosLosPagosTest() {
+async function obtenerTodosLosPagosTest() {
   const repo = new RepositorioPago();
-  repo.crearPago(new Date("2026-03-01"), 200, EstadoPago.Pendiente);
-  repo.crearPago(new Date("2026-03-02"), 300, EstadoPago.Rechazado);
+  await repo.crearPago(new Date("2026-03-01"), 200, EstadoPago.Pendiente);
+  await repo.crearPago(new Date("2026-03-02"), 300, EstadoPago.Rechazado);
 
-  const pagos = repo.obtenerPagos();
+  const pagos = await repo.obtenerPagos();
   assert.strictEqual(pagos.length, 2);
-  // Existe algún pago con monto 200 y otro con monto 300
   assert.ok(pagos.some(p => p.getMonto() === 200));
   assert.ok(pagos.some(p => p.getMonto() === 300));
 }
 
-function existePagoTest() {
+async function existePagoTest() {
   const repo = new RepositorioPago();
-  const pago = repo.crearPago(new Date("2026-04-01"), 400, EstadoPago.Pendiente);
+  const pago = await repo.crearPago(new Date("2026-04-01"), 400, EstadoPago.Pendiente);
 
-  assert.strictEqual(repo.existe(pago.getId()), true);
-  assert.strictEqual(repo.existe(999), false);
+  assert.strictEqual(await repo.existe(pago.getId()), true);
+  assert.strictEqual(await repo.existe(999), false);
 }
 
-function actualizarPagoTest() {
+async function actualizarPagoTest() {
   const repo = new RepositorioPago();
-  const pago = repo.crearPago(new Date("2026-05-01"), 500, EstadoPago.Pendiente);
+  const pago = await repo.crearPago(new Date("2026-05-01"), 500, EstadoPago.Pendiente);
 
-  const actualizado = repo.actualizarPago(pago.getId(), new Date("2026-05-02"), 550, EstadoPago.Aceptado);
-  // De correcto
+  const actualizado = await repo.actualizarPago(pago.getId(), new Date("2026-05-02"), 550, EstadoPago.Aceptado);
   assert.ok(actualizado);
-  // Se actualicen correctamente todos los atributos
   assert.strictEqual(actualizado?.getMonto(), 550);
   assert.strictEqual(actualizado?.getEstado(), EstadoPago.Aceptado);
   assert.strictEqual(actualizado?.getFecha().toISOString(), new Date("2026-05-02").toISOString());
 }
 
-function eliminarPagoTest() {
+async function eliminarPagoTest() {
   const repo = new RepositorioPago();
-  const pago = repo.crearPago(new Date("2026-07-01"), 700, EstadoPago.Pendiente);
+  const pago = await repo.crearPago(new Date("2026-07-01"), 700, EstadoPago.Pendiente);
 
-  assert.strictEqual(repo.eliminarPago(pago.getId()), true);
-  // Verificamos que el pago ya no exista
-  assert.strictEqual(repo.existe(pago.getId()), false);
-  assert.strictEqual(repo.obtenerPagos().length, 0);
+  assert.strictEqual(await repo.eliminarPago(pago.getId()), true);
+  assert.strictEqual(await repo.existe(pago.getId()), false);
+  assert.strictEqual((await repo.obtenerPagos()).length, 0);
 }
 
 const pruebas = [
@@ -77,19 +77,23 @@ const pruebas = [
   ["Eliminar pago", eliminarPagoTest],
 ] as const;
 
-function ejecutarPruebas() {
-  for (const [nombre, prueba] of pruebas) {
-    try {
-      prueba();
-      console.log(`✅ ${nombre}`);
-    } catch (error) { // Si alguna prueba falla, se muestra el error y se detiene la ejecución
-      console.error(`❌ ${nombre}`);
-      console.error(error);
-      process.exit(1);
+async function ejecutarPruebas() {
+  try {
+    for (const [nombre, prueba] of pruebas) {
+      try {
+        await limpiarBD();
+        await prueba();
+        console.log(`✅ ${nombre}`);
+      } catch (error) {
+        console.error(`❌ ${nombre}`);
+        console.error(error);
+        process.exit(1);
+      }
     }
+  } finally {
+    await pool.end();
   }
 }
-
 
 if (require.main === module) {
   ejecutarPruebas();

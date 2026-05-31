@@ -8,6 +8,7 @@ import { RepositorioAdministrador } from "../../src/ModuloUsuarios/DataAccess/Re
  */
 async function limpiarBD() {
   await pool.query('DELETE FROM administrador');
+  await pool.query('ALTER SEQUENCE administrador_id_seq RESTART WITH 1');
 }
 
 async function crearAdministradorTest() {
