@@ -45,7 +45,7 @@ function crearDispositivoPrueba() {
   const servicio = new ServicioDispositivoGPS(repositorio as any);
 
   const dispositivo = servicio.crearDispositivoGPS();
-  assert.strictEqual(dispositivo.getId(), 1);
+  assert.strictEqual(dispositivo.toEntity().getId(), 1);
 }
 
 function obtenerDispositivoPorIdPrueba() {
@@ -72,7 +72,7 @@ function actualizarDispositivoPrueba() {
 
   const actualizado = servicio.actualizarDispositivoGPS(dispositivo.getId());
   assert.ok(actualizado);
-  assert.strictEqual(actualizado.getId(), dispositivo.getId());
+  assert.strictEqual(actualizado.toEntity().getId(), dispositivo.getId());
 }
 
 function eliminarDispositivoPrueba() {
