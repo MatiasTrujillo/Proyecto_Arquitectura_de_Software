@@ -1,10 +1,10 @@
 import { DispositivoGPS } from "../Domain/DispositivoGPS";
 
 export interface IRepositorioDispositivoGPS {
-  crearDispositivoGPS(): DispositivoGPS;
-  obtenerDispositivosGPS(): DispositivoGPS[];
-  obtenerDispositivoGPSPorId(id: number): DispositivoGPS | undefined;
-  actualizarDispositivoGPS(id: number): DispositivoGPS | undefined;
-  eliminarDispositivoGPS(id: number): boolean;
-  existe(id: number): boolean;
+  crearDispositivoGPS(ubicacion: string): Promise<DispositivoGPS>;
+  obtenerDispositivosGPS(): Promise<DispositivoGPS[]>;
+  obtenerDispositivoGPSPorId(id: number): Promise<DispositivoGPS | undefined>;
+  actualizarDispositivoGPS(id: number, ubicacion: string): Promise<DispositivoGPS | undefined>;
+  eliminarDispositivoGPS(id: number): Promise<boolean>;
+  existe(id: number): Promise<boolean>;
 }

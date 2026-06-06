@@ -1,55 +1,56 @@
 import assert from "assert";
 import { RepositorioDispositivoGPS } from "../../src/ModuloVehiculos/DataAccess/RepositorioDispositivoGPS";
 
-function crearDispositivoTest() {
+async function crearDispositivoTest() {
   const repo = new RepositorioDispositivoGPS();
-  const d = repo.crearDispositivoGPS();
+  const d = await repo.crearDispositivoGPS("Ubicación inicial");
 
   assert.strictEqual(d.getId(), 1);
 }
 
-function obtenerDispositivoPorIdTest() {
+async function obtenerDispositivoPorIdTest() {
   const repo = new RepositorioDispositivoGPS();
-  const d = repo.crearDispositivoGPS();
+  const d = await repo.crearDispositivoGPS("Ubicación A");
 
-  const encontrado = repo.obtenerDispositivoGPSPorId(d.getId());
+  const encontrado = await repo.obtenerDispositivoGPSPorId(d.getId());
   assert.ok(encontrado);
-  assert.strictEqual(repo.obtenerDispositivoGPSPorId(999), undefined);
+  assert.strictEqual(await repo.obtenerDispositivoGPSPorId(999), undefined);
 }
 
-function obtenerTodosLosDispositivosTest() {
+async function obtenerTodosLosDispositivosTest() {
   const repo = new RepositorioDispositivoGPS();
-  repo.crearDispositivoGPS();
-  repo.crearDispositivoGPS();
+  await repo.crearDispositivoGPS("Ubicación 1");
+  await repo.crearDispositivoGPS("Ubicación 2");
 
-  const list = repo.obtenerDispositivosGPS();
+  const list = await repo.obtenerDispositivosGPS();
   assert.strictEqual(list.length, 2);
 }
 
-function existeDispositivoTest() {
+async function existeDispositivoTest() {
   const repo = new RepositorioDispositivoGPS();
-  const d = repo.crearDispositivoGPS();
+  const d = await repo.crearDispositivoGPS("Ubicación test");
 
-  assert.strictEqual(repo.existe(d.getId()), true);
-  assert.strictEqual(repo.existe(999), false);
+  assert.strictEqual(await repo.existe(d.getId()), true);
+  assert.strictEqual(await repo.existe(999), false);
 }
 
-function actualizarDispositivoTest() {
+async function actualizarDispositivoTest() {
   const repo = new RepositorioDispositivoGPS();
-  const d = repo.crearDispositivoGPS();
+  const d = await repo.crearDispositivoGPS("Ubicación original");
 
-  const actualizado = repo.actualizarDispositivoGPS(d.getId());
+  const actualizado = await repo.actualizarDispositivoGPS(d.getId(), "Ubicación actualizada");
   assert.ok(actualizado);
   assert.strictEqual(actualizado?.getId(), d.getId());
+  assert.strictEqual(actualizado?.getUbicacion(), "Ubicación actualizada");
 }
 
-function eliminarDispositivoTest() {
+async function eliminarDispositivoTest() {
   const repo = new RepositorioDispositivoGPS();
-  const d = repo.crearDispositivoGPS();
+  const d = await repo.crearDispositivoGPS("Ubicación a eliminar");
 
-  assert.strictEqual(repo.eliminarDispositivoGPS(d.getId()), true);
-  assert.strictEqual(repo.existe(d.getId()), false);
-  assert.strictEqual(repo.obtenerDispositivosGPS().length, 0);
+  assert.strictEqual(await repo.eliminarDispositivoGPS(d.getId()), true);
+  assert.strictEqual(await repo.existe(d.getId()), false);
+  assert.strictEqual((await repo.obtenerDispositivosGPS()).length, 0);
 }
 
 const pruebas = [
@@ -61,10 +62,10 @@ const pruebas = [
   ["Eliminar dispositivo", eliminarDispositivoTest],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);
@@ -75,5 +76,8 @@ function ejecutarPruebas() {
 }
 
 if (require.main === module) {
-  ejecutarPruebas();
+  ejecutarPruebas().catch(error => {
+    console.error("❌ Error en las pruebas:", error);
+    process.exit(1);
+  });
 }
