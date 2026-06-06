@@ -1,9 +1,9 @@
 import { DispositivoGPSDTO } from "../DTOs/DispositivoGPSDTO";
 
 export interface IServicioDispositivoGPS {
-  crearDispositivoGPS(): DispositivoGPSDTO;
-  obtenerDispositivosGPS(): DispositivoGPSDTO[];
-  obtenerDispositivoGPSPorId(id: number): DispositivoGPSDTO;
-  actualizarDispositivoGPS(id: number): DispositivoGPSDTO;
-  eliminarDispositivoGPS(id: number): void;
+  crearDispositivoGPS(ubicacion: string): Promise<DispositivoGPSDTO>;
+  obtenerDispositivosGPS(): Promise<DispositivoGPSDTO[]>;
+  obtenerDispositivoGPSPorId(id: number): Promise<DispositivoGPSDTO>;
+  actualizarDispositivoGPS(id: number, ubicacion: string): Promise<DispositivoGPSDTO>;
+  eliminarDispositivoGPS(id: number): Promise<void>;
 }

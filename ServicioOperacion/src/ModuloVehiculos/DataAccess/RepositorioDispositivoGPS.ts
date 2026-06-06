@@ -1,46 +1,46 @@
+import pool from '../../Shared/Database/DatabaseConnection';
 import { DispositivoGPS } from "../Domain/DispositivoGPS";
 import { IRepositorioDispositivoGPS } from "../IDataAccess/IRepositorioDispositivoGPS";
 
 export class RepositorioDispositivoGPS implements IRepositorioDispositivoGPS {
-  private dispositivos: DispositivoGPS[] = [];
-  private proximoId: number = 1;
-
-  crearDispositivoGPS(): DispositivoGPS {
-    const nuevoDispositivo = new DispositivoGPS(this.proximoId++);
-    this.dispositivos.push(nuevoDispositivo);
-    return nuevoDispositivo;
+  async crearDispositivoGPS(ubicacion: string): Promise<DispositivoGPS> {
+    const res = await pool.query(
+      'INSERT INTO dispositivo_gps (ubicacion) VALUES ($1) RETURNING id, ubicacion',
+      [ubicacion]
+    );
+    const r = res.rows[0];
+    return new DispositivoGPS(r.id, r.ubicacion);
   }
 
-  obtenerDispositivosGPS(): DispositivoGPS[] {
-    return this.dispositivos;
+  async obtenerDispositivosGPS(): Promise<DispositivoGPS[]> {
+    const res = await pool.query('SELECT id, ubicacion FROM dispositivo_gps');
+    return res.rows.map((r: any) => new DispositivoGPS(r.id, r.ubicacion));
   }
 
-  obtenerDispositivoGPSPorId(id: number): DispositivoGPS | undefined {
-    return this.dispositivos.find(dispositivo => dispositivo.getId() === id);
+  async obtenerDispositivoGPSPorId(id: number): Promise<DispositivoGPS | undefined> {
+    const res = await pool.query('SELECT id, ubicacion FROM dispositivo_gps WHERE id = $1', [id]);
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new DispositivoGPS(r.id, r.ubicacion);
   }
 
-  actualizarDispositivoGPS(id: number): DispositivoGPS | undefined {
-    let dispositivoActualizado: DispositivoGPS | undefined;
-
-    this.dispositivos = this.dispositivos.map(dispositivo => {
-      if (dispositivo.getId() !== id) {
-        return dispositivo;
-      }
-
-      dispositivoActualizado = new DispositivoGPS(id);
-      return dispositivoActualizado;
-    });
-
-    return dispositivoActualizado;
+  async actualizarDispositivoGPS(id: number, ubicacion: string): Promise<DispositivoGPS | undefined> {
+    const res = await pool.query(
+      'UPDATE dispositivo_gps SET ubicacion=$1 WHERE id=$2 RETURNING id, ubicacion',
+      [ubicacion, id]
+    );
+    if (!res.rows[0]) return undefined;
+    const r = res.rows[0];
+    return new DispositivoGPS(r.id, r.ubicacion);
   }
 
-  eliminarDispositivoGPS(id: number): boolean {
-    const originalLength = this.dispositivos.length;
-    this.dispositivos = this.dispositivos.filter(dispositivo => dispositivo.getId() !== id);
-    return this.dispositivos.length !== originalLength;
+  async eliminarDispositivoGPS(id: number): Promise<boolean> {
+    const res = await pool.query('DELETE FROM dispositivo_gps WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 
-  existe(id: number): boolean {
-    return this.dispositivos.some(dispositivo => dispositivo.getId() === id);
+  async existe(id: number): Promise<boolean> {
+    const res = await pool.query('SELECT 1 FROM dispositivo_gps WHERE id = $1', [id]);
+    return res.rowCount! > 0;
   }
 }

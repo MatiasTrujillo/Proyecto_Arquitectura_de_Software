@@ -1,57 +1,102 @@
 import assert from "assert";
 import { ControladorDispositivoGPS } from "../../src/ModuloVehiculos/WebApi/Controlador/ControladorDispositivoGPS";
+import { DispositivoGPSDTO } from "../../src/ModuloVehiculos/DTOs/DispositivoGPSDTO";
 import { crearRequestMock, crearResponseMock } from "./MockExpress";
 
-function crearDispositivoGPSPrueba() {
-  const controlador = new ControladorDispositivoGPS();
-  const req = crearRequestMock({}, { dispositivoId: "d1" });
-  const res = crearResponseMock();
+class ServicioDispositivoGPSFalso {
+  private data: DispositivoGPSDTO[] = [];
+  private id = 1;
 
-  controlador.crearDispositivoGPS(req as any, res as any);
+  async crearDispositivoGPS(ubicacion: string): Promise<DispositivoGPSDTO> {
+    const dispositivo = new DispositivoGPSDTO(this.id++, ubicacion);
+    this.data.push(dispositivo);
+    return dispositivo;
+  }
 
-  assert.strictEqual(res.statusCode, 201);
-  assert.strictEqual(res.body.mensaje, "DispositivoGPS creado");
+  async obtenerDispositivosGPS(): Promise<DispositivoGPSDTO[]> {
+    return this.data;
+  }
+
+  async obtenerDispositivoGPSPorId(id: number): Promise<DispositivoGPSDTO> {
+    const encontrado = this.data.find((d) => d.toEntity().getId() === id);
+    if (!encontrado) throw new Error("DispositivoGPS no encontrado");
+    return encontrado;
+  }
+
+  async actualizarDispositivoGPS(id: number, ubicacion: string): Promise<DispositivoGPSDTO> {
+    const index = this.data.findIndex((d) => d.toEntity().getId() === id);
+    if (index === -1) throw new Error("DispositivoGPS no encontrado");
+    const actualizado = new DispositivoGPSDTO(id, ubicacion);
+    this.data[index] = actualizado;
+    return actualizado;
+  }
+
+  async eliminarDispositivoGPS(id: number): Promise<void> {
+    const index = this.data.findIndex((d) => d.toEntity().getId() === id);
+    if (index === -1) throw new Error("DispositivoGPS no encontrado");
+    this.data.splice(index, 1);
+  }
 }
 
-function obtenerDispositivoGPSPrueba() {
-  const controlador = new ControladorDispositivoGPS();
+async function crearDispositivoGPSPrueba() {
+  const servicio = new ServicioDispositivoGPSFalso();
+  const controlador = new ControladorDispositivoGPS(servicio as any);
+  const req = crearRequestMock({}, { ubicacion: "Ubicación A" });
+  const res = crearResponseMock();
+
+  await controlador.crearDispositivoGPS(req as any, res as any);
+
+  assert.strictEqual(res.statusCode, 201);
+  assert.strictEqual(res.body.data.toEntity().getUbicacion(), "Ubicación A");
+}
+
+async function obtenerDispositivoGPSPrueba() {
+  const servicio = new ServicioDispositivoGPSFalso();
+  await servicio.crearDispositivoGPS("Ubicación B");
+  const controlador = new ControladorDispositivoGPS(servicio as any);
   const req = crearRequestMock();
   const res = crearResponseMock();
 
-  controlador.obtenerDispositivoGPS(req as any, res as any);
+  await controlador.obtenerDispositivoGPS(req as any, res as any);
 
   assert.strictEqual(res.statusCode, 200);
-  assert.deepStrictEqual(res.body.data, []);
+  assert.strictEqual(res.body.data.length, 1);
 }
 
-function obtenerDispositivoGPSPorIdPrueba() {
-  const controlador = new ControladorDispositivoGPS();
-  const req = crearRequestMock({ id: "1" }, {});
+async function obtenerDispositivoGPSPorIdPrueba() {
+  const servicio = new ServicioDispositivoGPSFalso();
+  const dispositivo = await servicio.crearDispositivoGPS("Ubicación C");
+  const controlador = new ControladorDispositivoGPS(servicio as any);
+  const req = crearRequestMock({ id: dispositivo.toEntity().getId().toString() }, {});
   const res = crearResponseMock();
 
-  controlador.obtenerDispositivoGPSPorId(req as any, res as any);
+  await controlador.obtenerDispositivoGPSPorId(req as any, res as any);
 
   assert.strictEqual(res.statusCode, 200);
-  assert.deepStrictEqual(res.body.data, {});
+  assert.strictEqual(res.body.data.toEntity().getUbicacion(), "Ubicación C");
 }
 
-function actualizarDispositivoGPSPrueba() {
-  const controlador = new ControladorDispositivoGPS();
-  const req = crearRequestMock({ id: "1" }, { ubicacion: "x" });
+async function actualizarDispositivoGPSPrueba() {
+  const servicio = new ServicioDispositivoGPSFalso();
+  const dispositivo = await servicio.crearDispositivoGPS("Ubicación original");
+  const controlador = new ControladorDispositivoGPS(servicio as any);
+  const req = crearRequestMock({ id: dispositivo.toEntity().getId().toString() }, { ubicacion: "Ubicación actualizada" });
   const res = crearResponseMock();
 
-  controlador.actualizarDispositivoGPS(req as any, res as any);
+  await controlador.actualizarDispositivoGPS(req as any, res as any);
 
   assert.strictEqual(res.statusCode, 200);
-  assert.strictEqual(res.body.mensaje, "DispositivoGPS actualizado");
+  assert.strictEqual(res.body.data.toEntity().getUbicacion(), "Ubicación actualizada");
 }
 
-function eliminarDispositivoGPSPrueba() {
-  const controlador = new ControladorDispositivoGPS();
-  const req = crearRequestMock({ id: "1" }, {});
+async function eliminarDispositivoGPSPrueba() {
+  const servicio = new ServicioDispositivoGPSFalso();
+  const dispositivo = await servicio.crearDispositivoGPS("Ubicación a eliminar");
+  const controlador = new ControladorDispositivoGPS(servicio as any);
+  const req = crearRequestMock({ id: dispositivo.toEntity().getId().toString() }, {});
   const res = crearResponseMock();
 
-  controlador.eliminarDispositivoGPS(req as any, res as any);
+  await controlador.eliminarDispositivoGPS(req as any, res as any);
 
   assert.strictEqual(res.statusCode, 204);
 }
@@ -64,10 +109,10 @@ const pruebas = [
   ["Eliminar dispositivo GPS", eliminarDispositivoGPSPrueba],
 ] as const;
 
-function ejecutarPruebas() {
+async function ejecutarPruebas() {
   for (const [nombre, prueba] of pruebas) {
     try {
-      prueba();
+      await prueba();
       console.log(`✅ ${nombre}`);
     } catch (error) {
       console.error(`❌ ${nombre}`);
@@ -78,5 +123,8 @@ function ejecutarPruebas() {
 }
 
 if (require.main === module) {
-  ejecutarPruebas();
+  ejecutarPruebas().catch(error => {
+    console.error("❌ Error en las pruebas:", error);
+    process.exit(1);
+  });
 }
