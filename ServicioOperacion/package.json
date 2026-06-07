@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "db:migrate": "ts-node src/Shared/Database/MigracionesRunner.ts"
+  },
   "dependencies": {
     "dotenv": "^17.4.2",
     "express": "^4.18.2",

@@ -1,5 +1,11 @@
 import assert from "assert";
+import pool from "../../src/Shared/Database/DatabaseConnection";
 import { RepositorioVehiculo } from "../../src/ModuloVehiculos/DataAccess/RepositorioVehiculo";
+
+async function limpiarBD() {
+  await pool.query('DELETE FROM vehiculo');
+  await pool.query('ALTER SEQUENCE vehiculo_id_seq RESTART WITH 1');
+}
 
 async function crearVehiculoTest() {
   const repo = new RepositorioVehiculo();
@@ -61,21 +67,27 @@ const pruebas = [
 ] as const;
 
 async function ejecutarPruebas() {
-  for (const [nombre, prueba] of pruebas) {
-    try {
-      await prueba();
-      console.log(`✅ ${nombre}`);
-    } catch (error) {
-      console.error(`❌ ${nombre}`);
-      console.error(error);
-      process.exit(1);
+  try {
+    console.log('🧪 Iniciando pruebas del RepositorioVehiculo...\n');
+
+    for (const [nombre, prueba] of pruebas) {
+      try {
+        await limpiarBD();
+        await prueba();
+        console.log(`✅ ${nombre}`);
+      } catch (error) {
+        console.error(`❌ ${nombre}`);
+        console.error(error);
+        process.exit(1);
+      }
     }
+
+    console.log('\n✨ Todas las pruebas pasaron correctamente');
+  } finally {
+    await pool.end();
   }
 }
 
 if (require.main === module) {
-  ejecutarPruebas().catch(error => {
-    console.error("❌ Error en las pruebas:", error);
-    process.exit(1);
-  });
+  ejecutarPruebas();
 }

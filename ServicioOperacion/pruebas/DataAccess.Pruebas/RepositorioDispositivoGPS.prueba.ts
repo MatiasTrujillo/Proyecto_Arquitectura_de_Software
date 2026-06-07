@@ -1,5 +1,11 @@
 import assert from "assert";
+import pool from "../../src/Shared/Database/DatabaseConnection";
 import { RepositorioDispositivoGPS } from "../../src/ModuloVehiculos/DataAccess/RepositorioDispositivoGPS";
+
+async function limpiarBD() {
+  await pool.query('DELETE FROM dispositivo_gps');
+  await pool.query('ALTER SEQUENCE dispositivo_gps_id_seq RESTART WITH 1');
+}
 
 async function crearDispositivoTest() {
   const repo = new RepositorioDispositivoGPS();
@@ -63,21 +69,27 @@ const pruebas = [
 ] as const;
 
 async function ejecutarPruebas() {
-  for (const [nombre, prueba] of pruebas) {
-    try {
-      await prueba();
-      console.log(`✅ ${nombre}`);
-    } catch (error) {
-      console.error(`❌ ${nombre}`);
-      console.error(error);
-      process.exit(1);
+  try {
+    console.log('🧪 Iniciando pruebas del RepositorioDispositivoGPS...\n');
+
+    for (const [nombre, prueba] of pruebas) {
+      try {
+        await limpiarBD();
+        await prueba();
+        console.log(`✅ ${nombre}`);
+      } catch (error) {
+        console.error(`❌ ${nombre}`);
+        console.error(error);
+        process.exit(1);
+      }
     }
+
+    console.log('\n✨ Todas las pruebas pasaron correctamente');
+  } finally {
+    await pool.end();
   }
 }
 
 if (require.main === module) {
-  ejecutarPruebas().catch(error => {
-    console.error("❌ Error en las pruebas:", error);
-    process.exit(1);
-  });
+  ejecutarPruebas();
 }
