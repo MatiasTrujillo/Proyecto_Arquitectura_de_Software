@@ -10,50 +10,50 @@ export class ControladorClientePersonal {
     this.servicioClientePersonal = servicioClientePersonal ?? new ServicioClientePersonal(new RepositorioClientePersonal());
   }
 
-  crearClientePersonal(req: Request, res: Response): void {
+  async crearClientePersonal(req: Request, res: Response): Promise<void> {
     try {
       const { cedula, nombre } = req.body;
-      const clienteCreado = this.servicioClientePersonal.crearClientePersonal(cedula, nombre);
+      const clienteCreado = await this.servicioClientePersonal.crearClientePersonal(cedula, nombre);
       res.status(201).json({ data: clienteCreado });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  obtenerClientePersonal(req: Request, res: Response): void {
+  async obtenerClientePersonal(req: Request, res: Response): Promise<void> {
     try {
-      const clientes = this.servicioClientePersonal.obtenerClientePersonales();
+      const clientes = await this.servicioClientePersonal.obtenerClientePersonales();
       res.status(200).json({ data: clientes });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  obtenerClientePersonalPorId(req: Request, res: Response): void {
+  async obtenerClientePersonalPorId(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const cliente = this.servicioClientePersonal.obtenerClientePersonalPorId(id as string);
+      const cliente = await this.servicioClientePersonal.obtenerClientePersonalPorId(id as string);
       res.status(200).json({ data: cliente });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  actualizarClientePersonal(req: Request, res: Response): void {
+  async actualizarClientePersonal(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
-      const clienteActualizado = this.servicioClientePersonal.actualizarClientePersonal(id as string, cedula, nombre);
+      const clienteActualizado = await this.servicioClientePersonal.actualizarClientePersonal(id as string, cedula, nombre);
       res.status(200).json({ data: clienteActualizado });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  eliminarClientePersonal(req: Request, res: Response): void {
+  async eliminarClientePersonal(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      this.servicioClientePersonal.eliminarClientePersonal(id as string);
+      await this.servicioClientePersonal.eliminarClientePersonal(id as string);
       res.status(204).send();
     } catch (error) {
       this.manejarError(res, error);

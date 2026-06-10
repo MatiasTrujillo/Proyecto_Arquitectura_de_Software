@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes Empresariales - ServicioGestion</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        h2 { color: #444; }
+        .nav { margin-bottom: 20px; }
+        a { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        .formulario { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ddd; }
+        .accion { background: #f0f4ff; padding: 15px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ccd6f6; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0052a3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .btn-eliminar { padding: 5px 10px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .btn-eliminar:hover { background: #990000; }
+        .btn-editar { padding: 5px 10px; background: #e07b00; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-editar:hover { background: #b56200; }
+        .btn-cancelar { padding: 8px 15px; background: #888; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; margin-left: 8px; }
+        .btn-cancelar:hover { background: #666; }
+        .error { color: red; margin-top: 10px; }
+        .exito { color: green; margin-top: 10px; }
+        .oculto { display: none; }
+        .id-cell { font-family: monospace; font-size: 0.82em; color: #555; }
+        .resultado { background: #e8e8e8; padding: 10px; border-radius: 4px; margin-top: 10px; font-family: monospace; white-space: pre-wrap; font-size: 0.88em; }
+    </style>
+</head>
+<body>
+    <div class="nav"><a href="/">← Volver</a></div>
+    <h1>Gestión de Clientes Empresariales</h1>
+
+    <div class="formulario" id="formularioCrear">
+        <h2>Crear Cliente Empresarial</h2>
+        <label>Cédula / RUT</label>
+        <input type="text" id="cedula" placeholder="Ej: 30123456">
+        <label>Nombre / Razón Social</label>
+        <input type="text" id="nombre" placeholder="Ej: Empresa S.A.">
+        <br>
+        <button onclick="crearCliente()">Crear</button>
+        <div id="mensajeCrear"></div>
+    </div>
+
+    <div class="formulario oculto" id="formularioEditar">
+        <h2>Editar Cliente <span id="tituloIdEditar"></span></h2>
+        <input type="hidden" id="editarId">
+        <label>Cédula / RUT</label>
+        <input type="text" id="editarCedula">
+        <label>Nombre / Razón Social</label>
+        <input type="text" id="editarNombre">
+        <br>
+        <button onclick="guardarEdicion()">Guardar cambios</button>
+        <button class="btn-cancelar" onclick="cancelarEdicion()">Cancelar</button>
+        <div id="mensajeEditar"></div>
+    </div>
+
+    <h2>Listado</h2>
+    <table id="tablaClientes">
+        <thead>
+            <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Rol</th><th>Acción</th></tr>
+        </thead>
+        <tbody><tr><td colspan="5">Cargando...</td></tr></tbody>
+    </table>
+
+    <h2 style="margin-top:30px">Acciones</h2>
+
+    <div class="accion">
+        <strong>Calcular Traslado</strong>
+        <label>Origen</label>
+        <input type="text" id="calcOrigen" placeholder="Ej: Av. Corrientes 100">
+        <label>Destino</label>
+        <input type="text" id="calcDestino" placeholder="Ej: Av. 9 de Julio 500">
+        <button onclick="calcularTraslado()">Calcular</button>
+        <div id="resultadoCalculo" class="resultado oculto"></div>
+    </div>
+
+    <div class="accion">
+        <strong>Realizar Reserva</strong>
+        <button onclick="realizarReserva()">Realizar</button>
+        <div id="resultadoReserva" class="resultado oculto"></div>
+    </div>
+
+    <div class="accion">
+        <strong>Asociar Producto</strong>
+        <label>ID del Cliente</label>
+        <input type="text" id="asociarClienteId" placeholder="ID del cliente empresarial">
+        <label>ID del Producto</label>
+        <input type="text" id="asociarProductoId" placeholder="ID del producto">
+        <button onclick="asociarProducto()">Asociar</button>
+        <div id="resultadoAsociar" class="resultado oculto"></div>
+    </div>
+
+    <div class="accion">
+        <strong>Registrar Origen Frecuente</strong>
+        <label>ID del Cliente</label>
+        <input type="text" id="origenClienteId" placeholder="ID del cliente">
+        <label>Origen</label>
+        <input type="text" id="origenDireccion" placeholder="Ej: Av. Santa Fe 1000">
+        <button onclick="registrarOrigenFrecuente()">Registrar</button>
+        <div id="resultadoOrigen" class="resultado oculto"></div>
+    </div>
+
+    <div class="accion">
+        <strong>Registrar Destino Frecuente</strong>
+        <label>ID del Cliente</label>
+        <input type="text" id="destinoClienteId" placeholder="ID del cliente">
+        <label>Destino</label>
+        <input type="text" id="destinoDireccion" placeholder="Ej: Av. Cabildo 200">
+        <button onclick="registrarDestinoFrecuente()">Registrar</button>
+        <div id="resultadoDestino" class="resultado oculto"></div>
+    </div>
+
+    <div class="accion">
+        <strong>Ver Reservas de un Cliente</strong>
+        <label>ID del Cliente</label>
+        <input type="text" id="reservasClienteId" placeholder="ID del cliente">
+        <button onclick="verReservas()">Consultar</button>
+        <div id="resultadoReservas" class="resultado oculto"></div>
+    </div>
+
+    <script>
+        let items = [];
+
+        async function cargarClientes() {
+            try {
+                const res = await fetch('/api/clientes-empresariales');
+                const json = await res.json();
+                items = json.data || [];
+                const tbody = document.querySelector('#tablaClientes tbody');
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">No hay clientes empresariales</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = items.map((item, i) => `
+                    <tr>
+                        <td class="id-cell">${item.id}</td>
+                        <td>${item.cedula}</td>
+                        <td>${item.nombre}</td>
+                        <td>${item.rol}</td>
+                        <td>
+                            <button class="btn-editar" onclick="abrirEdicion(${i})">Editar</button>
+                            <button class="btn-eliminar" onclick="eliminarCliente('${item.id}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                document.querySelector('#tablaClientes tbody').innerHTML =
+                    `<tr><td colspan="5" class="error">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function crearCliente() {
+            const cedula = document.getElementById('cedula').value;
+            const nombre = document.getElementById('nombre').value;
+            if (!cedula || !nombre) {
+                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos</div>';
+                return;
+            }
+            try {
+                const res = await fetch('/api/clientes-empresariales', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cedula, nombre })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Cliente creado</div>';
+                    document.getElementById('cedula').value = '';
+                    document.getElementById('nombre').value = '';
+                    cargarClientes();
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        function abrirEdicion(indice) {
+            const item = items[indice];
+            document.getElementById('formularioEditar').classList.remove('oculto');
+            document.getElementById('formularioCrear').classList.add('oculto');
+            document.getElementById('tituloIdEditar').textContent = `#${item.id}`;
+            document.getElementById('editarId').value = item.id;
+            document.getElementById('editarCedula').value = item.cedula;
+            document.getElementById('editarNombre').value = item.nombre;
+            document.getElementById('mensajeEditar').innerHTML = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicion() {
+            document.getElementById('formularioEditar').classList.add('oculto');
+            document.getElementById('formularioCrear').classList.remove('oculto');
+        }
+
+        async function guardarEdicion() {
+            const id = document.getElementById('editarId').value;
+            const cedula = document.getElementById('editarCedula').value;
+            const nombre = document.getElementById('editarNombre').value;
+            if (!cedula || !nombre) {
+                document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá todos los campos</div>';
+                return;
+            }
+            try {
+                const res = await fetch(`/api/clientes-empresariales/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cedula, nombre })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeEditar').innerHTML = '<div class="exito">Cliente actualizado</div>';
+                    cargarClientes();
+                    setTimeout(cancelarEdicion, 1000);
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        async function eliminarCliente(id) {
+            if (!confirm('¿Eliminar este cliente?')) return;
+            try {
+                const res = await fetch(`/api/clientes-empresariales/${id}`, { method: 'DELETE' });
+                if (res.ok) cargarClientes();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function calcularTraslado() {
+            const origen = document.getElementById('calcOrigen').value;
+            const destino = document.getElementById('calcDestino').value;
+            if (!origen || !destino) return;
+            try {
+                const res = await fetch('/api/clientes-empresariales/calcular-traslado', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ origen, destino })
+                });
+                const json = await res.json();
+                const el = document.getElementById('resultadoCalculo');
+                el.classList.remove('oculto');
+                el.textContent = JSON.stringify(json, null, 2);
+            } catch (err) {
+                const el = document.getElementById('resultadoCalculo');
+                el.classList.remove('oculto');
+                el.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function realizarReserva() {
+            try {
+                const res = await fetch('/api/clientes-empresariales/realizar-reserva', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const json = await res.json();
+                const el = document.getElementById('resultadoReserva');
+                el.classList.remove('oculto');
+                el.textContent = JSON.stringify(json, null, 2);
+            } catch (err) {
+                const el = document.getElementById('resultadoReserva');
+                el.classList.remove('oculto');
+                el.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function asociarProducto() {
+            const clienteId = document.getElementById('asociarClienteId').value;
+            const productoId = document.getElementById('asociarProductoId').value;
+            if (!clienteId || !productoId) return;
+            try {
+                const res = await fetch('/api/clientes-empresariales/asociar-producto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clienteId, productoId })
+                });
+                const json = await res.json();
+                const el = document.getElementById('resultadoAsociar');
+                el.classList.remove('oculto');
+                el.textContent = JSON.stringify(json, null, 2);
+            } catch (err) {
+                const el = document.getElementById('resultadoAsociar');
+                el.classList.remove('oculto');
+                el.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function registrarOrigenFrecuente() {
+            const clienteId = document.getElementById('origenClienteId').value;
+            const origen = document.getElementById('origenDireccion').value;
+            if (!clienteId || !origen) return;
+            try {
+                const res = await fetch('/api/clientes-empresariales/registrar-origen-frecuente', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clienteId, origen })
+                });
+                const json = await res.json();
+                const el = document.getElementById('resultadoOrigen');
+                el.classList.remove('oculto');
+                el.textContent = JSON.stringify(json, null, 2);
+            } catch (err) {
+                const el = document.getElementById('resultadoOrigen');
+                el.classList.remove('oculto');
+                el.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function registrarDestinoFrecuente() {
+            const clienteId = document.getElementById('destinoClienteId').value;
+            const destino = document.getElementById('destinoDireccion').value;
+            if (!clienteId || !destino) return;
+            try {
+                const res = await fetch('/api/clientes-empresariales/registrar-destino-frecuente', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clienteId, destino })
+                });
+                const json = await res.json();
+                const el = document.getElementById('resultadoDestino');
+                el.classList.remove('oculto');
+                el.textContent = JSON.stringify(json, null, 2);
+            } catch (err) {
+                const el = document.getElementById('resultadoDestino');
+                el.classList.remove('oculto');
+                el.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        async function verReservas() {
+            const id = document.getElementById('reservasClienteId').value;
+            if (!id) return;
+            try {
+                const res = await fetch(`/api/clientes-empresariales/${id}/reservas`);
+                const json = await res.json();
+                const el = document.getElementById('resultadoReservas');
+                el.classList.remove('oculto');
+                el.textContent = JSON.stringify(json, null, 2);
+            } catch (err) {
+                const el = document.getElementById('resultadoReservas');
+                el.classList.remove('oculto');
+                el.textContent = 'Error: ' + err.message;
+            }
+        }
+
+        cargarClientes();
+        setInterval(cargarClientes, 5000);
+    </script>
+</body>
+</html>

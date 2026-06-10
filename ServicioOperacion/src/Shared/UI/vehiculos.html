@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehículos - ServicioOperacion</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        .nav { margin-bottom: 20px; }
+        a { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        .formulario {
+            background: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 8px 15px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover { background: #0052a3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .btn-eliminar { padding: 5px 10px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .btn-eliminar:hover { background: #990000; }
+        .btn-editar { padding: 5px 10px; background: #e07b00; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-editar:hover { background: #b56200; }
+        .btn-cancelar { padding: 8px 15px; background: #888; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; margin-left: 8px; }
+        .btn-cancelar:hover { background: #666; }
+        .error { color: red; margin-top: 10px; }
+        .exito { color: green; margin-top: 10px; }
+        .oculto { display: none; }
+    </style>
+</head>
+<body>
+    <div class="nav"><a href="/">← Volver</a></div>
+    <h1>Gestión de Vehículos</h1>
+
+    <!-- Formulario crear -->
+    <div class="formulario" id="formularioCrear">
+        <h2>Crear Vehículo</h2>
+        <label>Matrícula</label>
+        <input type="text" id="matricula" placeholder="Ej: ABC-1234">
+        <label>Tipo</label>
+        <input type="text" id="tipo" placeholder="Ej: Sedán">
+        <label>Capacidad</label>
+        <input type="number" id="capacidad" placeholder="4">
+        <label>ID Dispositivo GPS (opcional)</label>
+        <input type="number" id="dispositivoGps">
+        <br>
+        <button onclick="crearVehiculo()">Crear</button>
+        <div id="mensajeCrear"></div>
+    </div>
+
+    <!-- Formulario editar -->
+    <div class="formulario oculto" id="formularioEditar">
+        <h2>Editar Vehículo <span id="tituloIdEditar"></span></h2>
+        <input type="hidden" id="editarId">
+        <label>Matrícula</label>
+        <input type="text" id="editarMatricula">
+        <label>Tipo</label>
+        <input type="text" id="editarTipo">
+        <label>Capacidad</label>
+        <input type="number" id="editarCapacidad">
+        <label>ID Dispositivo GPS (opcional)</label>
+        <input type="number" id="editarDispositivoGps">
+        <br>
+        <button onclick="guardarEdicion()">Guardar cambios</button>
+        <button class="btn-cancelar" onclick="cancelarEdicion()">Cancelar</button>
+        <div id="mensajeEditar"></div>
+    </div>
+
+    <h2>Listado</h2>
+    <table id="tablaVehiculos">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Matrícula</th>
+                <th>Tipo</th>
+                <th>Capacidad</th>
+                <th>Dispositivo GPS</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td colspan="6">Cargando...</td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        async function cargarVehiculos() {
+            try {
+                const respuesta = await fetch('/api/vehiculos');
+                const json = await respuesta.json();
+                const vehiculos = json.data || [];
+
+                const tbody = document.querySelector('#tablaVehiculos tbody');
+                if (vehiculos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No hay vehículos</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = vehiculos.map(v => `
+                    <tr>
+                        <td>${v.id}</td>
+                        <td>${v.matricula}</td>
+                        <td>${v.tipo}</td>
+                        <td>${v.capacidad}</td>
+                        <td>${v.dispositivoGps || '-'}</td>
+                        <td>
+                            <button class="btn-editar" onclick="abrirEdicion(${v.id}, '${v.matricula}', '${v.tipo}', ${v.capacidad}, ${v.dispositivoGps || 'null'})">Editar</button>
+                            <button class="btn-eliminar" onclick="eliminarVehiculo(${v.id})">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                document.querySelector('#tablaVehiculos tbody').innerHTML =
+                    `<tr><td colspan="6" class="error">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function crearVehiculo() {
+            const matricula = document.getElementById('matricula').value;
+            const tipo = document.getElementById('tipo').value;
+            const capacidad = document.getElementById('capacidad').value;
+            const dispositivoGps = document.getElementById('dispositivoGps').value;
+
+            if (!matricula || !tipo || !capacidad) {
+                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos obligatorios</div>';
+                return;
+            }
+
+            try {
+                const respuesta = await fetch('/api/vehiculos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        matricula,
+                        tipo,
+                        capacidad: Number(capacidad),
+                        dispositivoGps: dispositivoGps ? Number(dispositivoGps) : null
+                    })
+                });
+
+                if (respuesta.ok) {
+                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Vehículo creado</div>';
+                    document.getElementById('matricula').value = '';
+                    document.getElementById('tipo').value = '';
+                    document.getElementById('capacidad').value = '';
+                    document.getElementById('dispositivoGps').value = '';
+                    cargarVehiculos();
+                } else {
+                    const err = await respuesta.json();
+                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        function abrirEdicion(id, matricula, tipo, capacidad, dispositivoGps) {
+            document.getElementById('formularioEditar').classList.remove('oculto');
+            document.getElementById('formularioCrear').classList.add('oculto');
+            document.getElementById('tituloIdEditar').textContent = `#${id}`;
+            document.getElementById('editarId').value = id;
+            document.getElementById('editarMatricula').value = matricula;
+            document.getElementById('editarTipo').value = tipo;
+            document.getElementById('editarCapacidad').value = capacidad;
+            document.getElementById('editarDispositivoGps').value = dispositivoGps || '';
+            document.getElementById('mensajeEditar').innerHTML = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicion() {
+            document.getElementById('formularioEditar').classList.add('oculto');
+            document.getElementById('formularioCrear').classList.remove('oculto');
+        }
+
+        async function guardarEdicion() {
+            const id = document.getElementById('editarId').value;
+            const matricula = document.getElementById('editarMatricula').value;
+            const tipo = document.getElementById('editarTipo').value;
+            const capacidad = document.getElementById('editarCapacidad').value;
+            const dispositivoGps = document.getElementById('editarDispositivoGps').value;
+
+            if (!matricula || !tipo || !capacidad) {
+                document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá todos los campos obligatorios</div>';
+                return;
+            }
+
+            try {
+                const respuesta = await fetch(`/api/vehiculos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        matricula,
+                        tipo,
+                        capacidad: Number(capacidad),
+                        dispositivoGps: dispositivoGps ? Number(dispositivoGps) : null
+                    })
+                });
+
+                if (respuesta.ok) {
+                    document.getElementById('mensajeEditar').innerHTML = '<div class="exito">Vehículo actualizado</div>';
+                    cargarVehiculos();
+                    setTimeout(cancelarEdicion, 1000);
+                } else {
+                    const err = await respuesta.json();
+                    document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        async function eliminarVehiculo(id) {
+            if (!confirm('¿Eliminar este vehículo?')) return;
+            try {
+                const respuesta = await fetch(`/api/vehiculos/${id}`, { method: 'DELETE' });
+                if (respuesta.ok) cargarVehiculos();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        cargarVehiculos();
+        setInterval(cargarVehiculos, 5000);
+    </script>
+</body>
+</html>

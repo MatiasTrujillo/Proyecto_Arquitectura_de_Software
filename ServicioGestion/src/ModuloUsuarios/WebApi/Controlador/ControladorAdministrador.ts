@@ -11,52 +11,50 @@ export class ControladorAdministrador {
   }
 
   // CRUD ADMINISTRADORES
-  crearAdministrador(req: Request, res: Response): void {
+  async crearAdministrador(req: Request, res: Response): Promise<void> {
     try {
       const { cedula, nombre } = req.body;
-      const administradorCreado = this.servicioAdministrador.crearAdministrador(cedula, nombre); //aca await no es necesario porque no se usa una funcion con adminCreado
-
+      const administradorCreado = await this.servicioAdministrador.crearAdministrador(cedula, nombre);
       res.status(201).json({ data: administradorCreado });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  obtenerAdministradores(req: Request, res: Response): void {
+  async obtenerAdministradores(req: Request, res: Response): Promise<void> {
     try {
-      const administradores = this.servicioAdministrador.obtenerAdministradores();
+      const administradores = await this.servicioAdministrador.obtenerAdministradores();
       res.status(200).json({ data: administradores });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  obtenerAdministradorPorId(req: Request, res: Response): void {
+  async obtenerAdministradorPorId(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const administrador = this.servicioAdministrador.obtenerAdministradorPorId(id as string);
+      const administrador = await this.servicioAdministrador.obtenerAdministradorPorId(id as string);
       res.status(200).json({ data: administrador });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  actualizarAdministrador(req: Request, res: Response): void {
+  async actualizarAdministrador(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
-      const administradorActualizado = this.servicioAdministrador.actualizarAdministrador(id as string, cedula, nombre);
-
+      const administradorActualizado = await this.servicioAdministrador.actualizarAdministrador(id as string, cedula, nombre);
       res.status(200).json({ data: administradorActualizado });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  eliminarAdministrador(req: Request, res: Response): void {
+  async eliminarAdministrador(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      this.servicioAdministrador.eliminarAdministrador(id as string);
+      await this.servicioAdministrador.eliminarAdministrador(id as string);
       res.status(204).send();
     } catch (error) {
       this.manejarError(res, error);

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productos - ServicioGestion</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        h2 { color: #444; }
+        .nav { margin-bottom: 20px; }
+        a { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        .formulario { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ddd; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0052a3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .btn-eliminar { padding: 5px 10px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .btn-eliminar:hover { background: #990000; }
+        .btn-editar { padding: 5px 10px; background: #e07b00; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-editar:hover { background: #b56200; }
+        .btn-cancelar { padding: 8px 15px; background: #888; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; margin-left: 8px; }
+        .btn-cancelar:hover { background: #666; }
+        .error { color: red; margin-top: 10px; }
+        .exito { color: green; margin-top: 10px; }
+        .oculto { display: none; }
+    </style>
+</head>
+<body>
+    <div class="nav"><a href="/">← Volver</a></div>
+    <h1>Gestión de Productos</h1>
+
+    <div class="formulario" id="formularioCrear">
+        <h2>Crear Producto</h2>
+        <label>Descripción</label>
+        <input type="text" id="descripcion" placeholder="Ej: Seguro premium">
+        <label>Valor</label>
+        <input type="number" id="valor" placeholder="Ej: 1500" min="0" step="0.01">
+        <label>Tamaño</label>
+        <input type="number" id="tamano" placeholder="Ej: 1" min="0">
+        <label>Categoría</label>
+        <input type="text" id="categoria" placeholder="Ej: seguro">
+        <br>
+        <button onclick="crearProducto()">Crear</button>
+        <div id="mensajeCrear"></div>
+    </div>
+
+    <div class="formulario oculto" id="formularioEditar">
+        <h2>Editar Producto <span id="tituloIdEditar"></span></h2>
+        <input type="hidden" id="editarId">
+        <label>Descripción</label>
+        <input type="text" id="editarDescripcion">
+        <label>Valor</label>
+        <input type="number" id="editarValor" min="0" step="0.01">
+        <label>Tamaño</label>
+        <input type="number" id="editarTamano" min="0">
+        <label>Categoría</label>
+        <input type="text" id="editarCategoria">
+        <br>
+        <button onclick="guardarEdicion()">Guardar cambios</button>
+        <button class="btn-cancelar" onclick="cancelarEdicion()">Cancelar</button>
+        <div id="mensajeEditar"></div>
+    </div>
+
+    <h2>Listado</h2>
+    <table id="tablaProductos">
+        <thead>
+            <tr><th>ID</th><th>Descripción</th><th>Valor</th><th>Tamaño</th><th>Categoría</th><th>Acción</th></tr>
+        </thead>
+        <tbody><tr><td colspan="6">Cargando...</td></tr></tbody>
+    </table>
+
+    <script>
+        let items = [];
+
+        async function cargarProductos() {
+            try {
+                const res = await fetch('/api/productos');
+                const json = await res.json();
+                items = json.data || [];
+                const tbody = document.querySelector('#tablaProductos tbody');
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">No hay productos</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = items.map((item, i) => `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td>${item.descripcion}</td>
+                        <td>${item.valor}</td>
+                        <td>${item.tamano}</td>
+                        <td>${item.categoria}</td>
+                        <td>
+                            <button class="btn-editar" onclick="abrirEdicion(${i})">Editar</button>
+                            <button class="btn-eliminar" onclick="eliminarProducto(${item.id})">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                document.querySelector('#tablaProductos tbody').innerHTML =
+                    `<tr><td colspan="6" class="error">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function crearProducto() {
+            const descripcion = document.getElementById('descripcion').value;
+            const valor = document.getElementById('valor').value;
+            const tamano = document.getElementById('tamano').value;
+            const categoria = document.getElementById('categoria').value;
+            if (!descripcion || !valor || !tamano || !categoria) {
+                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos</div>';
+                return;
+            }
+            try {
+                const res = await fetch('/api/productos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ descripcion, valor: Number(valor), tamano: Number(tamano), categoria })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Producto creado</div>';
+                    document.getElementById('descripcion').value = '';
+                    document.getElementById('valor').value = '';
+                    document.getElementById('tamano').value = '';
+                    document.getElementById('categoria').value = '';
+                    cargarProductos();
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        function abrirEdicion(indice) {
+            const item = items[indice];
+            document.getElementById('formularioEditar').classList.remove('oculto');
+            document.getElementById('formularioCrear').classList.add('oculto');
+            document.getElementById('tituloIdEditar').textContent = `#${item.id}`;
+            document.getElementById('editarId').value = item.id;
+            document.getElementById('editarDescripcion').value = item.descripcion;
+            document.getElementById('editarValor').value = item.valor;
+            document.getElementById('editarTamano').value = item.tamano;
+            document.getElementById('editarCategoria').value = item.categoria;
+            document.getElementById('mensajeEditar').innerHTML = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicion() {
+            document.getElementById('formularioEditar').classList.add('oculto');
+            document.getElementById('formularioCrear').classList.remove('oculto');
+        }
+
+        async function guardarEdicion() {
+            const id = document.getElementById('editarId').value;
+            const descripcion = document.getElementById('editarDescripcion').value;
+            const valor = document.getElementById('editarValor').value;
+            const tamano = document.getElementById('editarTamano').value;
+            const categoria = document.getElementById('editarCategoria').value;
+            if (!descripcion || !valor || !tamano || !categoria) {
+                document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá todos los campos</div>';
+                return;
+            }
+            try {
+                const res = await fetch(`/api/productos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ descripcion, valor: Number(valor), tamano: Number(tamano), categoria })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeEditar').innerHTML = '<div class="exito">Producto actualizado</div>';
+                    cargarProductos();
+                    setTimeout(cancelarEdicion, 1000);
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        async function eliminarProducto(id) {
+            if (!confirm('¿Eliminar este producto?')) return;
+            try {
+                const res = await fetch(`/api/productos/${id}`, { method: 'DELETE' });
+                if (res.ok) cargarProductos();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        cargarProductos();
+        setInterval(cargarProductos, 5000);
+    </script>
+</body>
+</html>

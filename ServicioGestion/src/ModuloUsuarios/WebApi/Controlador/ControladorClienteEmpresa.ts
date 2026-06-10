@@ -10,50 +10,50 @@ export class ControladorClienteEmpresa {
     this.servicioClienteEmpresa = servicioClienteEmpresa ?? new ServicioClienteEmpresa(new RepositorioClienteEmpresa());
   }
 
-  crearClienteEmpresa(req: Request, res: Response): void {
+  async crearClienteEmpresa(req: Request, res: Response): Promise<void> {
     try {
       const { cedula, nombre } = req.body;
-      const clienteCreado = this.servicioClienteEmpresa.crearClienteEmpresa(cedula, nombre);
+      const clienteCreado = await this.servicioClienteEmpresa.crearClienteEmpresa(cedula, nombre);
       res.status(201).json({ data: clienteCreado });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  obtenerClienteEmpresa(req: Request, res: Response): void {
+  async obtenerClienteEmpresa(req: Request, res: Response): Promise<void> {
     try {
-      const clientes = this.servicioClienteEmpresa.obtenerClienteEmpresas();
+      const clientes = await this.servicioClienteEmpresa.obtenerClienteEmpresas();
       res.status(200).json({ data: clientes });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  obtenerClienteEmpresaPorId(req: Request, res: Response): void {
+  async obtenerClienteEmpresaPorId(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const cliente = this.servicioClienteEmpresa.obtenerClienteEmpresaPorId(id as string);
+      const cliente = await this.servicioClienteEmpresa.obtenerClienteEmpresaPorId(id as string);
       res.status(200).json({ data: cliente });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  actualizarClienteEmpresa(req: Request, res: Response): void {
+  async actualizarClienteEmpresa(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
-      const clienteActualizado = this.servicioClienteEmpresa.actualizarClienteEmpresa(id as string, cedula, nombre);
+      const clienteActualizado = await this.servicioClienteEmpresa.actualizarClienteEmpresa(id as string, cedula, nombre);
       res.status(200).json({ data: clienteActualizado });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  eliminarClienteEmpresa(req: Request, res: Response): void {
+  async eliminarClienteEmpresa(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      this.servicioClienteEmpresa.eliminarClienteEmpresa(id as string);
+      await this.servicioClienteEmpresa.eliminarClienteEmpresa(id as string);
       res.status(204).send();
     } catch (error) {
       this.manejarError(res, error);

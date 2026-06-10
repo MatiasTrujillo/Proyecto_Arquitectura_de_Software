@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incidentes - ServicioGestion</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        h2 { color: #444; }
+        .nav { margin-bottom: 20px; }
+        a { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        .formulario { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ddd; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0052a3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .btn-eliminar { padding: 5px 10px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .btn-eliminar:hover { background: #990000; }
+        .btn-editar { padding: 5px 10px; background: #e07b00; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-editar:hover { background: #b56200; }
+        .btn-cancelar { padding: 8px 15px; background: #888; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; margin-left: 8px; }
+        .btn-cancelar:hover { background: #666; }
+        .error { color: red; margin-top: 10px; }
+        .exito { color: green; margin-top: 10px; }
+        .oculto { display: none; }
+        .id-cell { font-family: monospace; font-size: 0.82em; color: #555; }
+    </style>
+</head>
+<body>
+    <div class="nav"><a href="/">← Volver</a></div>
+    <h1>Gestión de Incidentes</h1>
+
+    <div class="formulario" id="formularioCrear">
+        <h2>Crear Incidente</h2>
+        <label>Descripción</label>
+        <input type="text" id="descripcion" placeholder="Ej: Vehículo no llegó">
+        <label>Fecha</label>
+        <input type="datetime-local" id="fecha">
+        <label>ID de Reserva</label>
+        <input type="text" id="reservaId" placeholder="ID de la reserva asociada">
+        <label>Estado</label>
+        <input type="text" id="estado" placeholder="Ej: abierto">
+        <label>Severidad</label>
+        <input type="text" id="severidad" placeholder="Ej: alta">
+        <br>
+        <button onclick="crearIncidente()">Crear</button>
+        <div id="mensajeCrear"></div>
+    </div>
+
+    <div class="formulario oculto" id="formularioEditar">
+        <h2>Editar Incidente <span id="tituloIdEditar"></span></h2>
+        <input type="hidden" id="editarId">
+        <label>Descripción</label>
+        <input type="text" id="editarDescripcion">
+        <label>Fecha</label>
+        <input type="datetime-local" id="editarFecha">
+        <label>ID de Reserva</label>
+        <input type="text" id="editarReservaId">
+        <label>Estado</label>
+        <input type="text" id="editarEstado">
+        <label>Severidad</label>
+        <input type="text" id="editarSeveridad">
+        <br>
+        <button onclick="guardarEdicion()">Guardar cambios</button>
+        <button class="btn-cancelar" onclick="cancelarEdicion()">Cancelar</button>
+        <div id="mensajeEditar"></div>
+    </div>
+
+    <h2>Listado</h2>
+    <table id="tablaIncidentes">
+        <thead>
+            <tr><th>ID</th><th>Descripción</th><th>Fecha</th><th>Reserva</th><th>Estado</th><th>Severidad</th><th>Acción</th></tr>
+        </thead>
+        <tbody><tr><td colspan="7">Cargando...</td></tr></tbody>
+    </table>
+
+    <script>
+        let items = [];
+
+        function fechaParaInput(fecha) {
+            if (!fecha) return '';
+            return new Date(fecha).toISOString().slice(0, 16);
+        }
+
+        async function cargarIncidentes() {
+            try {
+                const res = await fetch('/api/incidentes');
+                const json = await res.json();
+                items = json.data || [];
+                const tbody = document.querySelector('#tablaIncidentes tbody');
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7">No hay incidentes</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = items.map((item, i) => `
+                    <tr>
+                        <td class="id-cell">${item.id}</td>
+                        <td>${item.descripcion}</td>
+                        <td>${new Date(item.fecha).toLocaleString('es-AR')}</td>
+                        <td class="id-cell">${item.reservaId}</td>
+                        <td>${item.estado}</td>
+                        <td>${item.severidad}</td>
+                        <td>
+                            <button class="btn-editar" onclick="abrirEdicion(${i})">Editar</button>
+                            <button class="btn-eliminar" onclick="eliminarIncidente('${item.id}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                document.querySelector('#tablaIncidentes tbody').innerHTML =
+                    `<tr><td colspan="7" class="error">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function crearIncidente() {
+            const descripcion = document.getElementById('descripcion').value;
+            const fecha = document.getElementById('fecha').value;
+            const reservaId = document.getElementById('reservaId').value;
+            const estado = document.getElementById('estado').value;
+            const severidad = document.getElementById('severidad').value;
+            if (!descripcion || !fecha || !reservaId || !estado || !severidad) {
+                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos</div>';
+                return;
+            }
+            try {
+                const res = await fetch('/api/incidentes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ descripcion, fecha: new Date(fecha).toISOString(), reservaId, estado, severidad })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Incidente creado</div>';
+                    ['descripcion','fecha','reservaId','estado','severidad'].forEach(id => document.getElementById(id).value = '');
+                    cargarIncidentes();
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        function abrirEdicion(indice) {
+            const item = items[indice];
+            document.getElementById('formularioEditar').classList.remove('oculto');
+            document.getElementById('formularioCrear').classList.add('oculto');
+            document.getElementById('tituloIdEditar').textContent = `#${item.id}`;
+            document.getElementById('editarId').value = item.id;
+            document.getElementById('editarDescripcion').value = item.descripcion;
+            document.getElementById('editarFecha').value = fechaParaInput(item.fecha);
+            document.getElementById('editarReservaId').value = item.reservaId;
+            document.getElementById('editarEstado').value = item.estado;
+            document.getElementById('editarSeveridad').value = item.severidad;
+            document.getElementById('mensajeEditar').innerHTML = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicion() {
+            document.getElementById('formularioEditar').classList.add('oculto');
+            document.getElementById('formularioCrear').classList.remove('oculto');
+        }
+
+        async function guardarEdicion() {
+            const id = document.getElementById('editarId').value;
+            const descripcion = document.getElementById('editarDescripcion').value;
+            const fecha = document.getElementById('editarFecha').value;
+            const reservaId = document.getElementById('editarReservaId').value;
+            const estado = document.getElementById('editarEstado').value;
+            const severidad = document.getElementById('editarSeveridad').value;
+            if (!descripcion || !fecha || !reservaId || !estado || !severidad) {
+                document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá todos los campos</div>';
+                return;
+            }
+            try {
+                const res = await fetch(`/api/incidentes/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ descripcion, fecha: new Date(fecha).toISOString(), reservaId, estado, severidad })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeEditar').innerHTML = '<div class="exito">Incidente actualizado</div>';
+                    cargarIncidentes();
+                    setTimeout(cancelarEdicion, 1000);
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        async function eliminarIncidente(id) {
+            if (!confirm('¿Eliminar este incidente?')) return;
+            try {
+                const res = await fetch(`/api/incidentes/${id}`, { method: 'DELETE' });
+                if (res.ok) cargarIncidentes();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        cargarIncidentes();
+        setInterval(cargarIncidentes, 5000);
+    </script>
+</body>
+</html>

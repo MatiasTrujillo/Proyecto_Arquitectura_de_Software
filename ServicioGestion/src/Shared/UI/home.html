@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServicioGestion</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+        }
+        h1 {
+            margin-top: 0;
+            color: #333;
+        }
+        h2 {
+            color: #555;
+            font-size: 1rem;
+            margin: 20px 0 8px 0;
+        }
+        .nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        a {
+            padding: 10px 15px;
+            background: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        a:hover {
+            background: #0052a3;
+        }
+        a.secundario {
+            background: #6c757d;
+        }
+        a.secundario:hover {
+            background: #545b62;
+        }
+    </style>
+</head>
+<body>
+    <h1>ServicioGestion</h1>
+
+    <h2>Usuarios</h2>
+    <div class="nav">
+        <a href="/administradores-ui">Administradores</a>
+        <a href="/operadores-ui">Operadores</a>
+        <a href="/conductores-ui">Conductores</a>
+        <a href="/clientes-personales-ui">Clientes Personales</a>
+        <a href="/clientes-empresariales-ui">Clientes Empresariales</a>
+    </div>
+
+    <h2>Catálogo</h2>
+    <div class="nav">
+        <a href="/productos-ui">Productos</a>
+    </div>
+
+    <h2>Pagos</h2>
+    <div class="nav">
+        <a href="/pagos-ui">Pagos</a>
+    </div>
+
+    <h2>Reservas</h2>
+    <div class="nav">
+        <a href="/viajes-ui">Viajes</a>
+        <a href="/incidentes-ui">Incidentes</a>
+    </div>
+
+    <h2>Monitoreo</h2>
+    <div class="nav">
+        <a href="/metricas-ui">Métricas</a>
+    </div>
+</body>
+</html>

@@ -10,50 +10,50 @@ export class ControladorConductor {
     this.servicioConductor = servicioConductor ?? new ServicioConductor(new RepositorioConductor());
   }
 
-  crearConductor(req: Request, res: Response): void {
+  async crearConductor(req: Request, res: Response): Promise<void> {
     try {
       const { cedula, nombre } = req.body;
-      const conductorCreado = this.servicioConductor.crearConductor(cedula, nombre);
+      const conductorCreado = await this.servicioConductor.crearConductor(cedula, nombre);
       res.status(201).json({ data: conductorCreado });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  obtenerConductor(req: Request, res: Response): void {
+  async obtenerConductor(req: Request, res: Response): Promise<void> {
     try {
-      const conductores = this.servicioConductor.obtenerConductores();
+      const conductores = await this.servicioConductor.obtenerConductores();
       res.status(200).json({ data: conductores });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  obtenerConductorPorId(req: Request, res: Response): void {
+  async obtenerConductorPorId(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const conductor = this.servicioConductor.obtenerConductorPorId(id as string);
+      const conductor = await this.servicioConductor.obtenerConductorPorId(id as string);
       res.status(200).json({ data: conductor });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  actualizarConductor(req: Request, res: Response): void {
+  async actualizarConductor(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
-      const conductorActualizado = this.servicioConductor.actualizarConductor(id as string, cedula, nombre);
+      const conductorActualizado = await this.servicioConductor.actualizarConductor(id as string, cedula, nombre);
       res.status(200).json({ data: conductorActualizado });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  eliminarConductor(req: Request, res: Response): void {
+  async eliminarConductor(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      this.servicioConductor.eliminarConductor(id as string);
+      await this.servicioConductor.eliminarConductor(id as string);
       res.status(204).send();
     } catch (error) {
       this.manejarError(res, error);

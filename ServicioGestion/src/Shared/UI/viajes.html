@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viajes - ServicioGestion</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        h2 { color: #444; }
+        .nav { margin-bottom: 20px; }
+        a { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        .formulario { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ddd; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0052a3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .btn-eliminar { padding: 5px 10px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .btn-eliminar:hover { background: #990000; }
+        .btn-editar { padding: 5px 10px; background: #e07b00; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-editar:hover { background: #b56200; }
+        .btn-cancelar { padding: 8px 15px; background: #888; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; margin-left: 8px; }
+        .btn-cancelar:hover { background: #666; }
+        .error { color: red; margin-top: 10px; }
+        .exito { color: green; margin-top: 10px; }
+        .oculto { display: none; }
+        .id-cell { font-family: monospace; font-size: 0.82em; color: #555; }
+    </style>
+</head>
+<body>
+    <div class="nav"><a href="/">← Volver</a></div>
+    <h1>Gestión de Viajes</h1>
+
+    <div class="formulario" id="formularioCrear">
+        <h2>Crear Viaje</h2>
+        <label>ID de Reserva</label>
+        <input type="text" id="reservaId" placeholder="ID de la reserva asociada">
+        <label>Origen</label>
+        <input type="text" id="origen" placeholder="Ej: Av. Corrientes 100">
+        <label>Destino</label>
+        <input type="text" id="destino" placeholder="Ej: Av. 9 de Julio 500">
+        <label>Fecha</label>
+        <input type="datetime-local" id="fecha">
+        <label>Estado</label>
+        <input type="text" id="estado" placeholder="Ej: pendiente">
+        <label>Conductor</label>
+        <input type="text" id="conductor" placeholder="ID o nombre del conductor">
+        <br>
+        <button onclick="crearViaje()">Crear</button>
+        <div id="mensajeCrear"></div>
+    </div>
+
+    <div class="formulario oculto" id="formularioEditar">
+        <h2>Editar Viaje <span id="tituloIdEditar"></span></h2>
+        <input type="hidden" id="editarId">
+        <label>ID de Reserva</label>
+        <input type="text" id="editarReservaId">
+        <label>Origen</label>
+        <input type="text" id="editarOrigen">
+        <label>Destino</label>
+        <input type="text" id="editarDestino">
+        <label>Fecha</label>
+        <input type="datetime-local" id="editarFecha">
+        <label>Estado</label>
+        <input type="text" id="editarEstado">
+        <label>Conductor</label>
+        <input type="text" id="editarConductor">
+        <br>
+        <button onclick="guardarEdicion()">Guardar cambios</button>
+        <button class="btn-cancelar" onclick="cancelarEdicion()">Cancelar</button>
+        <div id="mensajeEditar"></div>
+    </div>
+
+    <h2>Listado</h2>
+    <table id="tablaViajes">
+        <thead>
+            <tr><th>ID</th><th>Reserva</th><th>Origen</th><th>Destino</th><th>Fecha</th><th>Estado</th><th>Conductor</th><th>Acción</th></tr>
+        </thead>
+        <tbody><tr><td colspan="8">Cargando...</td></tr></tbody>
+    </table>
+
+    <script>
+        let items = [];
+
+        function fechaParaInput(fecha) {
+            if (!fecha) return '';
+            return new Date(fecha).toISOString().slice(0, 16);
+        }
+
+        async function cargarViajes() {
+            try {
+                const res = await fetch('/api/viajes');
+                const json = await res.json();
+                items = json.data || [];
+                const tbody = document.querySelector('#tablaViajes tbody');
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8">No hay viajes</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = items.map((item, i) => `
+                    <tr>
+                        <td class="id-cell">${item.id}</td>
+                        <td class="id-cell">${item.reservaId}</td>
+                        <td>${item.origen}</td>
+                        <td>${item.destino}</td>
+                        <td>${new Date(item.fecha).toLocaleString('es-AR')}</td>
+                        <td>${item.estado}</td>
+                        <td>${item.conductor}</td>
+                        <td>
+                            <button class="btn-editar" onclick="abrirEdicion(${i})">Editar</button>
+                            <button class="btn-eliminar" onclick="eliminarViaje('${item.id}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                document.querySelector('#tablaViajes tbody').innerHTML =
+                    `<tr><td colspan="8" class="error">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function crearViaje() {
+            const reservaId = document.getElementById('reservaId').value;
+            const origen = document.getElementById('origen').value;
+            const destino = document.getElementById('destino').value;
+            const fecha = document.getElementById('fecha').value;
+            const estado = document.getElementById('estado').value;
+            const conductor = document.getElementById('conductor').value;
+            if (!reservaId || !origen || !destino || !fecha || !estado || !conductor) {
+                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos</div>';
+                return;
+            }
+            try {
+                const res = await fetch('/api/viajes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reservaId, origen, destino, fecha: new Date(fecha).toISOString(), estado, conductor })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Viaje creado</div>';
+                    ['reservaId','origen','destino','fecha','estado','conductor'].forEach(id => document.getElementById(id).value = '');
+                    cargarViajes();
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        function abrirEdicion(indice) {
+            const item = items[indice];
+            document.getElementById('formularioEditar').classList.remove('oculto');
+            document.getElementById('formularioCrear').classList.add('oculto');
+            document.getElementById('tituloIdEditar').textContent = `#${item.id}`;
+            document.getElementById('editarId').value = item.id;
+            document.getElementById('editarReservaId').value = item.reservaId;
+            document.getElementById('editarOrigen').value = item.origen;
+            document.getElementById('editarDestino').value = item.destino;
+            document.getElementById('editarFecha').value = fechaParaInput(item.fecha);
+            document.getElementById('editarEstado').value = item.estado;
+            document.getElementById('editarConductor').value = item.conductor;
+            document.getElementById('mensajeEditar').innerHTML = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicion() {
+            document.getElementById('formularioEditar').classList.add('oculto');
+            document.getElementById('formularioCrear').classList.remove('oculto');
+        }
+
+        async function guardarEdicion() {
+            const id = document.getElementById('editarId').value;
+            const reservaId = document.getElementById('editarReservaId').value;
+            const origen = document.getElementById('editarOrigen').value;
+            const destino = document.getElementById('editarDestino').value;
+            const fecha = document.getElementById('editarFecha').value;
+            const estado = document.getElementById('editarEstado').value;
+            const conductor = document.getElementById('editarConductor').value;
+            if (!reservaId || !origen || !destino || !fecha || !estado || !conductor) {
+                document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá todos los campos</div>';
+                return;
+            }
+            try {
+                const res = await fetch(`/api/viajes/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reservaId, origen, destino, fecha: new Date(fecha).toISOString(), estado, conductor })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeEditar').innerHTML = '<div class="exito">Viaje actualizado</div>';
+                    cargarViajes();
+                    setTimeout(cancelarEdicion, 1000);
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        async function eliminarViaje(id) {
+            if (!confirm('¿Eliminar este viaje?')) return;
+            try {
+                const res = await fetch(`/api/viajes/${id}`, { method: 'DELETE' });
+                if (res.ok) cargarViajes();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        cargarViajes();
+        setInterval(cargarViajes, 5000);
+    </script>
+</body>
+</html>

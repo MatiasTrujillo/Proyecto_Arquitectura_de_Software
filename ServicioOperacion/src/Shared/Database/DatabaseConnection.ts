@@ -1,5 +1,7 @@
-import { Pool } from 'pg';
+import { Pool, QueryResult } from 'pg';
 import dotenv from 'dotenv';
+import registrador from '../Logging/logger';
+import { contadorConsultasBd, histogramaDuracionConsultasBd } from '../Metrics/metrics';
 
 // Carga las variables de entorno desde el archivo .env
 dotenv.config();
@@ -21,7 +23,24 @@ const pool = new Pool({
  * Si la BD se desconecta inesperadamente, registramos el error
  */
 pool.on('error', (err) => {
-  console.error('Error inesperado en el pool de conexiones:', err);
+  registrador.error('error_pool_bd', { mensaje: err?.message || err, pila: err?.stack });
 });
+
+const originalQuery = pool.query.bind(pool);
+
+(pool as any).query = async function (text: string, params?: any[]) {
+  const endTimer = histogramaDuracionConsultasBd.startTimer();
+  contadorConsultasBd.inc();
+  try {
+    const result: QueryResult<any> = await originalQuery(text, params);
+    endTimer();
+    registrador.info('consulta_bd', { texto: text, parametros: params, cantidadFilas: result.rowCount });
+    return result;
+  } catch (error) {
+    endTimer();
+    registrador.error('error_consulta_bd', { texto: text, parametros: params, mensaje: error?.message || error, pila: error?.stack });
+    throw error;
+  }
+};
 
 export default pool;

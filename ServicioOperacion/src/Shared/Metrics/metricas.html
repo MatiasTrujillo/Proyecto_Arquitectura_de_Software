@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Métricas - ServicioOperacion</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        h2 { margin: 20px 0 10px 0; color: #333; font-size: 1.1rem; }
+        .nav { margin-bottom: 20px; }
+        a { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0052a3; }
+        select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .desc { font-size: 0.9rem; color: #666; }
+
+        /* Fila del grupo: ruta base */
+        .fila-grupo td { background: #f5f5f5; font-weight: bold; }
+
+        /* Subfilas de método */
+        .fila-metodo td:first-child { padding-left: 28px; }
+        .fila-metodo { font-size: 0.95rem; }
+
+        /* Badges de método HTTP */
+        .metodo {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            min-width: 52px;
+            text-align: center;
+            margin-right: 6px;
+        }
+        .metodo-GET    { background: #d4edda; color: #155724; }
+        .metodo-POST   { background: #cce5ff; color: #004085; }
+        .metodo-PUT    { background: #fff3cd; color: #856404; }
+        .metodo-DELETE { background: #f8d7da; color: #721c24; }
+        .metodo-PATCH  { background: #e2d9f3; color: #4a235a; }
+    </style>
+</head>
+<body>
+    <div class="nav"><a href="/">← Volver</a></div>
+    <h1>Métricas del Servicio</h1>
+
+    <div>
+        <button id="btnActualizar">Actualizar</button>
+        <label style="margin-left: 20px;">Auto-refresh:
+            <select id="intervalo">
+                <option value="0">Off</option>
+                <option value="5000">5s</option>
+                <option value="15000">15s</option>
+                <option value="60000">1 min</option>
+            </select>
+        </label>
+        <span id="ultimaActualizacion" style="margin-left: 20px; font-size: 0.9rem;">-</span>
+    </div>
+
+    <h2>Sistema</h2>
+    <table id="tabla-sistema">
+        <thead><tr><th>Métrica</th><th>Valor</th><th>Descripción</th></tr></thead>
+        <tbody><tr><td colspan="3">Cargando...</td></tr></tbody>
+    </table>
+
+    <h2>Solicitudes por Endpoint</h2>
+    <table id="tabla-endpoints">
+        <thead><tr><th>Endpoint</th><th>Total</th><th>Por minuto</th><th>Descripción</th></tr></thead>
+        <tbody><tr><td colspan="4">Cargando...</td></tr></tbody>
+    </table>
+
+    <h2>Solicitudes por Categoría</h2>
+    <table id="tabla-categorias">
+        <thead><tr><th>Categoría</th><th>Total</th><th>Por minuto</th><th>Descripción</th></tr></thead>
+        <tbody><tr><td colspan="4">Cargando...</td></tr></tbody>
+    </table>
+
+    <h2>Otros</h2>
+    <table id="tabla-otros">
+        <thead><tr><th>Métrica</th><th>Valor</th><th>Descripción</th></tr></thead>
+        <tbody><tr><td colspan="3">Cargando...</td></tr></tbody>
+    </table>
+
+    <script>
+
+        // ── Descripciones por "METODO /ruta" ─────────────────────────────────
+        //
+        // Cuando el backend ya envía el método en la clave (ej: "GET /api/vehiculos"),
+        // se usa esta tabla para mostrar la descripción de cada operación.
+
+        const descripcionesPorMetodoYRuta = {
+            'GET /':                'Sirve la página principal.',
+            'GET /vehiculos-ui':    'Sirve la interfaz web de vehículos.',
+            'GET /dispositivos-ui': 'Sirve la interfaz web de dispositivos GPS.',
+            'GET /metricas-ui':     'Sirve la interfaz web de métricas.',
+            'GET /metricas':        'Devuelve las métricas en formato JSON.',
+
+            'GET /api/vehiculos':        'Consulta: lista todos los vehículos.',
+            'POST /api/vehiculos':       'Alta: crea un nuevo vehículo.',
+            'GET /api/vehiculos/:id':    'Consulta: obtiene un vehículo por ID.',
+            'PUT /api/vehiculos/:id':    'Modificación: actualiza un vehículo existente.',
+            'DELETE /api/vehiculos/:id': 'Baja: elimina un vehículo por ID.',
+
+            'GET /api/dispositivos':        'Consulta: lista todos los dispositivos GPS.',
+            'POST /api/dispositivos':       'Alta: crea un nuevo dispositivo GPS.',
+            'GET /api/dispositivos/:id':    'Consulta: obtiene un dispositivo GPS por ID.',
+            'PUT /api/dispositivos/:id':    'Modificación: actualiza un dispositivo GPS existente.',
+            'DELETE /api/dispositivos/:id': 'Baja: elimina un dispositivo GPS por ID.',
+            'POST /api/dispositivos/recibir':                  'Recibe telemetría enviada por un dispositivo GPS.',
+            'GET /api/dispositivos/:dispositivoId/verificar':  'Verifica el estado de un dispositivo GPS.',
+        };
+
+        // ── Métodos conocidos por ruta (para cuando el backend NO envía el método) ──
+        //
+        // Si la clave que llega es solo "/api/vehiculos" (sin método),
+        // esta tabla define qué métodos existen para esa ruta,
+        // y se muestran como subfilas informativas.
+
+        const metodosPorRuta = {
+            '/':                'GET',
+            '/vehiculos-ui':    'GET',
+            '/dispositivos-ui': 'GET',
+            '/metricas-ui':     'GET',
+            '/metricas':        'GET',
+
+            '/api/vehiculos':    'GET, POST',
+            '/api/vehiculos/:id':'GET, PUT, DELETE',
+
+            '/api/dispositivos':     'GET, POST',
+            '/api/dispositivos/:id': 'GET, PUT, DELETE',
+            '/api/dispositivos/recibir':                 'POST',
+            '/api/dispositivos/:dispositivoId/verificar':'GET',
+        };
+
+        // Descripción general de la ruta (sin método), usada en la fila del grupo
+        // cuando el backend no envía el método
+        const descripcionGeneralPorRuta = {
+            '/':                'Página principal del servicio.',
+            '/vehiculos-ui':    'Interfaz web para gestionar vehículos.',
+            '/dispositivos-ui': 'Interfaz web para gestionar dispositivos GPS.',
+            '/metricas-ui':     'Interfaz web para visualizar las métricas.',
+            '/metricas':        'Devuelve las métricas en formato JSON.',
+
+            '/api/vehiculos':    'Alta (POST) y consulta (GET) de vehículos.',
+            '/api/vehiculos/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un vehículo.',
+
+            '/api/dispositivos':     'Alta (POST) y consulta (GET) de dispositivos GPS.',
+            '/api/dispositivos/:id': 'Consulta (GET), modificación (PUT) y baja (DELETE) de un dispositivo GPS.',
+            '/api/dispositivos/recibir':                 'Recibe telemetría de un dispositivo GPS (POST).',
+            '/api/dispositivos/:dispositivoId/verificar':'Verifica el estado de un dispositivo GPS (GET).',
+        };
+
+        const descripcionesSistema = {
+            'Uptime':              'Tiempo que lleva el servidor activo desde el último inicio.',
+            'Rutas':               'Combinaciones método+ruta que han recibido al menos una solicitud.',
+            'Categorías':          'Cantidad de categorías de endpoints registradas.',
+            'Solicitudes totales': 'Total de solicitudes recibidas desde el inicio del servidor.',
+        };
+
+        const descripcionesPorCategoria = {
+            'general':      'Solicitudes a páginas UI y endpoints fuera de /api.',
+            'vehiculos':    'Solicitudes al módulo de vehículos (/api/vehiculos).',
+            'dispositivos': 'Solicitudes al módulo de dispositivos GPS (/api/dispositivos).',
+        };
+
+        const descripcionesOtros = {
+            'Consultas BD': 'Cantidad de veces que el servicio consultó la base de datos.',
+        };
+
+        // ── Detección del formato de clave ────────────────────────────────────
+
+        const METODOS_HTTP = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
+
+        /**
+         * Detecta si una clave tiene formato "METODO /ruta" o solo "/ruta".
+         * Devuelve { tieneMetodo, metodo, ruta }.
+         */
+        function parsearClave(clave) {
+            const partes = clave.split(' ');
+            if (partes.length >= 2 && METODOS_HTTP.includes(partes[0])) {
+                return { tieneMetodo: true, metodo: partes[0], ruta: partes.slice(1).join(' ') };
+            }
+            return { tieneMetodo: false, metodo: null, ruta: clave };
+        }
+
+        // ── Agrupación por ruta ───────────────────────────────────────────────
+
+        /**
+         * Agrupa las entradas del objeto de totales por ruta base.
+         * Soporta claves con y sin método HTTP.
+         *
+         * Resultado: Map<ruta, Array<{ metodo, total, rpm, clave, tieneMetodo }>>
+         */
+        function agruparPorRuta(totales, rpms) {
+            const grupos = new Map();
+
+            for (const [clave, total] of Object.entries(totales)) {
+                const { tieneMetodo, metodo, ruta } = parsearClave(clave);
+                const rpm = rpms[clave] || 0;
+
+                if (!grupos.has(ruta)) grupos.set(ruta, []);
+                grupos.get(ruta).push({ metodo, total, rpm, clave, tieneMetodo });
+            }
+
+            return grupos;
+        }
+
+        function badgeMetodo(metodo) {
+            return `<span class="metodo metodo-${metodo}">${metodo}</span>`;
+        }
+
+        // ── Renderizado ───────────────────────────────────────────────────────
+
+        function renderizarTablaEndpoints(totales, rpms) {
+            const grupos = agruparPorRuta(totales, rpms);
+            const filas = [];
+
+            for (const [ruta, entradas] of grupos.entries()) {
+                const totalGrupo = entradas.reduce((acc, e) => acc + e.total, 0);
+                const rpmGrupo   = entradas.reduce((acc, e) => acc + e.rpm, 0);
+                const tieneMetodo = entradas[0].tieneMetodo;
+
+                if (tieneMetodo) {
+                    // ── Modo con método: fila grupo + subfilas por método ──────
+                    filas.push(`
+                        <tr class="fila-grupo">
+                            <td><code>${ruta}</code></td>
+                            <td>${totalGrupo}</td>
+                            <td>${rpmGrupo.toFixed(1)}</td>
+                            <td></td>
+                        </tr>
+                    `);
+                    for (const { metodo, total, rpm, clave } of entradas) {
+                        const desc = descripcionesPorMetodoYRuta[clave] || '—';
+                        filas.push(`
+                            <tr class="fila-metodo">
+                                <td>${badgeMetodo(metodo)}</td>
+                                <td>${total}</td>
+                                <td>${rpm.toFixed(1)}</td>
+                                <td class="desc">${desc}</td>
+                            </tr>
+                        `);
+                    }
+                } else {
+                    // ── Modo sin método: fila única con descripción general ────
+                    // y subfilas informativas (sin conteos) de los métodos disponibles
+                    const descGeneral = descripcionGeneralPorRuta[ruta] || '—';
+                    const metodosDisponibles = metodosPorRuta[ruta] || null;
+
+                    filas.push(`
+                        <tr class="fila-grupo">
+                            <td><code>${ruta}</code></td>
+                            <td>${totalGrupo}</td>
+                            <td>${rpmGrupo.toFixed(1)}</td>
+                            <td class="desc">${descGeneral}</td>
+                        </tr>
+                    `);
+
+                    // Subfilas informativas de los métodos disponibles
+                    if (metodosDisponibles) {
+                        for (const metodo of metodosDisponibles.split(', ')) {
+                            const claveCompleta = `${metodo} ${ruta}`;
+                            const desc = descripcionesPorMetodoYRuta[claveCompleta] || '—';
+                            filas.push(`
+                                <tr class="fila-metodo">
+                                    <td>${badgeMetodo(metodo)}</td>
+                                    <td>—</td>
+                                    <td>—</td>
+                                    <td class="desc">${desc}</td>
+                                </tr>
+                            `);
+                        }
+                    }
+                }
+            }
+
+            return filas.join('') || '<tr><td colspan="4">Sin datos</td></tr>';
+        }
+
+        // ── Carga de datos ────────────────────────────────────────────────────
+
+        async function cargarMetricas() {
+            try {
+                const respuesta = await fetch('/metricas');
+                const datos = await respuesta.json();
+
+                document.getElementById('ultimaActualizacion').textContent =
+                    new Date(datos.ultima_actualizacion).toLocaleString('es-ES');
+
+                // Sistema
+                const uptime = datos.sistema.uptime_segundos;
+                const textoUptime = uptime > 3600 ? (uptime / 3600).toFixed(1) + ' h'
+                                  : uptime > 60   ? (uptime / 60).toFixed(1) + ' m'
+                                  : uptime.toFixed(0) + ' s';
+
+                const totalSolicitudes = Object.values(datos.solicitudes_totales_por_endpoint || {})
+                    .reduce((a, b) => a + b, 0);
+
+                const filasSistema = [
+                    { etiqueta: 'Uptime',              valor: textoUptime },
+                    { etiqueta: 'Rutas',               valor: datos.sistema.rutas_registradas },
+                    { etiqueta: 'Categorías',          valor: datos.sistema.categorias_registradas },
+                    { etiqueta: 'Solicitudes totales', valor: totalSolicitudes },
+                ];
+                document.querySelector('#tabla-sistema tbody').innerHTML = filasSistema.map(f => `
+                    <tr>
+                        <td>${f.etiqueta}</td>
+                        <td><strong>${f.valor}</strong></td>
+                        <td class="desc">${descripcionesSistema[f.etiqueta] || '—'}</td>
+                    </tr>
+                `).join('');
+
+                // Endpoints
+                document.querySelector('#tabla-endpoints tbody').innerHTML = renderizarTablaEndpoints(
+                    datos.solicitudes_totales_por_endpoint || {},
+                    datos.solicitudes_por_minuto_por_endpoint || {}
+                );
+
+                // Categorías
+                const categorias = Object.entries(datos.solicitudes_totales_por_categoria || {});
+                document.querySelector('#tabla-categorias tbody').innerHTML = categorias.map(([cat, total]) => {
+                    const rpm = datos.solicitudes_por_minuto_por_categoria?.[cat] || 0;
+                    return `
+                        <tr>
+                            <td>${cat}</td>
+                            <td>${total}</td>
+                            <td>${rpm.toFixed(1)}</td>
+                            <td class="desc">${descripcionesPorCategoria[cat] || '—'}</td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="4">Sin datos</td></tr>';
+
+                // Otros
+                document.querySelector('#tabla-otros tbody').innerHTML = `
+                    <tr>
+                        <td>Consultas BD</td>
+                        <td><strong>${datos.consultas_bd_totales || 0}</strong></td>
+                        <td class="desc">${descripcionesOtros['Consultas BD']}</td>
+                    </tr>
+                `;
+
+            } catch (err) {
+                alert('Error al cargar métricas: ' + err.message);
+            }
+        }
+
+        document.getElementById('btnActualizar').addEventListener('click', cargarMetricas);
+        document.getElementById('intervalo').addEventListener('change', (e) => {
+            clearInterval(window.__temporizador);
+            const intervalo = Number(e.target.value);
+            if (intervalo > 0) window.__temporizador = setInterval(cargarMetricas, intervalo);
+        });
+
+        cargarMetricas();
+    </script>
+</body>
+</html>
