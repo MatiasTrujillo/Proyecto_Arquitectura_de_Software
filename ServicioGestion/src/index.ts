@@ -13,6 +13,7 @@ import { ControladorIncidente } from './ModuloReservas/WebApi/Controlador/Contro
 
 import { registradorSolicitudes, manejadorErrores } from './Shared/Logging/requestLogger';
 import { manejadorMetricas } from './Shared/Metrics/metrics';
+import { verificarAutorizacion } from './Shared/Auth/middlewareAuth';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -29,6 +30,7 @@ const incidenteController = new ControladorIncidente();
 
 app.use(express.json());
 app.use(registradorSolicitudes);
+app.use('/api', verificarAutorizacion);
 
 // ─── Administradores ─────────────────────────────────────────────────────────
 app.post('/api/administradores', administradorController.crearAdministrador.bind(administradorController));

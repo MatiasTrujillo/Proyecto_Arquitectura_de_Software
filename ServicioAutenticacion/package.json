@@ -1,0 +1,29 @@
+{
+  "name": "servicio-autenticacion",
+  "version": "1.0.0",
+  "description": "Servicio externo de autenticación - MOVE",
+  "main": "index.js",
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "db:migrate": "ts-node src/Shared/Database/MigracionesRunner.ts"
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.21.0",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.1",
+    "@types/pg": "^8.20.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  },
+  "allowScripts": {
+    "bcrypt@5.1.1": true
+  }
+}

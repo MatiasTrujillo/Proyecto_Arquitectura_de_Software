@@ -5,76 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ServicioGestion</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: white;
-        }
-        h1 {
-            margin-top: 0;
-            color: #333;
-        }
-        h2 {
-            color: #555;
-            font-size: 1rem;
-            margin: 20px 0 8px 0;
-        }
-        .nav {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        a {
-            padding: 10px 15px;
-            background: #0066cc;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-        a:hover {
-            background: #0052a3;
-        }
-        a.secundario {
-            background: #6c757d;
-        }
-        a.secundario:hover {
-            background: #545b62;
-        }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        h2 { color: #555; font-size: 1rem; margin: 20px 0 8px 0; }
+        .nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        a { padding: 10px 15px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .info-rol { font-size: 0.9em; color: #555; }
+        .btn-logout { padding: 8px 14px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+        .btn-logout:hover { background: #990000; }
     </style>
 </head>
 <body>
-    <h1>ServicioGestion</h1>
-
-    <h2>Usuarios</h2>
-    <div class="nav">
-        <a href="/administradores-ui">Administradores</a>
-        <a href="/operadores-ui">Operadores</a>
-        <a href="/conductores-ui">Conductores</a>
-        <a href="/clientes-personales-ui">Clientes Personales</a>
-        <a href="/clientes-empresariales-ui">Clientes Empresariales</a>
+    <div class="header">
+        <h1 style="margin:0">ServicioGestion</h1>
+        <div style="display:flex;align-items:center;gap:12px">
+            <span class="info-rol" id="infoRol"></span>
+            <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
     </div>
+    <div id="contenido"></div>
 
-    <h2>Catálogo</h2>
-    <div class="nav">
-        <a href="/productos-ui">Productos</a>
-    </div>
+    <script>
+        const token = sessionStorage.getItem('auth_token');
+        const rol   = sessionStorage.getItem('auth_rol');
 
-    <h2>Pagos</h2>
-    <div class="nav">
-        <a href="/pagos-ui">Pagos</a>
-    </div>
+        if (!token || !rol) {
+            window.location.href = 'http://localhost:3002/';
+        }
 
-    <h2>Reservas</h2>
-    <div class="nav">
-        <a href="/viajes-ui">Viajes</a>
-        <a href="/incidentes-ui">Incidentes</a>
-    </div>
+        document.getElementById('infoRol').textContent = 'Sesión: ' + rol;
 
-    <h2>Monitoreo</h2>
-    <div class="nav">
-        <a href="/metricas-ui">Métricas</a>
-    </div>
+        const PAGINAS = {
+            'Administrador': [
+                { seccion: 'Usuarios',   links: [
+                    { label: 'Administradores',       href: '/administradores-ui' },
+                    { label: 'Operadores',             href: '/operadores-ui' },
+                    { label: 'Conductores',            href: '/conductores-ui' },
+                    { label: 'Clientes Personales',    href: '/clientes-personales-ui' },
+                    { label: 'Clientes Empresariales', href: '/clientes-empresariales-ui' },
+                ]},
+                { seccion: 'Catálogo', links: [{ label: 'Productos', href: '/productos-ui' }] },
+                { seccion: 'Pagos',    links: [{ label: 'Pagos',     href: '/pagos-ui' }] },
+                { seccion: 'Reservas', links: [
+                    { label: 'Viajes',     href: '/viajes-ui' },
+                    { label: 'Incidentes', href: '/incidentes-ui' },
+                ]},
+                { seccion: 'Monitoreo', links: [{ label: 'Métricas', href: '/metricas-ui' }] },
+            ],
+            'Operador': [
+                { seccion: 'Mi sección', links: [{ label: 'Operadores', href: '/operadores-ui' }] },
+                { seccion: 'Reservas',   links: [
+                    { label: 'Viajes',     href: '/viajes-ui' },
+                    { label: 'Incidentes', href: '/incidentes-ui' },
+                ]},
+            ],
+            'Conductor': [
+                { seccion: 'Mi sección', links: [{ label: 'Conductores', href: '/conductores-ui' }] },
+                { seccion: 'Reservas',   links: [{ label: 'Viajes', href: '/viajes-ui' }] },
+            ],
+            'ClientePersonal': [
+                { seccion: 'Mi sección', links: [{ label: 'Mis datos y reservas', href: '/clientes-personales-ui' }] },
+            ],
+            'ClienteEmpresa': [
+                { seccion: 'Mi sección', links: [
+                    { label: 'Mis datos y reservas', href: '/clientes-empresariales-ui' },
+                    { label: 'Productos',             href: '/productos-ui' },
+                ]},
+            ],
+        };
+
+        const secciones = PAGINAS[rol] || [];
+        const contenido = document.getElementById('contenido');
+
+        if (secciones.length === 0) {
+            contenido.innerHTML = '<p>No hay páginas disponibles para el rol <strong>' + rol + '</strong>.</p>';
+        } else {
+            contenido.innerHTML = secciones.map(s => `
+                <h2>${s.seccion}</h2>
+                <div class="nav">
+                    ${s.links.map(l => `<a href="${l.href}">${l.label}</a>`).join('')}
+                </div>
+            `).join('');
+        }
+
+        async function logout() {
+            try {
+                await fetch('http://localhost:3002/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+            } catch (_) {}
+            sessionStorage.removeItem('auth_token');
+            sessionStorage.removeItem('auth_rol');
+            window.location.href = 'http://localhost:3002/';
+        }
+    </script>
 </body>
 </html>

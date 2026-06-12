@@ -126,11 +126,21 @@
     </div>
 
     <script>
+        const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
+        const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
+        if (token) sessionStorage.setItem('auth_token', token);
+        if (rol)   sessionStorage.setItem('auth_rol',   rol);
+        if (!token) window.location.href = 'http://localhost:3002/';
+        function apiFetch(url, options = {}) {
+            options.headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + token };
+            return fetch(url, options);
+        }
+
         let items = [];
 
         async function cargarClientes() {
             try {
-                const res = await fetch('/api/clientes-empresariales');
+                const res = await apiFetch('/api/clientes-empresariales');
                 const json = await res.json();
                 items = json.data || [];
                 const tbody = document.querySelector('#tablaClientes tbody');
@@ -164,7 +174,7 @@
                 return;
             }
             try {
-                const res = await fetch('/api/clientes-empresariales', {
+                const res = await apiFetch('/api/clientes-empresariales', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cedula, nombre })
@@ -242,7 +252,7 @@
             const destino = document.getElementById('calcDestino').value;
             if (!origen || !destino) return;
             try {
-                const res = await fetch('/api/clientes-empresariales/calcular-traslado', {
+                const res = await apiFetch('/api/clientes-empresariales/calcular-traslado', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ origen, destino })
@@ -260,7 +270,7 @@
 
         async function realizarReserva() {
             try {
-                const res = await fetch('/api/clientes-empresariales/realizar-reserva', {
+                const res = await apiFetch('/api/clientes-empresariales/realizar-reserva', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -280,7 +290,7 @@
             const productoId = document.getElementById('asociarProductoId').value;
             if (!clienteId || !productoId) return;
             try {
-                const res = await fetch('/api/clientes-empresariales/asociar-producto', {
+                const res = await apiFetch('/api/clientes-empresariales/asociar-producto', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ clienteId, productoId })
@@ -301,7 +311,7 @@
             const origen = document.getElementById('origenDireccion').value;
             if (!clienteId || !origen) return;
             try {
-                const res = await fetch('/api/clientes-empresariales/registrar-origen-frecuente', {
+                const res = await apiFetch('/api/clientes-empresariales/registrar-origen-frecuente', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ clienteId, origen })
@@ -322,7 +332,7 @@
             const destino = document.getElementById('destinoDireccion').value;
             if (!clienteId || !destino) return;
             try {
-                const res = await fetch('/api/clientes-empresariales/registrar-destino-frecuente', {
+                const res = await apiFetch('/api/clientes-empresariales/registrar-destino-frecuente', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ clienteId, destino })
