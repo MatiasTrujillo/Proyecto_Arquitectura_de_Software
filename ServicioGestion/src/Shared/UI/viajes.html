@@ -84,6 +84,16 @@
     </table>
 
     <script>
+        const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
+        const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
+        if (token) sessionStorage.setItem('auth_token', token);
+        if (rol)   sessionStorage.setItem('auth_rol',   rol);
+        if (!token) window.location.href = 'http://localhost:3002/';
+        function apiFetch(url, options = {}) {
+            options.headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + token };
+            return fetch(url, options);
+        }
+
         let items = [];
 
         function fechaParaInput(fecha) {
@@ -93,7 +103,7 @@
 
         async function cargarViajes() {
             try {
-                const res = await fetch('/api/viajes');
+                const res = await apiFetch('/api/viajes');
                 const json = await res.json();
                 items = json.data || [];
                 const tbody = document.querySelector('#tablaViajes tbody');
@@ -134,7 +144,7 @@
                 return;
             }
             try {
-                const res = await fetch('/api/viajes', {
+                const res = await apiFetch('/api/viajes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ reservaId, origen, destino, fecha: new Date(fecha).toISOString(), estado, conductor })

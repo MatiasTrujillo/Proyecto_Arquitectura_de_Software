@@ -96,11 +96,21 @@
     </div>
 
     <script>
+        const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
+        const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
+        if (token) sessionStorage.setItem('auth_token', token);
+        if (rol)   sessionStorage.setItem('auth_rol',   rol);
+        if (!token) window.location.href = 'http://localhost:3002/';
+        function apiFetch(url, options = {}) {
+            options.headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + token };
+            return fetch(url, options);
+        }
+
         let items = [];
 
         async function cargarClientes() {
             try {
-                const res = await fetch('/api/clientes-personales');
+                const res = await apiFetch('/api/clientes-personales');
                 const json = await res.json();
                 items = json.data || [];
                 const tbody = document.querySelector('#tablaClientes tbody');
@@ -134,7 +144,7 @@
                 return;
             }
             try {
-                const res = await fetch('/api/clientes-personales', {
+                const res = await apiFetch('/api/clientes-personales', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cedula, nombre })
@@ -212,7 +222,7 @@
             const destino = document.getElementById('calcDestino').value;
             if (!origen || !destino) return;
             try {
-                const res = await fetch('/api/clientes-personales/calcular-traslado', {
+                const res = await apiFetch('/api/clientes-personales/calcular-traslado', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ origen, destino })
@@ -230,7 +240,7 @@
 
         async function realizarReserva() {
             try {
-                const res = await fetch('/api/clientes-personales/realizar-reserva', {
+                const res = await apiFetch('/api/clientes-personales/realizar-reserva', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
