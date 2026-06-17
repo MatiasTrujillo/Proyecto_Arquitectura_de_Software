@@ -177,7 +177,7 @@
                 return;
             }
             try {
-                const res = await fetch(`/api/productos/${id}`, {
+                const res = await apiFetch(`/api/productos/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ descripcion, valor: Number(valor), tamano: Number(tamano), categoria })
@@ -198,7 +198,7 @@
         async function eliminarProducto(id) {
             if (!confirm('¿Eliminar este producto?')) return;
             try {
-                const res = await fetch(`/api/productos/${id}`, { method: 'DELETE' });
+                const res = await apiFetch(`/api/productos/${id}`, { method: 'DELETE' });
                 if (res.ok) cargarProductos();
             } catch (err) {
                 alert('Error: ' + err.message);

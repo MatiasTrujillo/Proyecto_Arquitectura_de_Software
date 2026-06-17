@@ -83,6 +83,11 @@
     </table>
 
     <script>
+        const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
+        const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
+        if (token) sessionStorage.setItem('auth_token', token);
+        if (rol)   sessionStorage.setItem('auth_rol',   rol);
+        if (!token || rol !== 'Administrador') window.location.href = 'http://localhost:3002/';
 
         const descripcionesPorMetodoYRuta = {
             'GET /':          'Sirve la página principal.',
@@ -143,12 +148,32 @@
             'PUT /api/productos/:id':    'Modificación: actualiza un producto existente.',
             'DELETE /api/productos/:id': 'Baja: elimina un producto por ID.',
 
+            // Vehículos
+            'GET /api/vehiculos':        'Consulta: lista todos los vehículos.',
+            'POST /api/vehiculos':       'Alta: registra un nuevo vehículo.',
+            'GET /api/vehiculos/:id':    'Consulta: obtiene un vehículo por ID.',
+            'PUT /api/vehiculos/:id':    'Modificación: actualiza un vehículo existente.',
+            'DELETE /api/vehiculos/:id': 'Baja: elimina un vehículo por ID.',
+
+            // Zonas Geográficas
+            'GET /api/zonas-geograficas':        'Consulta: lista todas las zonas geográficas.',
+            'POST /api/zonas-geograficas':       'Alta: crea una nueva zona geográfica.',
+            'GET /api/zonas-geograficas/:id':    'Consulta: obtiene una zona por ID.',
+            'PUT /api/zonas-geograficas/:id':    'Modificación: actualiza una zona existente.',
+            'DELETE /api/zonas-geograficas/:id': 'Baja: elimina una zona por ID.',
+
             // Pagos
             'GET /api/pagos':        'Consulta: lista todos los pagos.',
             'POST /api/pagos':       'Alta: registra un nuevo pago.',
             'GET /api/pagos/:id':    'Consulta: obtiene un pago por ID.',
             'PUT /api/pagos/:id':    'Modificación: actualiza un pago existente.',
             'DELETE /api/pagos/:id': 'Baja: elimina un pago por ID.',
+
+            // Reservas
+            'GET /api/reservas':               'Consulta: lista todas las reservas.',
+            'POST /api/reservas':              'Alta: crea una nueva reserva.',
+            'GET /api/reservas/:id':           'Consulta: obtiene una reserva por ID.',
+            'PATCH /api/reservas/:id/estado':  'Modificación: actualiza el estado de una reserva.',
 
             // Viajes
             'GET /api/viajes':        'Consulta: lista todos los viajes.',
@@ -200,8 +225,18 @@
             '/api/productos':    'GET, POST',
             '/api/productos/:id':'GET, PUT, DELETE',
 
+            '/api/vehiculos':    'GET, POST',
+            '/api/vehiculos/:id':'GET, PUT, DELETE',
+
+            '/api/zonas-geograficas':    'GET, POST',
+            '/api/zonas-geograficas/:id':'GET, PUT, DELETE',
+
             '/api/pagos':    'GET, POST',
             '/api/pagos/:id':'GET, PUT, DELETE',
+
+            '/api/reservas':             'GET, POST',
+            '/api/reservas/:id':         'GET',
+            '/api/reservas/:id/estado':  'PATCH',
 
             '/api/viajes':    'GET, POST',
             '/api/viajes/:id':'GET, PUT, DELETE',
@@ -245,8 +280,18 @@
             '/api/productos':    'Alta (POST) y consulta (GET) de productos.',
             '/api/productos/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un producto.',
 
+            '/api/vehiculos':    'Alta (POST) y consulta (GET) de vehículos.',
+            '/api/vehiculos/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un vehículo.',
+
+            '/api/zonas-geograficas':    'Alta (POST) y consulta (GET) de zonas geográficas.',
+            '/api/zonas-geograficas/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de una zona.',
+
             '/api/pagos':    'Alta (POST) y consulta (GET) de pagos.',
             '/api/pagos/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un pago.',
+
+            '/api/reservas':            'Alta (POST) y consulta (GET) de reservas.',
+            '/api/reservas/:id':        'Consulta (GET) de una reserva por ID.',
+            '/api/reservas/:id/estado': 'Actualización del estado de una reserva (PATCH).',
 
             '/api/viajes':    'Alta (POST) y consulta (GET) de viajes.',
             '/api/viajes/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un viaje.',
@@ -270,7 +315,10 @@
             'clientes-personales':   'Solicitudes al módulo de clientes personales (/api/clientes-personales).',
             'clientes-empresariales':'Solicitudes al módulo de clientes empresariales (/api/clientes-empresariales).',
             'productos':             'Solicitudes al módulo de productos (/api/productos).',
+            'vehiculos':             'Solicitudes al módulo de vehículos (/api/vehiculos).',
+            'zonas-geograficas':     'Solicitudes al módulo de zonas geográficas (/api/zonas-geograficas).',
             'pagos':                 'Solicitudes al módulo de pagos (/api/pagos).',
+            'reservas':              'Solicitudes al módulo de reservas (/api/reservas).',
             'viajes':                'Solicitudes al módulo de viajes (/api/viajes).',
             'incidentes':            'Solicitudes al módulo de incidentes (/api/incidentes).',
         };

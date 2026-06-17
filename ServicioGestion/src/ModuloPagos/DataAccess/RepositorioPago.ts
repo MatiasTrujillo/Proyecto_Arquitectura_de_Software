@@ -4,35 +4,36 @@ import { EstadoPago } from "../Domain/EstadoPago";
 import { IRepositorioPago } from "../IDataAccess/IRepositorioPago";
 
 export class RepositorioPago implements IRepositorioPago {
-  async crearPago(fecha: Date, monto: number, estado: EstadoPago): Promise<Pago> {
+  private mapRow(r: any): Pago {
+    return new Pago(r.id, new Date(r.fecha), r.monto, r.estado as EstadoPago, r.reserva_id ?? '');
+  }
+
+  async crearPago(fecha: Date, monto: number, estado: EstadoPago, reservaId: string): Promise<Pago> {
     const res = await pool.query(
-      'INSERT INTO pago (fecha, monto, estado) VALUES ($1, $2, $3) RETURNING id, fecha, monto, estado',
-      [fecha.toISOString(), monto, estado]
+      'INSERT INTO pago (fecha, monto, estado, reserva_id) VALUES ($1, $2, $3, $4) RETURNING id, fecha, monto, estado, reserva_id',
+      [fecha.toISOString(), monto, estado, reservaId]
     );
-    const r = res.rows[0];
-    return new Pago(r.id, new Date(r.fecha), r.monto, r.estado as EstadoPago);
+    return this.mapRow(res.rows[0]);
   }
 
   async obtenerPagos(): Promise<Pago[]> {
-    const res = await pool.query('SELECT id, fecha, monto, estado FROM pago');
-    return res.rows.map((r: any) => new Pago(r.id, new Date(r.fecha), r.monto, r.estado as EstadoPago));
+    const res = await pool.query('SELECT id, fecha, monto, estado, reserva_id FROM pago');
+    return res.rows.map((r: any) => this.mapRow(r));
   }
 
   async obtenerPagoPorId(id: number): Promise<Pago | undefined> {
-    const res = await pool.query('SELECT id, fecha, monto, estado FROM pago WHERE id = $1', [id]);
+    const res = await pool.query('SELECT id, fecha, monto, estado, reserva_id FROM pago WHERE id = $1', [id]);
     if (!res.rows[0]) return undefined;
-    const r = res.rows[0];
-    return new Pago(r.id, new Date(r.fecha), r.monto, r.estado as EstadoPago);
+    return this.mapRow(res.rows[0]);
   }
 
-  async actualizarPago(id: number, fecha: Date, monto: number, estado: EstadoPago): Promise<Pago | undefined> {
+  async actualizarPago(id: number, fecha: Date, monto: number, estado: EstadoPago, reservaId: string): Promise<Pago | undefined> {
     const res = await pool.query(
-      'UPDATE pago SET fecha=$1, monto=$2, estado=$3 WHERE id=$4 RETURNING id, fecha, monto, estado',
-      [fecha.toISOString(), monto, estado, id]
+      'UPDATE pago SET fecha=$1, monto=$2, estado=$3, reserva_id=$4 WHERE id=$5 RETURNING id, fecha, monto, estado, reserva_id',
+      [fecha.toISOString(), monto, estado, reservaId, id]
     );
     if (!res.rows[0]) return undefined;
-    const r = res.rows[0];
-    return new Pago(r.id, new Date(r.fecha), r.monto, r.estado as EstadoPago);
+    return this.mapRow(res.rows[0]);
   }
 
   async eliminarPago(id: number): Promise<boolean> {

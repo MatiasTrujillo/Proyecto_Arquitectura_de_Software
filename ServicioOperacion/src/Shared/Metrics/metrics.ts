@@ -1,23 +1,19 @@
 import client from 'prom-client';
 
-// ─── Registro de Prometheus ───────────────────────────────────────────────────
-
 const registro = new client.Registry();
 client.collectDefaultMetrics({ register: registro });
-
-// ─── Contadores y Histogramas de Prometheus ───────────────────────────────────
 
 export const contadorSolicitudesHttp = new client.Counter({
   name: 'solicitudes_http_totales',
   help: 'Cantidad total de solicitudes HTTP',
   labelNames: ['metodo', 'ruta', 'estado'],
-  registers: [registro],
+  registers: [registro]
 });
 
 export const contadorConsultasBd = new client.Counter({
   name: 'consultas_bd_totales',
   help: 'Cantidad total de consultas a la base de datos',
-  registers: [registro],
+  registers: [registro]
 });
 
 export const histogramaDuracionSolicitudes = new client.Histogram({
@@ -25,156 +21,93 @@ export const histogramaDuracionSolicitudes = new client.Histogram({
   help: 'Duración de solicitudes HTTP en segundos',
   labelNames: ['metodo', 'ruta', 'estado'],
   registers: [registro],
-  buckets: [0.001, 0.01, 0.1, 1, 5],
+  buckets: [0.001, 0.01, 0.1, 1, 5]
 });
 
 export const histogramaDuracionConsultasBd = new client.Histogram({
   name: 'duracion_consultas_bd_segundos',
   help: 'Duración de consultas a la BD en segundos',
   registers: [registro],
-  buckets: [0.0005, 0.001, 0.005, 0.01, 0.1, 1],
+  buckets: [0.0005, 0.001, 0.005, 0.01, 0.1, 1]
 });
 
-// ─── Tipos internos ───────────────────────────────────────────────────────────
+const solicitudesPorRuta = new Map<string, number>();
+const solicitudesPorCategoria = new Map<string, number>();
+const duracionTotalPorRuta = new Map<string, number>();
+const conteoDuracionPorRuta = new Map<string, number>();
+const historialSolicitudes: Array<{ ruta: string; categoria: string; timestamp: number }> = [];
 
-interface EntradaSolicitud {
-  clave: string;      // Ej: "GET /api/vehiculos/:id"
-  categoria: string;  // Ej: "vehiculos"
-  timestamp: number;
-}
-
-interface DatosPorClave {
-  total: number;
-  duracionTotal: number;
-}
-
-// ─── Almacenamiento interno ───────────────────────────────────────────────────
-
-// Acumula totales por "METODO /ruta"
-const datosPorClave = new Map<string, DatosPorClave>();
-
-// Acumula totales por categoría (ej: "vehiculos", "dispositivos", "general")
-const totalesPorCategoria = new Map<string, number>();
-
-// Historial de los últimos N minutos para calcular solicitudes por minuto
-const historial: EntradaSolicitud[] = [];
-
-// ─── Funciones auxiliares ─────────────────────────────────────────────────────
-
-/**
- * Extrae la categoría de una ruta.
- * Ej: "/api/vehiculos/:id" → "vehiculos"
- *     "/metricas-ui"       → "general"
- */
 function obtenerCategoria(ruta: string): string {
   const coincidencia = ruta.match(/^\/api\/([^\/]+)/);
   return coincidencia ? coincidencia[1] : 'general';
 }
 
-/**
- * Elimina del historial las entradas más antiguas que la ventana de tiempo dada.
- * Devuelve las entradas que quedan (las recientes).
- */
-function limpiarHistorialAntiguo(ventanaMs: number): EntradaSolicitud[] {
+export function registrarSolicitudInterna(ruta: string, duracionSegundos: number) {
+  const categoria = obtenerCategoria(ruta);
+  const ahora = Date.now();
+
+  solicitudesPorRuta.set(ruta, (solicitudesPorRuta.get(ruta) ?? 0) + 1);
+  solicitudesPorCategoria.set(categoria, (solicitudesPorCategoria.get(categoria) ?? 0) + 1);
+  duracionTotalPorRuta.set(ruta, (duracionTotalPorRuta.get(ruta) ?? 0) + duracionSegundos);
+  conteoDuracionPorRuta.set(ruta, (conteoDuracionPorRuta.get(ruta) ?? 0) + 1);
+  historialSolicitudes.push({ ruta, categoria, timestamp: ahora });
+}
+
+function limpiarHistorialAntiguo(ventanaMs: number) {
   const limite = Date.now() - ventanaMs;
-  const recientes = historial.filter(entrada => entrada.timestamp >= limite);
-  historial.length = 0;
-  historial.push(...recientes);
+  const recientes = historialSolicitudes.filter(registro => registro.timestamp >= limite);
+  historialSolicitudes.length = 0;
+  historialSolicitudes.push(...recientes);
   return recientes;
 }
 
-// ─── Función principal de registro ───────────────────────────────────────────
+export async function obtenerMetricasJSON() {
+  const ventanaMs = 5 * 60 * 1000; // 5 minutos
+  const recientes = limpiarHistorialAntiguo(ventanaMs);
+  const solicitudesPorMinutoPorRuta = new Map<string, number>();
+  const solicitudesPorMinutoPorCategoria = new Map<string, number>();
 
-/**
- * Registra una solicitud HTTP en las estructuras internas.
- * La clave que se guarda es "METODO /ruta", por ejemplo "DELETE /api/vehiculos/:id".
- */
-export function registrarSolicitudInterna(metodo: string, ruta: string, duracionSegundos: number) {
-  const clave = `${metodo} ${ruta}`;
-  const categoria = obtenerCategoria(ruta);
-
-  // Actualizar totales por clave
-  const datosPrevios = datosPorClave.get(clave) ?? { total: 0, duracionTotal: 0 };
-  datosPorClave.set(clave, {
-    total: datosPrevios.total + 1,
-    duracionTotal: datosPrevios.duracionTotal + duracionSegundos,
+  recientes.forEach(({ ruta, categoria }) => {
+    solicitudesPorMinutoPorRuta.set(ruta, (solicitudesPorMinutoPorRuta.get(ruta) ?? 0) + 1);
+    solicitudesPorMinutoPorCategoria.set(categoria, (solicitudesPorMinutoPorCategoria.get(categoria) ?? 0) + 1);
   });
 
-  // Actualizar totales por categoría
-  totalesPorCategoria.set(categoria, (totalesPorCategoria.get(categoria) ?? 0) + 1);
-
-  // Guardar en historial para cálculo de RPM
-  historial.push({ clave, categoria, timestamp: Date.now() });
-}
-
-// ─── Generación del JSON de métricas ─────────────────────────────────────────
-
-export async function obtenerMetricasJSON() {
-  const VENTANA_MS = 5 * 60 * 1000; // ventana de 5 minutos para el cálculo de RPM
-  const MINUTOS_VENTANA = 5;
-
-  const recientes = limpiarHistorialAntiguo(VENTANA_MS);
-
-  // Contar solicitudes recientes por clave y categoría (para RPM)
-  const recientesPorClave = new Map<string, number>();
-  const recientesPorCategoria = new Map<string, number>();
-
-  for (const entrada of recientes) {
-    recientesPorClave.set(entrada.clave, (recientesPorClave.get(entrada.clave) ?? 0) + 1);
-    recientesPorCategoria.set(entrada.categoria, (recientesPorCategoria.get(entrada.categoria) ?? 0) + 1);
+  const promedioDuracionPorRuta: Record<string, number> = {};
+  for (const [ruta, total] of duracionTotalPorRuta.entries()) {
+    const conteo = conteoDuracionPorRuta.get(ruta) ?? 1;
+    promedioDuracionPorRuta[ruta] = total / conteo;
   }
 
-  // Construir objeto de totales por endpoint
-  const totalesPorEndpoint: Record<string, number> = {};
-  for (const [clave, datos] of datosPorClave.entries()) {
-    totalesPorEndpoint[clave] = datos.total;
-  }
+  const requestsByEndpoint: Record<string, number> = {};
+  solicitudesPorRuta.forEach((valor, ruta) => { requestsByEndpoint[ruta] = valor; });
 
-  // Construir objeto de totales por categoría
-  const totalesCategorias: Record<string, number> = {};
-  for (const [categoria, total] of totalesPorCategoria.entries()) {
-    totalesCategorias[categoria] = total;
-  }
+  const requestsByCategory: Record<string, number> = {};
+  solicitudesPorCategoria.forEach((valor, categoria) => { requestsByCategory[categoria] = valor; });
 
-  // Construir objeto de RPM por endpoint
-  const rpmPorEndpoint: Record<string, number> = {};
-  for (const [clave, conteo] of recientesPorClave.entries()) {
-    rpmPorEndpoint[clave] = parseFloat((conteo / MINUTOS_VENTANA).toFixed(2));
-  }
+  const rpmByEndpoint: Record<string, number> = {};
+  solicitudesPorMinutoPorRuta.forEach((valor, ruta) => { rpmByEndpoint[ruta] = parseFloat((valor / 5).toFixed(2)); });
 
-  // Construir objeto de RPM por categoría
-  const rpmPorCategoria: Record<string, number> = {};
-  for (const [categoria, conteo] of recientesPorCategoria.entries()) {
-    rpmPorCategoria[categoria] = parseFloat((conteo / MINUTOS_VENTANA).toFixed(2));
-  }
+  const rpmByCategory: Record<string, number> = {};
+  solicitudesPorMinutoPorCategoria.forEach((valor, categoria) => { rpmByCategory[categoria] = parseFloat((valor / 5).toFixed(2)); });
 
-  // Construir objeto de duración promedio por endpoint
-  const duracionPromedioPorEndpoint: Record<string, number> = {};
-  for (const [clave, datos] of datosPorClave.entries()) {
-    duracionPromedioPorEndpoint[clave] = datos.duracionTotal / datos.total;
-  }
-
-  // Obtener total de consultas a la BD desde Prometheus
   const contadorBD = await contadorConsultasBd.get();
   const consultasBdTotales = contadorBD.values?.reduce((acc, item) => acc + (item?.value ?? 0), 0) ?? 0;
 
   return {
     sistema: {
       uptime_segundos: process.uptime(),
-      rutas_registradas: datosPorClave.size,
-      categorias_registradas: totalesPorCategoria.size,
+      rutas_registradas: Array.from(solicitudesPorRuta.keys()).length,
+      categorias_registradas: Array.from(solicitudesPorCategoria.keys()).length,
     },
-    solicitudes_totales_por_endpoint: totalesPorEndpoint,
-    solicitudes_totales_por_categoria: totalesCategorias,
-    solicitudes_por_minuto_por_endpoint: rpmPorEndpoint,
-    solicitudes_por_minuto_por_categoria: rpmPorCategoria,
-    duracion_promedio_segundos_por_endpoint: duracionPromedioPorEndpoint,
+    solicitudes_totales_por_endpoint: requestsByEndpoint,
+    solicitudes_totales_por_categoria: requestsByCategory,
+    solicitudes_por_minuto_por_endpoint: rpmByEndpoint,
+    solicitudes_por_minuto_por_categoria: rpmByCategory,
+    duracion_promedio_segundos_por_endpoint: promedioDuracionPorRuta,
     consultas_bd_totales: consultasBdTotales,
     ultima_actualizacion: new Date().toISOString(),
   };
 }
-
-// ─── Handler HTTP para el endpoint /metricas ──────────────────────────────────
 
 export async function manejadorMetricas(req: any, res: any) {
   try {

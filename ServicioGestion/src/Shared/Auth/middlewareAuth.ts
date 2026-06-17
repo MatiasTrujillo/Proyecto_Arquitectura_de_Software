@@ -9,11 +9,22 @@ const ACCESO_POR_PREFIJO: Record<string, string[]> = {
   '/conductores':     ['Conductor', 'Administrador'],
   '/clientes-personales':    ['ClientePersonal', 'Administrador'],
   '/clientes-empresariales': ['ClienteEmpresa', 'Administrador'],
-  '/productos':   ['Administrador', 'ClienteEmpresa'],
-  '/pagos':       ['Administrador'],
-  '/viajes':      ['Administrador', 'Operador', 'Conductor'],
-  '/incidentes':  ['Administrador', 'Operador'],
+  '/productos':          ['Administrador', 'ClienteEmpresa'],
+  '/vehiculos':          ['Administrador'],
+  '/zonas-geograficas':  ['Administrador'],
+  '/pagos':              ['Administrador'],
+  '/reservas':           ['Administrador', 'Operador'],
+  '/viajes':             ['Administrador', 'Operador', 'Conductor'],
+  '/incidentes':         ['Administrador', 'Operador', 'Conductor'],
 };
+
+// Rutas donde solo el Administrador puede hacer la operación,
+// independientemente de lo que permita el prefijo general.
+const SOLO_ADMIN_EXACTO: Array<{ metodo: string; ruta: string }> = [
+  { metodo: 'POST', ruta: '/clientes-personales' },
+  { metodo: 'POST', ruta: '/clientes-empresariales' },
+  { metodo: 'POST', ruta: '/conductores' },
+];
 
 export async function verificarAutorizacion(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
@@ -49,6 +60,20 @@ export async function verificarAutorizacion(req: Request, res: Response, next: N
 
     const usuario = await respuesta.json() as { cedula: string; rol: string };
     (req as any).usuario = usuario;
+
+    const esRutaSoloAdmin = SOLO_ADMIN_EXACTO.some(
+      r => r.metodo === req.method && r.ruta === req.path
+    );
+    if (esRutaSoloAdmin && usuario.rol !== 'Administrador') {
+      registrador.warn('acceso_denegado_por_rol', {
+        cedula: usuario.cedula,
+        rol: usuario.rol,
+        ruta: req.path,
+        metodo: req.method,
+      });
+      res.status(403).json({ error: `El rol '${usuario.rol}' no tiene permiso para crear usuarios` });
+      return;
+    }
 
     const prefijo = Object.keys(ACCESO_POR_PREFIJO).find(p => req.path.startsWith(p));
     if (prefijo) {

@@ -161,7 +161,7 @@
                 return;
             }
             try {
-                const res = await fetch(`/api/administradores/${id}`, {
+                const res = await apiFetch(`/api/administradores/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cedula, nombre })
@@ -182,7 +182,7 @@
         async function eliminarAdministrador(id) {
             if (!confirm('¿Eliminar este administrador?')) return;
             try {
-                const res = await fetch(`/api/administradores/${id}`, { method: 'DELETE' });
+                const res = await apiFetch(`/api/administradores/${id}`, { method: 'DELETE' });
                 if (res.ok) cargarAdministradores();
             } catch (err) {
                 alert('Error: ' + err.message);

@@ -7,21 +7,16 @@ export class IncidenteDTO {
   reservaId: string;
   estado: string;
   severidad: string;
+  conductorId: string;
 
-  constructor(
-    id: string,
-    descripcion: string,
-    fecha: Date,
-    reservaId: string,
-    estado: string,
-    severidad: string
-  ) {
+  constructor(id: string, descripcion: string, fecha: Date, reservaId: string, estado: string, severidad: string, conductorId: string) {
     this.id = id;
     this.descripcion = descripcion;
     this.fecha = fecha;
     this.reservaId = reservaId;
     this.estado = estado;
     this.severidad = severidad;
+    this.conductorId = conductorId;
   }
 
   static fromEntity(entidad: Incidente): IncidenteDTO {
@@ -31,18 +26,8 @@ export class IncidenteDTO {
       entidad.getFecha(),
       entidad.getReservaId(),
       entidad.getEstado(),
-      entidad.getSeveridad()
-    );
-  }
-
-  toEntity(): Incidente {
-    return new Incidente(
-      this.id,
-      this.descripcion,
-      this.fecha,
-      this.reservaId,
-      this.estado,
-      this.severidad
+      entidad.getSeveridad(),
+      entidad.getConductorId()
     );
   }
 }

@@ -7,7 +7,10 @@ import { ControladorConductor } from './ModuloUsuarios/WebApi/Controlador/Contro
 import { ControladorClientePersonal } from './ModuloUsuarios/WebApi/Controlador/ControladorClientePersonal';
 import { ControladorClienteEmpresa } from './ModuloUsuarios/WebApi/Controlador/ControladorClienteEmpresa';
 import { ControladorProducto } from './ModuloCatalogo/WebApi/Controlador/ControladorProducto';
+import { ControladorVehiculo } from './ModuloCatalogo/WebApi/Controlador/ControladorVehiculo';
+import { ControladorZonaGeografica } from './ModuloCatalogo/WebApi/Controlador/ControladorZonaGeografica';
 import { ControladorPago } from './ModuloPagos/WebApi/Controlador/ControladorPago';
+import { ControladorReserva } from './ModuloReservas/WebApi/Controlador/ControladorReserva';
 import { ControladorViaje } from './ModuloReservas/WebApi/Controlador/ControladorViaje';
 import { ControladorIncidente } from './ModuloReservas/WebApi/Controlador/ControladorIncidente';
 
@@ -24,7 +27,10 @@ const conductorController = new ControladorConductor();
 const clientePersonalController = new ControladorClientePersonal();
 const clienteEmpresaController = new ControladorClienteEmpresa();
 const productoController = new ControladorProducto();
+const vehiculoController = new ControladorVehiculo();
+const zonaGeograficaController = new ControladorZonaGeografica();
 const pagoController = new ControladorPago();
+const reservaController = new ControladorReserva();
 const viajeController = new ControladorViaje();
 const incidenteController = new ControladorIncidente();
 
@@ -61,16 +67,19 @@ app.post('/api/clientes-personales', clientePersonalController.crearClientePerso
 app.get('/api/clientes-personales', clientePersonalController.obtenerClientePersonal.bind(clientePersonalController));
 app.post('/api/clientes-personales/calcular-traslado', clientePersonalController.calcularTraslado.bind(clientePersonalController));
 app.post('/api/clientes-personales/realizar-reserva', clientePersonalController.realizarReserva.bind(clientePersonalController));
+app.post('/api/clientes-personales/realizar-pago', clientePersonalController.realizarPago.bind(clientePersonalController));
 app.get('/api/clientes-personales/:id', clientePersonalController.obtenerClientePersonalPorId.bind(clientePersonalController));
 app.put('/api/clientes-personales/:id', clientePersonalController.actualizarClientePersonal.bind(clientePersonalController));
 app.delete('/api/clientes-personales/:id', clientePersonalController.eliminarClientePersonal.bind(clientePersonalController));
 app.get('/api/clientes-personales/:clienteId/reservas', clientePersonalController.obtenerReservas.bind(clientePersonalController));
+app.get('/api/clientes-personales/reservas/:reservaId/estado', clientePersonalController.consultarEstadoReserva.bind(clientePersonalController));
 
 // ─── Clientes Empresariales ───────────────────────────────────────────────────
 app.post('/api/clientes-empresariales', clienteEmpresaController.crearClienteEmpresa.bind(clienteEmpresaController));
 app.get('/api/clientes-empresariales', clienteEmpresaController.obtenerClienteEmpresa.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/calcular-traslado', clienteEmpresaController.calcularTraslado.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/realizar-reserva', clienteEmpresaController.realizarReserva.bind(clienteEmpresaController));
+app.post('/api/clientes-empresariales/realizar-pago', clienteEmpresaController.realizarPago.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/asociar-producto', clienteEmpresaController.asociarProducto.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/registrar-origen-frecuente', clienteEmpresaController.registrarOrigenFrecuente.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/registrar-destino-frecuente', clienteEmpresaController.registrarDestinoFrecuente.bind(clienteEmpresaController));
@@ -78,6 +87,7 @@ app.get('/api/clientes-empresariales/:id', clienteEmpresaController.obtenerClien
 app.put('/api/clientes-empresariales/:id', clienteEmpresaController.actualizarClienteEmpresa.bind(clienteEmpresaController));
 app.delete('/api/clientes-empresariales/:id', clienteEmpresaController.eliminarClienteEmpresa.bind(clienteEmpresaController));
 app.get('/api/clientes-empresariales/:clienteId/reservas', clienteEmpresaController.obtenerReservas.bind(clienteEmpresaController));
+app.get('/api/clientes-empresariales/reservas/:reservaId/estado', clienteEmpresaController.consultarEstadoReserva.bind(clienteEmpresaController));
 
 // ─── Productos ────────────────────────────────────────────────────────────────
 app.post('/api/productos', productoController.crearProducto.bind(productoController));
@@ -86,12 +96,32 @@ app.get('/api/productos/:id', productoController.obtenerProductoPorId.bind(produ
 app.put('/api/productos/:id', productoController.actualizarProducto.bind(productoController));
 app.delete('/api/productos/:id', productoController.eliminarProducto.bind(productoController));
 
+// ─── Vehículos ────────────────────────────────────────────────────────────────
+app.post('/api/vehiculos', vehiculoController.crearVehiculo.bind(vehiculoController));
+app.get('/api/vehiculos', vehiculoController.obtenerVehiculos.bind(vehiculoController));
+app.get('/api/vehiculos/:id', vehiculoController.obtenerVehiculoPorId.bind(vehiculoController));
+app.put('/api/vehiculos/:id', vehiculoController.actualizarVehiculo.bind(vehiculoController));
+app.delete('/api/vehiculos/:id', vehiculoController.eliminarVehiculo.bind(vehiculoController));
+
+// ─── Zonas Geográficas ────────────────────────────────────────────────────────
+app.post('/api/zonas-geograficas', zonaGeograficaController.crearZona.bind(zonaGeograficaController));
+app.get('/api/zonas-geograficas', zonaGeograficaController.obtenerZonas.bind(zonaGeograficaController));
+app.get('/api/zonas-geograficas/:id', zonaGeograficaController.obtenerZonaPorId.bind(zonaGeograficaController));
+app.put('/api/zonas-geograficas/:id', zonaGeograficaController.actualizarZona.bind(zonaGeograficaController));
+app.delete('/api/zonas-geograficas/:id', zonaGeograficaController.eliminarZona.bind(zonaGeograficaController));
+
 // ─── Pagos ────────────────────────────────────────────────────────────────────
 app.post('/api/pagos', pagoController.crearPago.bind(pagoController));
 app.get('/api/pagos', pagoController.obtenerPago.bind(pagoController));
 app.get('/api/pagos/:id', pagoController.obtenerPagoPorId.bind(pagoController));
 app.put('/api/pagos/:id', pagoController.actualizarPago.bind(pagoController));
 app.delete('/api/pagos/:id', pagoController.eliminarPago.bind(pagoController));
+
+// ─── Reservas ─────────────────────────────────────────────────────────────────
+app.post('/api/reservas', reservaController.crearReserva.bind(reservaController));
+app.get('/api/reservas', reservaController.obtenerReservas.bind(reservaController));
+app.get('/api/reservas/:id', reservaController.obtenerReservaPorId.bind(reservaController));
+app.patch('/api/reservas/:id/estado', reservaController.actualizarEstadoReserva.bind(reservaController));
 
 // ─── Viajes ───────────────────────────────────────────────────────────────────
 app.post('/api/viajes', viajeController.crearViaje.bind(viajeController));
@@ -130,8 +160,17 @@ app.get('/clientes-empresariales-ui', (req, res) => {
 app.get('/productos-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'productos.html'));
 });
+app.get('/vehiculos-ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'vehiculos.html'));
+});
+app.get('/zonas-geograficas-ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'zonas-geograficas.html'));
+});
 app.get('/pagos-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'pagos.html'));
+});
+app.get('/reservas-ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'reservas.html'));
 });
 app.get('/viajes-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'viajes.html'));

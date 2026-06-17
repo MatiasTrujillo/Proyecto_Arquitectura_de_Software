@@ -189,7 +189,7 @@
                 return;
             }
             try {
-                const res = await fetch(`/api/operadores/${id}`, {
+                const res = await apiFetch(`/api/operadores/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cedula, nombre })
@@ -210,7 +210,7 @@
         async function eliminarOperador(id) {
             if (!confirm('¿Eliminar este operador?')) return;
             try {
-                const res = await fetch(`/api/operadores/${id}`, { method: 'DELETE' });
+                const res = await apiFetch(`/api/operadores/${id}`, { method: 'DELETE' });
                 if (res.ok) cargarOperadores();
             } catch (err) {
                 alert('Error: ' + err.message);
@@ -221,7 +221,7 @@
             const id = document.getElementById('asignarReservaId').value;
             if (!id) return;
             try {
-                const res = await fetch(`/api/operadores/${id}/asignar-reserva`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const res = await apiFetch(`/api/operadores/${id}/asignar-reserva`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
                 const json = await res.json();
                 const el = document.getElementById('resultadoAsignar');
                 el.classList.remove('oculto');
@@ -237,7 +237,7 @@
             const id = document.getElementById('consultarTrasladoId').value;
             if (!id) return;
             try {
-                const res = await fetch(`/api/operadores/${id}/consultar-traslado`);
+                const res = await apiFetch(`/api/operadores/${id}/consultar-traslado`);
                 const json = await res.json();
                 const el = document.getElementById('resultadoConsultar');
                 el.classList.remove('oculto');
@@ -253,7 +253,7 @@
             const id = document.getElementById('noReconocidaReservaId').value;
             if (!id) return;
             try {
-                const res = await fetch(`/api/operadores/${id}/reserva-no-reconocida`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const res = await apiFetch(`/api/operadores/${id}/reserva-no-reconocida`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
                 const json = await res.json();
                 const el = document.getElementById('resultadoNoReconocida');
                 el.classList.remove('oculto');

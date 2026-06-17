@@ -2,12 +2,26 @@ import { Request, Response } from "express";
 import { ServicioClientePersonal } from "../../Servicio/ServicioClientePersonal";
 import { RepositorioClientePersonal } from "../../DataAccess/RepositorioClientePersonal";
 import { IServicioClientePersonal } from "../../IServicio/IServicioClientePersonal";
+import { IServicioReserva } from "../../../ModuloReservas/IServicio/IServicioReserva";
+import { ServicioReserva } from "../../../ModuloReservas/Servicio/ServicioReserva";
+import { RepositorioReserva } from "../../../ModuloReservas/DataAccess/RepositorioReserva";
+import { IServicioPago } from "../../../ModuloPagos/IServicio/IServicioPago";
+import { ServicioPago } from "../../../ModuloPagos/Servicio/ServicioPago";
+import { RepositorioPago } from "../../../ModuloPagos/DataAccess/RepositorioPago";
 
 export class ControladorClientePersonal {
   private servicioClientePersonal: IServicioClientePersonal;
+  private servicioReserva: IServicioReserva;
+  private servicioPago: IServicioPago;
 
-  constructor(servicioClientePersonal?: IServicioClientePersonal) {
+  constructor(
+    servicioClientePersonal?: IServicioClientePersonal,
+    servicioReserva?: IServicioReserva,
+    servicioPago?: IServicioPago
+  ) {
     this.servicioClientePersonal = servicioClientePersonal ?? new ServicioClientePersonal(new RepositorioClientePersonal());
+    this.servicioReserva = servicioReserva ?? new ServicioReserva(new RepositorioReserva());
+    this.servicioPago = servicioPago ?? new ServicioPago(new RepositorioPago());
   }
 
   async crearClientePersonal(req: Request, res: Response): Promise<void> {
@@ -69,18 +83,49 @@ export class ControladorClientePersonal {
     }
   }
 
-  realizarReserva(req: Request, res: Response): void {
+  async realizarReserva(req: Request, res: Response): Promise<void> {
     try {
-      res.status(201).json({ mensaje: "Reserva realizada" });
+      const clienteId = (req as any).usuario?.cedula ?? req.body.clienteId;
+      const { origen, destino, fecha, costo, vehiculo, productos, conductor, categorias } = req.body;
+      const reserva = await this.servicioReserva.crearReserva(
+        clienteId, origen, destino, fecha, costo, vehiculo,
+        productos ?? [], conductor, categorias ?? []
+      );
+      res.status(201).json({ data: reserva });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  obtenerReservas(req: Request, res: Response): void {
+  async obtenerReservas(req: Request, res: Response): Promise<void> {
     try {
-      const { clienteId } = req.params;
-      res.status(200).json({ data: [] });
+      const clienteId = (req as any).usuario?.cedula ?? req.params.clienteId;
+      const reservas = await this.servicioReserva.obtenerReservasPorCliente(clienteId as string);
+      res.status(200).json({ data: reservas });
+    } catch (error) {
+      this.manejarError(res, error);
+    }
+  }
+
+  async consultarEstadoReserva(req: Request, res: Response): Promise<void> {
+    try {
+      const reservaId = req.params.reservaId as string;
+      const estado = await this.servicioReserva.consultarEstadoReserva(reservaId);
+      res.status(200).json({ data: { estado } });
+    } catch (error) {
+      this.manejarError(res, error);
+    }
+  }
+
+  async realizarPago(req: Request, res: Response): Promise<void> {
+    try {
+      const { reservaId } = req.body;
+      if (!reservaId) throw new Error("reservaId es requerido");
+      const reserva = await this.servicioReserva.obtenerReservaPorId(reservaId);
+      if (reserva.estado === "Pagado") throw new Error("Esta reserva ya fue pagada");
+      const pago = await this.servicioPago.crearPago(new Date(), reserva.costo, "Completado", reservaId);
+      await this.servicioReserva.actualizarEstadoReserva(reservaId, "Pagado");
+      res.status(201).json({ data: pago });
     } catch (error) {
       this.manejarError(res, error);
     }

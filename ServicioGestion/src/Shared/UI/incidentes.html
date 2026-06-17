@@ -47,6 +47,8 @@
         <input type="text" id="estado" placeholder="Ej: abierto">
         <label>Severidad</label>
         <input type="text" id="severidad" placeholder="Ej: alta">
+        <label>Conductor (cédula)</label>
+        <input type="text" id="conductorId" placeholder="Cédula del conductor que reporta">
         <br>
         <button onclick="crearIncidente()">Crear</button>
         <div id="mensajeCrear"></div>
@@ -65,6 +67,8 @@
         <input type="text" id="editarEstado">
         <label>Severidad</label>
         <input type="text" id="editarSeveridad">
+        <label>Conductor (cédula)</label>
+        <input type="text" id="editarConductorId">
         <br>
         <button onclick="guardarEdicion()">Guardar cambios</button>
         <button class="btn-cancelar" onclick="cancelarEdicion()">Cancelar</button>
@@ -74,9 +78,9 @@
     <h2>Listado</h2>
     <table id="tablaIncidentes">
         <thead>
-            <tr><th>ID</th><th>Descripción</th><th>Fecha</th><th>Reserva</th><th>Estado</th><th>Severidad</th><th>Acción</th></tr>
+            <tr><th>ID</th><th>Descripción</th><th>Fecha</th><th>Reserva</th><th>Estado</th><th>Severidad</th><th>Conductor</th><th>Acción</th></tr>
         </thead>
-        <tbody><tr><td colspan="7">Cargando...</td></tr></tbody>
+        <tbody><tr><td colspan="8">Cargando...</td></tr></tbody>
     </table>
 
     <script>
@@ -104,7 +108,7 @@
                 items = json.data || [];
                 const tbody = document.querySelector('#tablaIncidentes tbody');
                 if (items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7">No hay incidentes</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8">No hay incidentes</td></tr>';
                     return;
                 }
                 tbody.innerHTML = items.map((item, i) => `
@@ -115,6 +119,7 @@
                         <td class="id-cell">${item.reservaId}</td>
                         <td>${item.estado}</td>
                         <td>${item.severidad}</td>
+                        <td class="id-cell">${item.conductorId || '—'}</td>
                         <td>
                             <button class="btn-editar" onclick="abrirEdicion(${i})">Editar</button>
                             <button class="btn-eliminar" onclick="eliminarIncidente('${item.id}')">Eliminar</button>
@@ -133,6 +138,7 @@
             const reservaId = document.getElementById('reservaId').value;
             const estado = document.getElementById('estado').value;
             const severidad = document.getElementById('severidad').value;
+            const conductorId = document.getElementById('conductorId').value;
             if (!descripcion || !fecha || !reservaId || !estado || !severidad) {
                 document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos</div>';
                 return;
@@ -141,11 +147,11 @@
                 const res = await apiFetch('/api/incidentes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ descripcion, fecha: new Date(fecha).toISOString(), reservaId, estado, severidad })
+                    body: JSON.stringify({ descripcion, fecha: new Date(fecha).toISOString(), reservaId, estado, severidad, conductorId })
                 });
                 if (res.ok) {
                     document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Incidente creado</div>';
-                    ['descripcion','fecha','reservaId','estado','severidad'].forEach(id => document.getElementById(id).value = '');
+                    ['descripcion','fecha','reservaId','estado','severidad','conductorId'].forEach(id => document.getElementById(id).value = '');
                     cargarIncidentes();
                 } else {
                     const err = await res.json();
@@ -167,6 +173,7 @@
             document.getElementById('editarReservaId').value = item.reservaId;
             document.getElementById('editarEstado').value = item.estado;
             document.getElementById('editarSeveridad').value = item.severidad;
+            document.getElementById('editarConductorId').value = item.conductorId || '';
             document.getElementById('mensajeEditar').innerHTML = '';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -183,15 +190,16 @@
             const reservaId = document.getElementById('editarReservaId').value;
             const estado = document.getElementById('editarEstado').value;
             const severidad = document.getElementById('editarSeveridad').value;
+            const conductorId = document.getElementById('editarConductorId').value;
             if (!descripcion || !fecha || !reservaId || !estado || !severidad) {
                 document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá todos los campos</div>';
                 return;
             }
             try {
-                const res = await fetch(`/api/incidentes/${id}`, {
+                const res = await apiFetch(`/api/incidentes/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ descripcion, fecha: new Date(fecha).toISOString(), reservaId, estado, severidad })
+                    body: JSON.stringify({ descripcion, fecha: new Date(fecha).toISOString(), reservaId, estado, severidad, conductorId })
                 });
                 if (res.ok) {
                     document.getElementById('mensajeEditar').innerHTML = '<div class="exito">Incidente actualizado</div>';
@@ -209,7 +217,7 @@
         async function eliminarIncidente(id) {
             if (!confirm('¿Eliminar este incidente?')) return;
             try {
-                const res = await fetch(`/api/incidentes/${id}`, { method: 'DELETE' });
+                const res = await apiFetch(`/api/incidentes/${id}`, { method: 'DELETE' });
                 if (res.ok) cargarIncidentes();
             } catch (err) {
                 alert('Error: ' + err.message);

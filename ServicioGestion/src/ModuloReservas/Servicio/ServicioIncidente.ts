@@ -5,122 +5,72 @@ import { IServicioIncidente } from "../IServicio/IServicioIncidente";
 export class ServicioIncidente implements IServicioIncidente {
   constructor(private repositorio: IRepositorioIncidente) {}
 
-  async crearIncidente(
-    descripcion: string,
-    fecha: string | Date,
-    reservaId: string,
-    estado: string,
-    severidad: string,
-  ): Promise<IncidenteDTO> {
-    const descripcionValida = this.validarDescripcion(descripcion);
-    const fechaValida = this.validarFecha(fecha);
-    const reservaIdValido = this.validarId(reservaId);
-    const estadoValido = this.validarEstado(estado);
-    const severidadValida = this.validarSeveridad(severidad);
-
+  async crearIncidente(descripcion: string, fecha: string | Date, reservaId: string, estado: string, severidad: string, conductorId: string): Promise<IncidenteDTO> {
     const incidente = await this.repositorio.crearIncidente(
-      descripcionValida,
-      fechaValida,
-      reservaIdValido,
-      estadoValido,
-      severidadValida,
+      this.validarDescripcion(descripcion),
+      this.validarFecha(fecha),
+      this.validarId(reservaId),
+      this.validarEstado(estado),
+      this.validarSeveridad(severidad),
+      conductorId ?? ''
     );
-
     return IncidenteDTO.fromEntity(incidente);
   }
 
   async obtenerIncidentes(): Promise<IncidenteDTO[]> {
     const incidentes = await this.repositorio.obtenerIncidentes();
-    return incidentes.map(incidente => IncidenteDTO.fromEntity(incidente));
+    return incidentes.map(i => IncidenteDTO.fromEntity(i));
   }
 
   async obtenerIncidentePorId(id: string): Promise<IncidenteDTO> {
-    const idValido = this.validarId(id);
-    const incidente = await this.repositorio.obtenerIncidentePorId(idValido);
-
-    if (!incidente) {
-      throw new Error(`No se encontró el incidente con id ${idValido}`);
-    }
-
+    const incidente = await this.repositorio.obtenerIncidentePorId(this.validarId(id));
+    if (!incidente) throw new Error(`No se encontró el incidente con id ${id}`);
     return IncidenteDTO.fromEntity(incidente);
   }
 
-  async actualizarIncidente(
-    id: string,
-    descripcion: string,
-    fecha: string | Date,
-    reservaId: string,
-    estado: string,
-    severidad: string,
-  ): Promise<IncidenteDTO> {
+  async actualizarIncidente(id: string, descripcion: string, fecha: string | Date, reservaId: string, estado: string, severidad: string, conductorId: string): Promise<IncidenteDTO> {
     const idValido = this.validarId(id);
-    const descripcionValida = this.validarDescripcion(descripcion);
-    const fechaValida = this.validarFecha(fecha);
-    const reservaIdValido = this.validarId(reservaId);
-    const estadoValido = this.validarEstado(estado);
-    const severidadValida = this.validarSeveridad(severidad);
-
-    if (!await this.repositorio.existe(idValido)) {
-      throw new Error(`No se encontró el incidente con id ${idValido}`);
-    }
-
-    const incidenteActualizado = await this.repositorio.actualizarIncidente(
+    if (!await this.repositorio.existe(idValido)) throw new Error(`No se encontró el incidente con id ${idValido}`);
+    const actualizado = await this.repositorio.actualizarIncidente(
       idValido,
-      descripcionValida,
-      fechaValida,
-      reservaIdValido,
-      estadoValido,
-      severidadValida,
+      this.validarDescripcion(descripcion),
+      this.validarFecha(fecha),
+      this.validarId(reservaId),
+      this.validarEstado(estado),
+      this.validarSeveridad(severidad),
+      conductorId ?? ''
     );
-
-    if (!incidenteActualizado) {
-      throw new Error(`No se pudo actualizar el incidente con id ${idValido}`);
-    }
-
-    return IncidenteDTO.fromEntity(incidenteActualizado);
+    if (!actualizado) throw new Error(`No se pudo actualizar el incidente con id ${idValido}`);
+    return IncidenteDTO.fromEntity(actualizado);
   }
 
   async eliminarIncidente(id: string): Promise<void> {
-    const idValido = this.validarId(id);
-
-    if (!await this.repositorio.eliminarIncidente(idValido)) {
-      throw new Error(`No se encontró el incidente con id ${idValido}`);
-    }
+    if (!await this.repositorio.eliminarIncidente(this.validarId(id))) throw new Error(`No se encontró el incidente con id ${id}`);
   }
 
   private validarDescripcion(descripcion: string): string {
-    if (!descripcion || descripcion.trim().length === 0) {
-      throw new Error("Descripción inválida. Debe contener texto.");
-    }
+    if (!descripcion?.trim()) throw new Error("Descripción inválida. Debe contener texto.");
     return descripcion.trim();
   }
 
   private validarFecha(fecha: string | Date): Date {
     const valor = fecha instanceof Date ? fecha : new Date(fecha);
-    if (Number.isNaN(valor.getTime())) {
-      throw new Error("Fecha inválida.");
-    }
+    if (Number.isNaN(valor.getTime())) throw new Error("Fecha inválida.");
     return valor;
   }
 
   private validarId(id: string): string {
-    if (!id || id.trim().length === 0) {
-      throw new Error("Id inválido.");
-    }
+    if (!id?.trim()) throw new Error("Id inválido.");
     return id.trim();
   }
 
   private validarEstado(estado: string): string {
-    if (!estado || estado.trim().length === 0) {
-      throw new Error("Estado inválido.");
-    }
+    if (!estado?.trim()) throw new Error("Estado inválido.");
     return estado.trim();
   }
 
   private validarSeveridad(severidad: string): string {
-    if (!severidad || severidad.trim().length === 0) {
-      throw new Error("Severidad inválida.");
-    }
+    if (!severidad?.trim()) throw new Error("Severidad inválida.");
     return severidad.trim();
   }
 }
