@@ -29,7 +29,13 @@ app.post('/api/dispositivos/recibir', dispositivoController.recibirInformacion.b
 app.get('/api/dispositivos/:dispositivoId/verificar', dispositivoController.verificarInformacion.bind(dispositivoController));
 
 app.get('/', (req, res) => {
-  res.send('ServicioOperacion activo. Usa /metricas o /api/vehiculos');
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'home.html'));
+});
+app.get('/vehiculos-ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'vehiculos.html'));
+});
+app.get('/dispositivos-ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'dispositivos.html'));
 });
 
 app.get('/metricas', manejadorMetricas);
