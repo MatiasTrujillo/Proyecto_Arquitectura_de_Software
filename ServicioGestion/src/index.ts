@@ -7,7 +7,6 @@ import { ControladorConductor } from './ModuloUsuarios/WebApi/Controlador/Contro
 import { ControladorClientePersonal } from './ModuloUsuarios/WebApi/Controlador/ControladorClientePersonal';
 import { ControladorClienteEmpresa } from './ModuloUsuarios/WebApi/Controlador/ControladorClienteEmpresa';
 import { ControladorProducto } from './ModuloCatalogo/WebApi/Controlador/ControladorProducto';
-import { ControladorVehiculo } from './ModuloCatalogo/WebApi/Controlador/ControladorVehiculo';
 import { ControladorZonaGeografica } from './ModuloCatalogo/WebApi/Controlador/ControladorZonaGeografica';
 import { ControladorPago } from './ModuloPagos/WebApi/Controlador/ControladorPago';
 import { ControladorReserva } from './ModuloReservas/WebApi/Controlador/ControladorReserva';
@@ -27,7 +26,6 @@ const conductorController = new ControladorConductor();
 const clientePersonalController = new ControladorClientePersonal();
 const clienteEmpresaController = new ControladorClienteEmpresa();
 const productoController = new ControladorProducto();
-const vehiculoController = new ControladorVehiculo();
 const zonaGeograficaController = new ControladorZonaGeografica();
 const pagoController = new ControladorPago();
 const reservaController = new ControladorReserva();
@@ -96,13 +94,6 @@ app.get('/api/productos/:id', productoController.obtenerProductoPorId.bind(produ
 app.put('/api/productos/:id', productoController.actualizarProducto.bind(productoController));
 app.delete('/api/productos/:id', productoController.eliminarProducto.bind(productoController));
 
-// ─── Vehículos ────────────────────────────────────────────────────────────────
-app.post('/api/vehiculos', vehiculoController.crearVehiculo.bind(vehiculoController));
-app.get('/api/vehiculos', vehiculoController.obtenerVehiculos.bind(vehiculoController));
-app.get('/api/vehiculos/:id', vehiculoController.obtenerVehiculoPorId.bind(vehiculoController));
-app.put('/api/vehiculos/:id', vehiculoController.actualizarVehiculo.bind(vehiculoController));
-app.delete('/api/vehiculos/:id', vehiculoController.eliminarVehiculo.bind(vehiculoController));
-
 // ─── Zonas Geográficas ────────────────────────────────────────────────────────
 app.post('/api/zonas-geograficas', zonaGeograficaController.crearZona.bind(zonaGeograficaController));
 app.get('/api/zonas-geograficas', zonaGeograficaController.obtenerZonas.bind(zonaGeograficaController));
@@ -159,9 +150,6 @@ app.get('/clientes-empresariales-ui', (req, res) => {
 });
 app.get('/productos-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'productos.html'));
-});
-app.get('/vehiculos-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'vehiculos.html'));
 });
 app.get('/zonas-geograficas-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'zonas-geograficas.html'));
