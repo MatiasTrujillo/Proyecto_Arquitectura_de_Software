@@ -189,7 +189,7 @@
                 return;
             }
             try {
-                const res = await fetch(`/api/pagos/${id}`, {
+                const res = await apiFetch(`/api/pagos/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ fecha: new Date(fecha).toISOString(), monto: Number(monto), estado })
@@ -210,7 +210,7 @@
         async function eliminarPago(id) {
             if (!confirm('¿Eliminar este pago?')) return;
             try {
-                const res = await fetch(`/api/pagos/${id}`, { method: 'DELETE' });
+                const res = await apiFetch(`/api/pagos/${id}`, { method: 'DELETE' });
                 if (res.ok) cargarPagos();
             } catch (err) {
                 alert('Error: ' + err.message);

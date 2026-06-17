@@ -12,9 +12,8 @@ export class ControladorPago {
 
   async crearPago(req: Request, res: Response): Promise<void> {
     try {
-      const { fecha, monto, estado } = req.body;
-      const pagoCreado = await this.servicioPago.crearPago(fecha, monto, estado); //este await es necesario porque esta .mapPago
-
+      const { fecha, monto, estado, reservaId } = req.body;
+      const pagoCreado = await this.servicioPago.crearPago(fecha, monto, estado, reservaId ?? '');
       res.status(201).json({ data: this.mapPago(pagoCreado) });
     } catch (error) {
       this.manejarError(res, error);
@@ -43,8 +42,8 @@ export class ControladorPago {
   async actualizarPago(req: Request, res: Response): Promise<void> {
     try {
       const id = Number(req.params.id);
-      const { fecha, monto, estado } = req.body;
-      const pagoActualizado = await this.servicioPago.actualizarPago(id, fecha, monto, estado);
+      const { fecha, monto, estado, reservaId } = req.body;
+      const pagoActualizado = await this.servicioPago.actualizarPago(id, fecha, monto, estado, reservaId ?? '');
 
       res.status(200).json({ data: this.mapPago(pagoActualizado) });
     } catch (error) {
@@ -63,12 +62,7 @@ export class ControladorPago {
   }
 
   private mapPago(pago: any) {
-    return {
-      id: pago.id,
-      fecha: pago.fecha,
-      monto: pago.monto,
-      estado: pago.estado,
-    };
+    return { id: pago.id, fecha: pago.fecha, monto: pago.monto, estado: pago.estado, reservaId: pago.reservaId };
   }
 
   private manejarError(res: Response, error: unknown): void {

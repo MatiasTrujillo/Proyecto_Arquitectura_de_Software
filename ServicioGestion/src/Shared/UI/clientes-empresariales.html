@@ -37,7 +37,8 @@
     <div class="nav"><a href="/">← Volver</a></div>
     <h1>Gestión de Clientes Empresariales</h1>
 
-    <div class="formulario" id="formularioCrear">
+    <!-- Solo visible para Administrador -->
+    <div class="formulario solo-admin" id="formularioCrear">
         <h2>Crear Cliente Empresarial</h2>
         <label>Cédula / RUT</label>
         <input type="text" id="cedula" placeholder="Ej: 30123456">
@@ -61,17 +62,20 @@
         <div id="mensajeEditar"></div>
     </div>
 
-    <h2>Listado</h2>
-    <table id="tablaClientes">
-        <thead>
-            <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Rol</th><th>Acción</th></tr>
-        </thead>
-        <tbody><tr><td colspan="5">Cargando...</td></tr></tbody>
-    </table>
+    <!-- Listado solo para Administrador -->
+    <div class="solo-admin">
+        <h2>Listado</h2>
+        <table id="tablaClientes">
+            <thead>
+                <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Rol</th><th>Acción</th></tr>
+            </thead>
+            <tbody><tr><td colspan="5">Cargando...</td></tr></tbody>
+        </table>
+    </div>
 
     <h2 style="margin-top:30px">Acciones</h2>
 
-    <div class="accion">
+    <div class="accion solo-admin">
         <strong>Calcular Traslado</strong>
         <label>Origen</label>
         <input type="text" id="calcOrigen" placeholder="Ej: Av. Corrientes 100">
@@ -83,14 +87,35 @@
 
     <div class="accion">
         <strong>Realizar Reserva</strong>
+        <label>Origen</label>
+        <input type="text" id="resOrigen" placeholder="Ej: Zona Norte">
+        <label>Destino</label>
+        <input type="text" id="resDestino" placeholder="Ej: Zona Sur">
+        <label>Fecha</label>
+        <input type="date" id="resFecha">
+        <label>Costo</label>
+        <input type="number" id="resCosto" placeholder="Ej: 500" min="0">
+        <label>Vehículo (ID)</label>
+        <input type="text" id="resVehiculo" placeholder="ID del vehículo">
+        <label>Conductor (ID)</label>
+        <input type="text" id="resConductor" placeholder="ID del conductor">
         <button onclick="realizarReserva()">Realizar</button>
         <div id="resultadoReserva" class="resultado oculto"></div>
     </div>
 
     <div class="accion">
+        <strong>Mis Reservas</strong>
+        <button onclick="verMisReservas()" style="margin-bottom:10px">Actualizar</button>
+        <div id="mensajePago"></div>
+        <table id="tablaReservasCliente" style="display:none">
+            <thead><tr><th>ID</th><th>Origen</th><th>Destino</th><th>Fecha</th><th>Estado</th><th>Costo</th><th>Acción</th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <div id="sinReservas" class="resultado oculto">No tenés reservas registradas.</div>
+    </div>
+
+    <div class="accion">
         <strong>Asociar Producto</strong>
-        <label>ID del Cliente</label>
-        <input type="text" id="asociarClienteId" placeholder="ID del cliente empresarial">
         <label>ID del Producto</label>
         <input type="text" id="asociarProductoId" placeholder="ID del producto">
         <button onclick="asociarProducto()">Asociar</button>
@@ -99,8 +124,6 @@
 
     <div class="accion">
         <strong>Registrar Origen Frecuente</strong>
-        <label>ID del Cliente</label>
-        <input type="text" id="origenClienteId" placeholder="ID del cliente">
         <label>Origen</label>
         <input type="text" id="origenDireccion" placeholder="Ej: Av. Santa Fe 1000">
         <button onclick="registrarOrigenFrecuente()">Registrar</button>
@@ -109,15 +132,14 @@
 
     <div class="accion">
         <strong>Registrar Destino Frecuente</strong>
-        <label>ID del Cliente</label>
-        <input type="text" id="destinoClienteId" placeholder="ID del cliente">
         <label>Destino</label>
         <input type="text" id="destinoDireccion" placeholder="Ej: Av. Cabildo 200">
         <button onclick="registrarDestinoFrecuente()">Registrar</button>
         <div id="resultadoDestino" class="resultado oculto"></div>
     </div>
 
-    <div class="accion">
+    <!-- Solo admin: buscar reservas de cualquier cliente -->
+    <div class="accion solo-admin">
         <strong>Ver Reservas de un Cliente</strong>
         <label>ID del Cliente</label>
         <input type="text" id="reservasClienteId" placeholder="ID del cliente">
@@ -131,6 +153,12 @@
         if (token) sessionStorage.setItem('auth_token', token);
         if (rol)   sessionStorage.setItem('auth_rol',   rol);
         if (!token) window.location.href = 'http://localhost:3002/';
+
+        // Ocultar secciones de administrador si el usuario no es admin
+        if (rol !== 'Administrador') {
+            document.querySelectorAll('.solo-admin').forEach(el => el.classList.add('oculto'));
+        }
+
         function apiFetch(url, options = {}) {
             options.headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + token };
             return fetch(url, options);
@@ -139,6 +167,7 @@
         let items = [];
 
         async function cargarClientes() {
+            if (rol !== 'Administrador') return;
             try {
                 const res = await apiFetch('/api/clientes-empresariales');
                 const json = await res.json();
@@ -153,7 +182,7 @@
                         <td class="id-cell">${item.id}</td>
                         <td>${item.cedula}</td>
                         <td>${item.nombre}</td>
-                        <td>${item.rol}</td>
+                        <td>${item.rol ?? 'ClienteEmpresa'}</td>
                         <td>
                             <button class="btn-editar" onclick="abrirEdicion(${i})">Editar</button>
                             <button class="btn-eliminar" onclick="eliminarCliente('${item.id}')">Eliminar</button>
@@ -219,7 +248,7 @@
                 return;
             }
             try {
-                const res = await fetch(`/api/clientes-empresariales/${id}`, {
+                const res = await apiFetch(`/api/clientes-empresariales/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cedula, nombre })
@@ -240,7 +269,7 @@
         async function eliminarCliente(id) {
             if (!confirm('¿Eliminar este cliente?')) return;
             try {
-                const res = await fetch(`/api/clientes-empresariales/${id}`, { method: 'DELETE' });
+                const res = await apiFetch(`/api/clientes-empresariales/${id}`, { method: 'DELETE' });
                 if (res.ok) cargarClientes();
             } catch (err) {
                 alert('Error: ' + err.message);
@@ -257,94 +286,133 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ origen, destino })
                 });
-                const json = await res.json();
-                const el = document.getElementById('resultadoCalculo');
-                el.classList.remove('oculto');
-                el.textContent = JSON.stringify(json, null, 2);
+                mostrar('resultadoCalculo', await res.json());
             } catch (err) {
-                const el = document.getElementById('resultadoCalculo');
-                el.classList.remove('oculto');
-                el.textContent = 'Error: ' + err.message;
+                mostrar('resultadoCalculo', { error: err.message });
             }
         }
 
         async function realizarReserva() {
+            const origen    = document.getElementById('resOrigen').value;
+            const destino   = document.getElementById('resDestino').value;
+            const fecha     = document.getElementById('resFecha').value;
+            const costo     = parseFloat(document.getElementById('resCosto').value);
+            const vehiculo  = document.getElementById('resVehiculo').value;
+            const conductor = document.getElementById('resConductor').value;
+            if (!origen || !destino || !fecha || isNaN(costo) || !vehiculo || !conductor) {
+                mostrar('resultadoReserva', { error: 'Completá todos los campos de la reserva' });
+                return;
+            }
             try {
                 const res = await apiFetch('/api/clientes-empresariales/realizar-reserva', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ origen, destino, fecha, costo, vehiculo, conductor, productos: [], categorias: [] })
+                });
+                mostrar('resultadoReserva', await res.json());
+            } catch (err) {
+                mostrar('resultadoReserva', { error: err.message });
+            }
+        }
+
+        async function verMisReservas() {
+            const msgEl = document.getElementById('mensajePago');
+            msgEl.innerHTML = '';
+            try {
+                const res = await apiFetch('/api/clientes-empresariales/me/reservas');
+                const json = await res.json();
+                const lista = json.data || [];
+                const tabla = document.getElementById('tablaReservasCliente');
+                const sinReservas = document.getElementById('sinReservas');
+                if (lista.length === 0) {
+                    tabla.style.display = 'none';
+                    sinReservas.classList.remove('oculto');
+                    return;
+                }
+                sinReservas.classList.add('oculto');
+                tabla.style.display = 'table';
+                tabla.querySelector('tbody').innerHTML = lista.map(r => `
+                    <tr>
+                        <td class="id-cell">${r.id}</td>
+                        <td>${r.origen ?? '-'}</td>
+                        <td>${r.destino ?? '-'}</td>
+                        <td>${r.fecha ? r.fecha.substring(0,10) : '-'}</td>
+                        <td>${r.estado ?? '-'}</td>
+                        <td>$${r.costo ?? 0}</td>
+                        <td>${r.estado === 'Pagado'
+                            ? '<span style="background:#28a745;color:white;padding:5px 10px;border-radius:4px;font-size:0.9em">Pagado</span>'
+                            : `<button onclick="pagarReserva('${r.id}', ${r.costo})">Pagar</button>`
+                        }</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                document.getElementById('mensajePago').innerHTML = `<div class="error">Error al cargar reservas: ${err.message}</div>`;
+            }
+        }
+
+        async function pagarReserva(reservaId, costo) {
+            const msgEl = document.getElementById('mensajePago');
+            if (!confirm(`¿Confirmar pago de $${costo} para la reserva ${reservaId}?`)) return;
+            try {
+                const res = await apiFetch('/api/clientes-empresariales/realizar-pago', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reservaId })
                 });
                 const json = await res.json();
-                const el = document.getElementById('resultadoReserva');
-                el.classList.remove('oculto');
-                el.textContent = JSON.stringify(json, null, 2);
+                if (res.ok) {
+                    msgEl.innerHTML = `<div class="exito">Pago realizado correctamente (ID: ${json.data?.id})</div>`;
+                    verMisReservas();
+                } else {
+                    msgEl.innerHTML = `<div class="error">Error: ${json.error}</div>`;
+                }
             } catch (err) {
-                const el = document.getElementById('resultadoReserva');
-                el.classList.remove('oculto');
-                el.textContent = 'Error: ' + err.message;
+                msgEl.innerHTML = `<div class="error">Error: ${err.message}</div>`;
             }
         }
 
         async function asociarProducto() {
-            const clienteId = document.getElementById('asociarClienteId').value;
             const productoId = document.getElementById('asociarProductoId').value;
-            if (!clienteId || !productoId) return;
+            if (!productoId) return;
             try {
                 const res = await apiFetch('/api/clientes-empresariales/asociar-producto', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ clienteId, productoId })
+                    body: JSON.stringify({ productoId })
                 });
-                const json = await res.json();
-                const el = document.getElementById('resultadoAsociar');
-                el.classList.remove('oculto');
-                el.textContent = JSON.stringify(json, null, 2);
+                mostrar('resultadoAsociar', await res.json());
             } catch (err) {
-                const el = document.getElementById('resultadoAsociar');
-                el.classList.remove('oculto');
-                el.textContent = 'Error: ' + err.message;
+                mostrar('resultadoAsociar', { error: err.message });
             }
         }
 
         async function registrarOrigenFrecuente() {
-            const clienteId = document.getElementById('origenClienteId').value;
             const origen = document.getElementById('origenDireccion').value;
-            if (!clienteId || !origen) return;
+            if (!origen) return;
             try {
                 const res = await apiFetch('/api/clientes-empresariales/registrar-origen-frecuente', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ clienteId, origen })
+                    body: JSON.stringify({ origen })
                 });
-                const json = await res.json();
-                const el = document.getElementById('resultadoOrigen');
-                el.classList.remove('oculto');
-                el.textContent = JSON.stringify(json, null, 2);
+                mostrar('resultadoOrigen', await res.json());
             } catch (err) {
-                const el = document.getElementById('resultadoOrigen');
-                el.classList.remove('oculto');
-                el.textContent = 'Error: ' + err.message;
+                mostrar('resultadoOrigen', { error: err.message });
             }
         }
 
         async function registrarDestinoFrecuente() {
-            const clienteId = document.getElementById('destinoClienteId').value;
             const destino = document.getElementById('destinoDireccion').value;
-            if (!clienteId || !destino) return;
+            if (!destino) return;
             try {
                 const res = await apiFetch('/api/clientes-empresariales/registrar-destino-frecuente', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ clienteId, destino })
+                    body: JSON.stringify({ destino })
                 });
-                const json = await res.json();
-                const el = document.getElementById('resultadoDestino');
-                el.classList.remove('oculto');
-                el.textContent = JSON.stringify(json, null, 2);
+                mostrar('resultadoDestino', await res.json());
             } catch (err) {
-                const el = document.getElementById('resultadoDestino');
-                el.classList.remove('oculto');
-                el.textContent = 'Error: ' + err.message;
+                mostrar('resultadoDestino', { error: err.message });
             }
         }
 
@@ -352,20 +420,21 @@
             const id = document.getElementById('reservasClienteId').value;
             if (!id) return;
             try {
-                const res = await fetch(`/api/clientes-empresariales/${id}/reservas`);
-                const json = await res.json();
-                const el = document.getElementById('resultadoReservas');
-                el.classList.remove('oculto');
-                el.textContent = JSON.stringify(json, null, 2);
+                const res = await apiFetch(`/api/clientes-empresariales/${id}/reservas`);
+                mostrar('resultadoReservas', await res.json());
             } catch (err) {
-                const el = document.getElementById('resultadoReservas');
-                el.classList.remove('oculto');
-                el.textContent = 'Error: ' + err.message;
+                mostrar('resultadoReservas', { error: err.message });
             }
         }
 
+        function mostrar(id, data) {
+            const el = document.getElementById(id);
+            el.classList.remove('oculto');
+            el.textContent = JSON.stringify(data, null, 2);
+        }
+
         cargarClientes();
-        setInterval(cargarClientes, 5000);
+        verMisReservas();
     </script>
 </body>
 </html>

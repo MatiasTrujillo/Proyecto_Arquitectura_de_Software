@@ -133,7 +133,7 @@ app.get('/', (_req, res) => {
         const json = await res.json();
         if (res.ok && json.token) {
           const paginas = {
-            'Administrador':   'http://localhost:3001/administradores-ui',
+            'Administrador':   'http://localhost:3001/',
             'Operador':        'http://localhost:3001/operadores-ui',
             'Conductor':       'http://localhost:3001/conductores-ui',
             'ClientePersonal': 'http://localhost:3001/clientes-personales-ui',

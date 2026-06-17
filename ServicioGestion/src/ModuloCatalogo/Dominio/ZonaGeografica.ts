@@ -1,23 +1,13 @@
-export class Categoria {
-  private id: number;
-  private nombre : string;
-  private delimitacionGeografica: string //no se que es esto
+export class ZonaGeografica {
+  constructor(
+    private id: string,
+    private nombre: string,
+    private delimitacionGeografica: string,
+    private tipo: string
+  ) {}
 
-  constructor(id: number, nombre:string, delimitacionGeografica:string) {
-    this.id = id;
-    this.nombre = nombre;
-    this.delimitacionGeografica = delimitacionGeografica;
-  }
-
-  getId(): number {
-    return this.id;
-  }
-
-  getNombre(): string {
-    return this.nombre;
-  }
-
-  getNombreEs(): string {
-    return this.delimitacionGeografica;
-  }
+  getId(): string { return this.id; }
+  getNombre(): string { return this.nombre; }
+  getDelimitacionGeografica(): string { return this.delimitacionGeografica; }
+  getTipo(): string { return this.tipo; }
 }

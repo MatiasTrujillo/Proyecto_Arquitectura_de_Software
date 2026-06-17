@@ -1,6 +1,7 @@
 import { Reserva } from "../Dominio/Reserva";
 
 export class ReservaDTO {
+  id: string;
   cliente: string;
   origen: string;
   destino: string;
@@ -13,6 +14,7 @@ export class ReservaDTO {
   categorias: string[];
 
   constructor(
+    id: string,
     cliente: string,
     origen: string,
     destino: string,
@@ -24,6 +26,7 @@ export class ReservaDTO {
     conductor: string,
     categorias: string[]
   ) {
+    this.id = id;
     this.cliente = cliente;
     this.origen = origen;
     this.destino = destino;
@@ -38,6 +41,7 @@ export class ReservaDTO {
 
   static fromEntity(entidad: Reserva): ReservaDTO {
     return new ReservaDTO(
+      entidad.getId(),
       entidad.getCliente(),
       entidad.getOrigen(),
       entidad.getDestino(),
@@ -53,6 +57,7 @@ export class ReservaDTO {
 
   toEntity(): Reserva {
     return new Reserva(
+      this.id,
       this.cliente,
       this.origen,
       this.destino,

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zonas Geográficas - ServicioGestion</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        h2 { color: #444; }
+        .nav { margin-bottom: 20px; }
+        a { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        .formulario { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ddd; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        textarea { resize: vertical; min-height: 80px; font-family: monospace; }
+        .hint { font-size: 0.82em; color: #666; margin-top: 4px; }
+        button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0052a3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .btn-eliminar { padding: 5px 10px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+        .btn-eliminar:hover { background: #990000; }
+        .btn-editar { padding: 5px 10px; background: #e07b00; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-editar:hover { background: #b56200; }
+        .btn-cancelar { padding: 8px 15px; background: #888; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; margin-left: 8px; }
+        .btn-cancelar:hover { background: #666; }
+        .error { color: red; margin-top: 10px; }
+        .exito { color: green; margin-top: 10px; }
+        .oculto { display: none; }
+        .id-cell { font-family: monospace; font-size: 0.82em; color: #555; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
+        .badge-regular { background: #d4edda; color: #155724; }
+        .badge-roja { background: #f8d7da; color: #721c24; }
+        .badge-geocerca { background: #fff3cd; color: #856404; }
+        td.delimitacion { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="nav"><a href="/">← Volver</a></div>
+    <h1>Gestión de Zonas Geográficas</h1>
+
+    <div class="formulario" id="formularioCrear">
+        <h2>Crear Zona</h2>
+        <label>Nombre</label>
+        <input type="text" id="nombre" placeholder="Ej: Zona Norte">
+        <label>Tipo</label>
+        <select id="tipo">
+            <option value="regular">Regular</option>
+            <option value="roja">Roja (zona prohibida)</option>
+            <option value="geocerca">Geocerca (zona habilitada)</option>
+        </select>
+        <label>Delimitación geográfica</label>
+        <textarea id="delimitacion" placeholder='Ej: POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))'></textarea>
+        <div class="hint">Formato WKT o texto descriptivo del polígono</div>
+        <br>
+        <button onclick="crearZona()">Crear</button>
+        <div id="mensajeCrear"></div>
+    </div>
+
+    <div class="formulario oculto" id="formularioEditar">
+        <h2>Editar Zona <span id="tituloIdEditar"></span></h2>
+        <input type="hidden" id="editarId">
+        <label>Nombre</label>
+        <input type="text" id="editarNombre">
+        <label>Tipo</label>
+        <select id="editarTipo">
+            <option value="regular">Regular</option>
+            <option value="roja">Roja (zona prohibida)</option>
+            <option value="geocerca">Geocerca (zona habilitada)</option>
+        </select>
+        <label>Delimitación geográfica</label>
+        <textarea id="editarDelimitacion"></textarea>
+        <br>
+        <button onclick="guardarEdicion()">Guardar cambios</button>
+        <button class="btn-cancelar" onclick="cancelarEdicion()">Cancelar</button>
+        <div id="mensajeEditar"></div>
+    </div>
+
+    <h2>Listado</h2>
+    <table id="tablaZonas">
+        <thead>
+            <tr><th>ID</th><th>Nombre</th><th>Tipo</th><th>Delimitación</th><th>Acción</th></tr>
+        </thead>
+        <tbody><tr><td colspan="5">Cargando...</td></tr></tbody>
+    </table>
+
+    <script>
+        const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
+        const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
+        if (token) sessionStorage.setItem('auth_token', token);
+        if (rol)   sessionStorage.setItem('auth_rol',   rol);
+        if (!token) window.location.href = 'http://localhost:3002/';
+
+        function apiFetch(url, options = {}) {
+            options.headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + token };
+            return fetch(url, options);
+        }
+
+        let items = [];
+
+        const badgeClass = { regular: 'badge-regular', roja: 'badge-roja', geocerca: 'badge-geocerca' };
+
+        async function cargarZonas() {
+            try {
+                const res = await apiFetch('/api/zonas-geograficas');
+                const json = await res.json();
+                items = json.data || [];
+                const tbody = document.querySelector('#tablaZonas tbody');
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5">No hay zonas registradas</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = items.map((item, i) => `
+                    <tr>
+                        <td class="id-cell">${item.id}</td>
+                        <td>${item.nombre}</td>
+                        <td><span class="badge ${badgeClass[item.tipo] || ''}">${item.tipo}</span></td>
+                        <td class="delimitacion" title="${item.delimitacionGeografica}">${item.delimitacionGeografica}</td>
+                        <td>
+                            <button class="btn-editar" onclick="abrirEdicion(${i})">Editar</button>
+                            <button class="btn-eliminar" onclick="eliminarZona('${item.id}')">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                document.querySelector('#tablaZonas tbody').innerHTML =
+                    `<tr><td colspan="5" class="error">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function crearZona() {
+            const nombre = document.getElementById('nombre').value;
+            const tipo = document.getElementById('tipo').value;
+            const delimitacionGeografica = document.getElementById('delimitacion').value;
+            if (!nombre || !delimitacionGeografica) {
+                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá nombre y delimitación</div>';
+                return;
+            }
+            try {
+                const res = await apiFetch('/api/zonas-geograficas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, tipo, delimitacionGeografica })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Zona creada</div>';
+                    document.getElementById('nombre').value = '';
+                    document.getElementById('delimitacion').value = '';
+                    cargarZonas();
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        function abrirEdicion(indice) {
+            const item = items[indice];
+            document.getElementById('formularioEditar').classList.remove('oculto');
+            document.getElementById('formularioCrear').classList.add('oculto');
+            document.getElementById('tituloIdEditar').textContent = `#${item.id}`;
+            document.getElementById('editarId').value = item.id;
+            document.getElementById('editarNombre').value = item.nombre;
+            document.getElementById('editarTipo').value = item.tipo;
+            document.getElementById('editarDelimitacion').value = item.delimitacionGeografica;
+            document.getElementById('mensajeEditar').innerHTML = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicion() {
+            document.getElementById('formularioEditar').classList.add('oculto');
+            document.getElementById('formularioCrear').classList.remove('oculto');
+        }
+
+        async function guardarEdicion() {
+            const id = document.getElementById('editarId').value;
+            const nombre = document.getElementById('editarNombre').value;
+            const tipo = document.getElementById('editarTipo').value;
+            const delimitacionGeografica = document.getElementById('editarDelimitacion').value;
+            if (!nombre || !delimitacionGeografica) {
+                document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá nombre y delimitación</div>';
+                return;
+            }
+            try {
+                const res = await apiFetch(`/api/zonas-geograficas/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, tipo, delimitacionGeografica })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeEditar').innerHTML = '<div class="exito">Zona actualizada</div>';
+                    cargarZonas();
+                    setTimeout(cancelarEdicion, 1000);
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeEditar').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        async function eliminarZona(id) {
+            if (!confirm('¿Eliminar esta zona?')) return;
+            try {
+                const res = await apiFetch(`/api/zonas-geograficas/${id}`, { method: 'DELETE' });
+                if (res.ok) cargarZonas();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        cargarZonas();
+        setInterval(cargarZonas, 5000);
+    </script>
+</body>
+</html>

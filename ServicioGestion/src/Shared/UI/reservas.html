@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservas - ServicioGestion</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        h2 { color: #444; }
+        .nav { margin-bottom: 20px; }
+        a { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        .formulario { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ddd; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0052a3; }
+        .btn-cancelar { padding: 8px 15px; background: #888; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; margin-left: 8px; }
+        .btn-cancelar:hover { background: #666; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .btn-editar { padding: 5px 10px; background: #e07b00; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-editar:hover { background: #b56200; }
+        .error { color: red; margin-top: 10px; }
+        .exito { color: green; margin-top: 10px; }
+        .oculto { display: none; }
+        .id-cell { font-family: monospace; font-size: 0.82em; color: #555; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
+        .badge-Pendiente { background: #fff3cd; color: #856404; }
+        .badge-Confirmada { background: #d4edda; color: #155724; }
+        .badge-EnCurso { background: #d1ecf1; color: #0c5460; }
+        .badge-Completada { background: #d4edda; color: #155724; }
+        .badge-Cancelada { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="nav"><a href="/">← Volver</a></div>
+    <h1>Gestión de Reservas</h1>
+
+    <div class="formulario oculto" id="formularioEstado">
+        <h2>Actualizar Estado — Reserva <span id="tituloIdEstado"></span></h2>
+        <input type="hidden" id="estadoReservaId">
+        <label>Nuevo estado</label>
+        <select id="nuevoEstado">
+            <option value="Pendiente">Pendiente</option>
+            <option value="Confirmada">Confirmada</option>
+            <option value="EnCurso">En Curso</option>
+            <option value="Completada">Completada</option>
+            <option value="Cancelada">Cancelada</option>
+        </select>
+        <br>
+        <button onclick="guardarEstado()">Guardar</button>
+        <button class="btn-cancelar" onclick="cancelarEstado()">Cancelar</button>
+        <div id="mensajeEstado"></div>
+    </div>
+
+    <h2>Listado de Reservas</h2>
+    <table id="tablaReservas">
+        <thead>
+            <tr><th>ID</th><th>Cliente</th><th>Origen</th><th>Destino</th><th>Fecha</th><th>Estado</th><th>Costo</th><th>Conductor</th><th>Vehículo</th><th>Acción</th></tr>
+        </thead>
+        <tbody><tr><td colspan="10">Cargando...</td></tr></tbody>
+    </table>
+
+    <script>
+        const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
+        const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
+        if (token) sessionStorage.setItem('auth_token', token);
+        if (rol)   sessionStorage.setItem('auth_rol',   rol);
+        if (!token) window.location.href = 'http://localhost:3002/';
+
+        function apiFetch(url, options = {}) {
+            options.headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + token };
+            return fetch(url, options);
+        }
+
+        let items = [];
+
+        async function cargarReservas() {
+            try {
+                const res = await apiFetch('/api/reservas');
+                const json = await res.json();
+                items = json.data || [];
+                const tbody = document.querySelector('#tablaReservas tbody');
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="10">No hay reservas</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = items.map((item, i) => `
+                    <tr>
+                        <td class="id-cell">${item.id}</td>
+                        <td class="id-cell">${item.cliente}</td>
+                        <td>${item.origen}</td>
+                        <td>${item.destino}</td>
+                        <td>${new Date(item.fecha).toLocaleString('es-AR')}</td>
+                        <td><span class="badge badge-${item.estado.replace(/\s/g,'')}">${item.estado}</span></td>
+                        <td>$${Number(item.costo).toFixed(2)}</td>
+                        <td class="id-cell">${item.conductor || '—'}</td>
+                        <td class="id-cell">${item.vehiculo || '—'}</td>
+                        <td><button class="btn-editar" onclick="abrirCambioEstado(${i})">Estado</button></td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                document.querySelector('#tablaReservas tbody').innerHTML =
+                    `<tr><td colspan="10" class="error">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        function abrirCambioEstado(indice) {
+            const item = items[indice];
+            document.getElementById('formularioEstado').classList.remove('oculto');
+            document.getElementById('tituloIdEstado').textContent = `#${item.id}`;
+            document.getElementById('estadoReservaId').value = item.id;
+            document.getElementById('nuevoEstado').value = item.estado;
+            document.getElementById('mensajeEstado').innerHTML = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEstado() {
+            document.getElementById('formularioEstado').classList.add('oculto');
+        }
+
+        async function guardarEstado() {
+            const id = document.getElementById('estadoReservaId').value;
+            const estado = document.getElementById('nuevoEstado').value;
+            try {
+                const res = await apiFetch(`/api/reservas/${id}/estado`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estado })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeEstado').innerHTML = '<div class="exito">Estado actualizado</div>';
+                    cargarReservas();
+                    setTimeout(cancelarEstado, 1000);
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeEstado').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeEstado').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        cargarReservas();
+        setInterval(cargarReservas, 5000);
+    </script>
+</body>
+</html>

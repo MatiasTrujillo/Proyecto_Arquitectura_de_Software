@@ -13,7 +13,8 @@
         a:hover { background: #0052a3; }
         .formulario { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ddd; }
         label { display: block; margin-top: 10px; font-weight: bold; }
-        input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        textarea { resize: vertical; min-height: 70px; }
         button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
         button:hover { background: #0052a3; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -34,17 +35,6 @@
 <body>
     <div class="nav"><a href="/">← Volver</a></div>
     <h1>Gestión de Conductores</h1>
-
-    <div class="formulario" id="formularioCrear">
-        <h2>Crear Conductor</h2>
-        <label>Cédula</label>
-        <input type="text" id="cedula" placeholder="Ej: 12345678">
-        <label>Nombre</label>
-        <input type="text" id="nombre" placeholder="Ej: Carlos López">
-        <br>
-        <button onclick="crearConductor()">Crear</button>
-        <div id="mensajeCrear"></div>
-    </div>
 
     <div class="formulario oculto" id="formularioEditar">
         <h2>Editar Conductor <span id="tituloIdEditar"></span></h2>
@@ -67,12 +57,43 @@
         <tbody><tr><td colspan="5">Cargando...</td></tr></tbody>
     </table>
 
+    <div class="formulario" id="formularioIncidente" style="margin-top: 30px;">
+        <h2>Reportar Incidencia</h2>
+        <label>Descripción</label>
+        <textarea id="incDescripcion" placeholder="Describí el incidente ocurrido..."></textarea>
+        <label>Fecha</label>
+        <input type="datetime-local" id="incFecha">
+        <label>ID de Reserva</label>
+        <input type="text" id="incReservaId" placeholder="ID de la reserva relacionada">
+        <label>Estado</label>
+        <select id="incEstado">
+            <option value="abierto">Abierto</option>
+            <option value="en_revision">En revisión</option>
+            <option value="resuelto">Resuelto</option>
+        </select>
+        <label>Severidad</label>
+        <select id="incSeveridad">
+            <option value="baja">Baja</option>
+            <option value="media">Media</option>
+            <option value="alta">Alta</option>
+        </select>
+        <br>
+        <button onclick="reportarIncidencia()">Reportar</button>
+        <div id="mensajeIncidente"></div>
+    </div>
+
     <script>
         const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
         const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
         if (token) sessionStorage.setItem('auth_token', token);
         if (rol)   sessionStorage.setItem('auth_rol',   rol);
         if (!token) window.location.href = 'http://localhost:3002/';
+
+        // Setear fecha por defecto al momento actual
+        const ahora = new Date();
+        ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
+        document.getElementById('incFecha').value = ahora.toISOString().slice(0, 16);
+
         function apiFetch(url, options = {}) {
             options.headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + token };
             return fetch(url, options);
@@ -108,37 +129,9 @@
             }
         }
 
-        async function crearConductor() {
-            const cedula = document.getElementById('cedula').value;
-            const nombre = document.getElementById('nombre').value;
-            if (!cedula || !nombre) {
-                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos</div>';
-                return;
-            }
-            try {
-                const res = await apiFetch('/api/conductores', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cedula, nombre })
-                });
-                if (res.ok) {
-                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Conductor creado</div>';
-                    document.getElementById('cedula').value = '';
-                    document.getElementById('nombre').value = '';
-                    cargarConductores();
-                } else {
-                    const err = await res.json();
-                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
-                }
-            } catch (err) {
-                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
-            }
-        }
-
         function abrirEdicion(indice) {
             const item = items[indice];
             document.getElementById('formularioEditar').classList.remove('oculto');
-            document.getElementById('formularioCrear').classList.add('oculto');
             document.getElementById('tituloIdEditar').textContent = `#${item.id}`;
             document.getElementById('editarId').value = item.id;
             document.getElementById('editarCedula').value = item.cedula;
@@ -149,7 +142,6 @@
 
         function cancelarEdicion() {
             document.getElementById('formularioEditar').classList.add('oculto');
-            document.getElementById('formularioCrear').classList.remove('oculto');
         }
 
         async function guardarEdicion() {
@@ -161,7 +153,7 @@
                 return;
             }
             try {
-                const res = await fetch(`/api/conductores/${id}`, {
+                const res = await apiFetch(`/api/conductores/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ cedula, nombre })
@@ -182,10 +174,46 @@
         async function eliminarConductor(id) {
             if (!confirm('¿Eliminar este conductor?')) return;
             try {
-                const res = await fetch(`/api/conductores/${id}`, { method: 'DELETE' });
+                const res = await apiFetch(`/api/conductores/${id}`, { method: 'DELETE' });
                 if (res.ok) cargarConductores();
             } catch (err) {
                 alert('Error: ' + err.message);
+            }
+        }
+
+        async function reportarIncidencia() {
+            const descripcion = document.getElementById('incDescripcion').value;
+            const fecha       = document.getElementById('incFecha').value;
+            const reservaId   = document.getElementById('incReservaId').value;
+            const estado      = document.getElementById('incEstado').value;
+            const severidad   = document.getElementById('incSeveridad').value;
+            const msg         = document.getElementById('mensajeIncidente');
+
+            if (!descripcion || !fecha || !reservaId) {
+                msg.innerHTML = '<div class="error">Completá descripción, fecha e ID de reserva</div>';
+                return;
+            }
+            try {
+                const res = await apiFetch('/api/incidentes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ descripcion, fecha, reservaId, estado, severidad })
+                });
+                if (res.ok) {
+                    msg.innerHTML = '<div class="exito">Incidencia reportada correctamente</div>';
+                    document.getElementById('incDescripcion').value = '';
+                    document.getElementById('incReservaId').value = '';
+                    document.getElementById('incEstado').value = 'abierto';
+                    document.getElementById('incSeveridad').value = 'baja';
+                    const nuevo = new Date();
+                    nuevo.setMinutes(nuevo.getMinutes() - nuevo.getTimezoneOffset());
+                    document.getElementById('incFecha').value = nuevo.toISOString().slice(0, 16);
+                } else {
+                    const err = await res.json();
+                    msg.innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                msg.innerHTML = `<div class="error">Error: ${err.message}</div>`;
             }
         }
 

@@ -196,7 +196,7 @@
                 return;
             }
             try {
-                const res = await fetch(`/api/viajes/${id}`, {
+                const res = await apiFetch(`/api/viajes/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ reservaId, origen, destino, fecha: new Date(fecha).toISOString(), estado, conductor })
@@ -217,7 +217,7 @@
         async function eliminarViaje(id) {
             if (!confirm('¿Eliminar este viaje?')) return;
             try {
-                const res = await fetch(`/api/viajes/${id}`, { method: 'DELETE' });
+                const res = await apiFetch(`/api/viajes/${id}`, { method: 'DELETE' });
                 if (res.ok) cargarViajes();
             } catch (err) {
                 alert('Error: ' + err.message);

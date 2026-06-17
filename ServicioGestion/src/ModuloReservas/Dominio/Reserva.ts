@@ -1,4 +1,5 @@
 export class Reserva {
+  private id: string;
   private cliente: string; // UsuarioId
   private origen: string; // ZonaGeograficaId
   private destino: string; // ZonaGeograficaId
@@ -11,6 +12,7 @@ export class Reserva {
   private categorias: string[]; // List<CategoriaId>
 
   constructor(
+    id: string,
     cliente: string,
     origen: string,
     destino: string,
@@ -22,6 +24,7 @@ export class Reserva {
     conductor: string,
     categorias: string[]
   ) {
+    this.id = id;
     this.cliente = cliente;
     this.origen = origen;
     this.destino = destino;
@@ -35,6 +38,10 @@ export class Reserva {
   }
 
   // Getters
+  getId(): string {
+    return this.id;
+  }
+
   getCliente(): string {
     return this.cliente;
   }
