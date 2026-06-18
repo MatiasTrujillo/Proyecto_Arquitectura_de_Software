@@ -14,7 +14,8 @@
         .formulario { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ddd; }
         .accion { background: #f0f4ff; padding: 15px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ccd6f6; }
         label { display: block; margin-top: 10px; font-weight: bold; }
-        input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; background: white; }
+        .seleccion-info { background: #d8f0ff; border: 1px solid #90c4e8; border-radius: 4px; padding: 8px 12px; margin-top: 8px; font-size: 0.9em; display: none; }
         button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
         button:hover { background: #0052a3; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -43,6 +44,8 @@
         <input type="text" id="cedula" placeholder="Ej: 12345678">
         <label>Nombre</label>
         <input type="text" id="nombre" placeholder="Ej: María García">
+        <label>Contraseña (para el acceso al sistema)</label>
+        <input type="password" id="password" placeholder="Contraseña de acceso">
         <br>
         <button onclick="crearOperador()">Crear</button>
         <div id="mensajeCrear"></div>
@@ -72,9 +75,23 @@
     <h2 style="margin-top:30px">Acciones</h2>
 
     <div class="accion">
-        <strong>Asignar Reserva</strong>
-        <label>ID de Reserva</label>
-        <input type="text" id="asignarReservaId" placeholder="ID de la reserva">
+        <strong>Asignar Vehículo y Conductor a Reserva (F12)</strong>
+        <label>Reserva</label>
+        <select id="selReserva" onchange="onCambioReserva()">
+            <option value="">— Seleccioná una reserva —</option>
+        </select>
+        <div class="seleccion-info" id="infoReserva"></div>
+
+        <label>Conductor</label>
+        <select id="selConductor">
+            <option value="">— Seleccioná un conductor —</option>
+        </select>
+
+        <label>Vehículo</label>
+        <select id="selVehiculo">
+            <option value="">— Seleccioná un vehículo —</option>
+        </select>
+
         <button onclick="asignarReserva()">Asignar</button>
         <div id="resultadoAsignar" class="resultado oculto"></div>
     </div>
@@ -137,22 +154,24 @@
         }
 
         async function crearOperador() {
-            const cedula = document.getElementById('cedula').value;
-            const nombre = document.getElementById('nombre').value;
-            if (!cedula || !nombre) {
-                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos</div>';
+            const cedula   = document.getElementById('cedula').value.trim();
+            const nombre   = document.getElementById('nombre').value.trim();
+            const password = document.getElementById('password').value;
+            if (!cedula || !nombre || !password) {
+                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá cédula, nombre y contraseña</div>';
                 return;
             }
             try {
                 const res = await apiFetch('/api/operadores', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cedula, nombre })
+                    body: JSON.stringify({ cedula, nombre, password })
                 });
                 if (res.ok) {
-                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Operador creado</div>';
-                    document.getElementById('cedula').value = '';
-                    document.getElementById('nombre').value = '';
+                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Operador creado y acceso al sistema habilitado</div>';
+                    document.getElementById('cedula').value   = '';
+                    document.getElementById('nombre').value   = '';
+                    document.getElementById('password').value = '';
                     cargarOperadores();
                 } else {
                     const err = await res.json();
@@ -217,18 +236,117 @@
             }
         }
 
-        async function asignarReserva() {
-            const id = document.getElementById('asignarReservaId').value;
-            if (!id) return;
+        let reservasDisp = [];
+
+        async function cargarDropdownsAsignacion() {
+            await Promise.all([cargarReservasDisp(), cargarConductores(), cargarVehiculos()]);
+        }
+
+        async function cargarReservasDisp() {
             try {
-                const res = await apiFetch(`/api/operadores/${id}/asignar-reserva`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const res  = await apiFetch('/api/reservas/sin-viaje');
                 const json = await res.json();
-                const el = document.getElementById('resultadoAsignar');
-                el.classList.remove('oculto');
-                el.textContent = JSON.stringify(json, null, 2);
+                reservasDisp = json.data || [];
+                const sel = document.getElementById('selReserva');
+                sel.innerHTML = '<option value="">— Seleccioná una reserva —</option>';
+                reservasDisp.forEach(r => {
+                    const fecha = new Date(r.fecha).toLocaleDateString('es-AR');
+                    const opt   = document.createElement('option');
+                    opt.value       = r.id;
+                    opt.textContent = `#${r.id} · ${r.origen} → ${r.destino} (${fecha})`;
+                    sel.appendChild(opt);
+                });
+                if (reservasDisp.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.disabled = true;
+                    opt.textContent = 'No hay reservas disponibles';
+                    sel.appendChild(opt);
+                }
+            } catch (e) { console.error('Error cargando reservas:', e); }
+        }
+
+        async function cargarConductores() {
+            const sel = document.getElementById('selConductor');
+            try {
+                const res  = await apiFetch('/api/conductores/disponibles');
+                const json = await res.json();
+                if (!res.ok) {
+                    sel.innerHTML = `<option value="">[Error ${res.status}: ${json.error}]</option>`;
+                    return;
+                }
+                const conductores = json.data || [];
+                sel.innerHTML = '<option value="">— Seleccioná un conductor —</option>';
+                if (conductores.length === 0) {
+                    sel.innerHTML += '<option disabled>No hay conductores disponibles</option>';
+                    return;
+                }
+                conductores.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value       = c.cedula;
+                    opt.textContent = `${c.nombre} (cédula: ${c.cedula})`;
+                    sel.appendChild(opt);
+                });
+            } catch (e) {
+                sel.innerHTML = `<option value="">[Error de red: ${e.message}]</option>`;
+            }
+        }
+
+        async function cargarVehiculos() {
+            try {
+                const res  = await fetch('http://localhost:3000/api/vehiculos', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const json = await res.json();
+                const vehiculos = json.data || [];
+                const sel = document.getElementById('selVehiculo');
+                sel.innerHTML = '<option value="">— Seleccioná un vehículo —</option>';
+                vehiculos.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value       = v.matricula;
+                    opt.textContent = `${v.matricula} · ${v.tipo} (cap. ${v.capacidad})`;
+                    sel.appendChild(opt);
+                });
+            } catch (e) { console.error('Error cargando vehículos:', e); }
+        }
+
+        function onCambioReserva() {
+            const id    = document.getElementById('selReserva').value;
+            const panel = document.getElementById('infoReserva');
+            if (!id) { panel.style.display = 'none'; return; }
+            const r = reservasDisp.find(x => String(x.id) === String(id));
+            if (!r) { panel.style.display = 'none'; return; }
+            panel.innerHTML = `<strong>Origen:</strong> ${r.origen} &nbsp;|&nbsp; <strong>Destino:</strong> ${r.destino} &nbsp;|&nbsp; <strong>Fecha:</strong> ${new Date(r.fecha).toLocaleString('es-AR')}`;
+            panel.style.display = 'block';
+        }
+
+        async function asignarReserva() {
+            const reservaId = document.getElementById('selReserva').value;
+            const conductor = document.getElementById('selConductor').value;
+            const vehiculo  = document.getElementById('selVehiculo').value;
+            const el        = document.getElementById('resultadoAsignar');
+            el.classList.remove('oculto');
+            if (!reservaId || !conductor || !vehiculo) {
+                el.textContent = 'Seleccioná reserva, conductor y vehículo.';
+                return;
+            }
+            try {
+                const res  = await apiFetch(`/api/reservas/${reservaId}/asignar`, {
+                    method:  'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ vehiculo, conductor })
+                });
+                const json = await res.json();
+                el.textContent = res.ok
+                    ? `✓ Asignado correctamente. Viaje creado para reserva #${reservaId}`
+                    : `Error: ${json.error}`;
+                if (res.ok) {
+                    document.getElementById('selReserva').value   = '';
+                    document.getElementById('selConductor').value = '';
+                    document.getElementById('selVehiculo').value  = '';
+                    document.getElementById('infoReserva').style.display = 'none';
+                    cargarReservasDisp();
+                }
             } catch (err) {
-                const el = document.getElementById('resultadoAsignar');
-                el.classList.remove('oculto');
                 el.textContent = 'Error: ' + err.message;
             }
         }
@@ -266,6 +384,7 @@
         }
 
         cargarOperadores();
+        cargarDropdownsAsignacion();
         setInterval(cargarOperadores, 5000);
     </script>
 </body>

@@ -8,9 +8,9 @@ export class ReservaDTO {
   fecha: Date;
   estado: string;
   costo: number;
-  vehiculo: string;
+  vehiculo: string | null;
   productos: string[];
-  conductor: string;
+  conductor: string | null;
   categorias: string[];
 
   constructor(
@@ -21,9 +21,9 @@ export class ReservaDTO {
     fecha: Date,
     estado: string,
     costo: number,
-    vehiculo: string,
+    vehiculo: string | null,
     productos: string[],
-    conductor: string,
+    conductor: string | null,
     categorias: string[]
   ) {
     this.id = id;

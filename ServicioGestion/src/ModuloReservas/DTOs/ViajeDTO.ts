@@ -8,6 +8,8 @@ export class ViajeDTO {
   fecha: Date;
   estado: string;
   conductor: string;
+  vehiculo: string;
+  tieneAlertas: boolean;
 
   constructor(
     id: string,
@@ -16,7 +18,9 @@ export class ViajeDTO {
     destino: string,
     fecha: Date,
     estado: string,
-    conductor: string
+    conductor: string,
+    vehiculo: string = '',
+    tieneAlertas: boolean = false,
   ) {
     this.id = id;
     this.reservaId = reservaId;
@@ -25,6 +29,8 @@ export class ViajeDTO {
     this.fecha = fecha;
     this.estado = estado;
     this.conductor = conductor;
+    this.vehiculo = vehiculo;
+    this.tieneAlertas = tieneAlertas;
   }
 
   static fromEntity(entidad: Viaje): ViajeDTO {
@@ -35,7 +41,9 @@ export class ViajeDTO {
       entidad.getDestino(),
       entidad.getFecha(),
       entidad.getEstado(),
-      entidad.getConductor()
+      entidad.getConductor(),
+      entidad.getVehiculo(),
+      entidad.getTieneAlertas(),
     );
   }
 
@@ -47,7 +55,9 @@ export class ViajeDTO {
       this.destino,
       this.fecha,
       this.estado,
-      this.conductor
+      this.conductor,
+      this.vehiculo,
+      this.tieneAlertas,
     );
   }
 }

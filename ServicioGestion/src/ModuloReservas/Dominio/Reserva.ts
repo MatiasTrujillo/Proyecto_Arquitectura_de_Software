@@ -6,9 +6,9 @@ export class Reserva {
   private fecha: Date;
   private estado: string;
   private costo: number; // int en TypeScript es number
-  private vehiculo: string; // VehiculoId
+  private vehiculo: string | null; // VehiculoId — asignado por Operador (F12)
   private productos: string[]; // List<ProductoId>
-  private conductor: string; // ConductorId
+  private conductor: string | null; // ConductorId — asignado por Operador (F12)
   private categorias: string[]; // List<CategoriaId>
 
   constructor(
@@ -19,9 +19,9 @@ export class Reserva {
     fecha: Date,
     estado: string,
     costo: number,
-    vehiculo: string,
+    vehiculo: string | null,
     productos: string[],
-    conductor: string,
+    conductor: string | null,
     categorias: string[]
   ) {
     this.id = id;
@@ -66,7 +66,7 @@ export class Reserva {
     return this.costo;
   }
 
-  getVehiculo(): string {
+  getVehiculo(): string | null {
     return this.vehiculo;
   }
 
@@ -74,7 +74,7 @@ export class Reserva {
     return this.productos;
   }
 
-  getConductor(): string {
+  getConductor(): string | null {
     return this.conductor;
   }
 

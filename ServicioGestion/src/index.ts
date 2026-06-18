@@ -16,6 +16,7 @@ import { ControladorIncidente } from './ModuloReservas/WebApi/Controlador/Contro
 import { registradorSolicitudes, manejadorErrores } from './Shared/Logging/requestLogger';
 import { manejadorMetricas } from './Shared/Metrics/metrics';
 import { verificarAutorizacion } from './Shared/Auth/middlewareAuth';
+import ejecutarMigraciones from './Shared/Database/MigracionesRunner';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -56,6 +57,7 @@ app.post('/api/operadores/:reservaId/reserva-no-reconocida', operadorController.
 // ─── Conductores ──────────────────────────────────────────────────────────────
 app.post('/api/conductores', conductorController.crearConductor.bind(conductorController));
 app.get('/api/conductores', conductorController.obtenerConductor.bind(conductorController));
+app.get('/api/conductores/disponibles', conductorController.obtenerConductoresDisponibles.bind(conductorController));
 app.get('/api/conductores/:id', conductorController.obtenerConductorPorId.bind(conductorController));
 app.put('/api/conductores/:id', conductorController.actualizarConductor.bind(conductorController));
 app.delete('/api/conductores/:id', conductorController.eliminarConductor.bind(conductorController));
@@ -111,15 +113,21 @@ app.delete('/api/pagos/:id', pagoController.eliminarPago.bind(pagoController));
 // ─── Reservas ─────────────────────────────────────────────────────────────────
 app.post('/api/reservas', reservaController.crearReserva.bind(reservaController));
 app.get('/api/reservas', reservaController.obtenerReservas.bind(reservaController));
+app.get('/api/reservas/sin-viaje', reservaController.obtenerReservasSinViaje.bind(reservaController));
 app.get('/api/reservas/:id', reservaController.obtenerReservaPorId.bind(reservaController));
 app.patch('/api/reservas/:id/estado', reservaController.actualizarEstadoReserva.bind(reservaController));
+app.patch('/api/reservas/:id/asignar', reservaController.asignarVehiculoConductor.bind(reservaController));
 
 // ─── Viajes ───────────────────────────────────────────────────────────────────
 app.post('/api/viajes', viajeController.crearViaje.bind(viajeController));
 app.get('/api/viajes', viajeController.obtenerViaje.bind(viajeController));
+app.get('/api/viajes/en-curso', viajeController.obtenerViajesEnCurso.bind(viajeController));
+app.get('/api/viajes/mis-viajes', viajeController.obtenerMisViajes.bind(viajeController));
 app.get('/api/viajes/:id', viajeController.obtenerViajePorId.bind(viajeController));
 app.put('/api/viajes/:id', viajeController.actualizarViaje.bind(viajeController));
 app.delete('/api/viajes/:id', viajeController.eliminarViaje.bind(viajeController));
+app.post('/api/viajes/:id/iniciar', viajeController.iniciarTraslado.bind(viajeController));
+app.post('/api/viajes/:id/finalizar', viajeController.finalizarTraslado.bind(viajeController));
 
 // ─── Incidentes ───────────────────────────────────────────────────────────────
 app.post('/api/incidentes', incidenteController.crearIncidente.bind(incidenteController));
@@ -163,6 +171,9 @@ app.get('/reservas-ui', (req, res) => {
 app.get('/viajes-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'viajes.html'));
 });
+app.get('/mis-viajes-ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'mis-viajes.html'));
+});
 app.get('/incidentes-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'incidentes.html'));
 });
@@ -174,6 +185,13 @@ app.get('/metricas-ui', (req, res) => {
 
 app.use(manejadorErrores);
 
-app.listen(port, () => {
-  console.log(`ServicioGestion escuchando en http://localhost:${port}`);
-});
+ejecutarMigraciones()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`ServicioGestion escuchando en http://localhost:${port}`);
+    });
+  })
+  .catch(err => {
+    console.error('Error al iniciar ServicioGestion:', err);
+    process.exit(1);
+  });

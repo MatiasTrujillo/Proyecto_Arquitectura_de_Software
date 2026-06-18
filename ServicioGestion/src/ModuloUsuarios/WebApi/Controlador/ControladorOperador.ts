@@ -3,6 +3,20 @@ import { ServicioOperador } from "../../Servicio/ServicioOperador";
 import { RepositorioOperador } from "../../DataAccess/RepositorioOperador";
 import { IServicioOperador } from "../../IServicio/IServicioOperador";
 
+const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
+
+async function registrarCredencial(cedula: string, password: string, rol: string): Promise<void> {
+  const res = await fetch(`${AUTH_URL}/api/auth/registrar-interno`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ cedula, password, rol }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error || 'Error al crear credencial en ServicioAutenticacion');
+  }
+}
+
 export class ControladorOperador {
   private servicioOperador: IServicioOperador;
 
@@ -12,8 +26,13 @@ export class ControladorOperador {
 
   async crearOperador(req: Request, res: Response): Promise<void> {
     try {
-      const { cedula, nombre } = req.body;
+      const { cedula, nombre, password } = req.body;
+      if (!password) {
+        res.status(400).json({ error: 'La contraseña es requerida para crear un operador' });
+        return;
+      }
       const operadorCreado = await this.servicioOperador.crearOperador(cedula, nombre);
+      await registrarCredencial(cedula, password, 'Operador');
       res.status(201).json({ data: operadorCreado });
     } catch (error) {
       this.manejarError(res, error);

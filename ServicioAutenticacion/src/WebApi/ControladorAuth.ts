@@ -4,6 +4,40 @@ import { RepositorioCredencial } from '../DataAccess/RepositorioCredencial';
 import { RepositorioSesion } from '../DataAccess/RepositorioSesion';
 import registrador from '../Shared/Logging/logger';
 
+const GESTION_URL            = process.env.GESTION_URL            || 'http://localhost:3001';
+const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN || '';
+
+const ROLES_PUBLICOS = ['ClientePersonal', 'ClienteEmpresa'];
+
+const ENDPOINT_POR_ROL: Record<string, string> = {
+  ClientePersonal: '/api/clientes-personales',
+  ClienteEmpresa:  '/api/clientes-empresariales',
+  Conductor:       '/api/conductores',
+  Operador:        '/api/operadores',
+  Administrador:   '/api/administradores',
+};
+
+async function sincronizarConGestion(cedula: string, nombre: string, rol: string): Promise<void> {
+  const endpoint = ENDPOINT_POR_ROL[rol];
+  if (!endpoint) return;
+  try {
+    const res = await fetch(`${GESTION_URL}${endpoint}`, {
+      method:  'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${INTERNAL_SERVICE_TOKEN}`,
+      },
+      body: JSON.stringify({ cedula, nombre }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      registrador.warn('sincronizacion_gestion_fallida', { cedula, rol, status: res.status, error: (err as any).error });
+    }
+  } catch (e) {
+    registrador.warn('sincronizacion_gestion_error_red', { cedula, rol, detalle: String(e) });
+  }
+}
+
 export class ControladorAuth {
   private servicio: ServicioAuth;
 
@@ -16,17 +50,39 @@ export class ControladorAuth {
 
   async registrar(req: Request, res: Response): Promise<void> {
     try {
+      const { cedula, password, rol, nombre } = req.body;
+      if (!cedula || !password || !rol || !nombre) {
+        res.status(400).json({ error: 'cedula, nombre, password y rol son requeridos' });
+        return;
+      }
+      if (!ROLES_PUBLICOS.includes(rol)) {
+        res.status(403).json({ error: `El registro de '${rol}' lo gestiona el administrador del sistema` });
+        return;
+      }
+      await this.servicio.registrar(cedula, password, rol);
+      registrador.info('credencial_registrada', { cedula, rol });
+      await sincronizarConGestion(cedula, nombre, rol);
+      res.status(201).json({ mensaje: 'Usuario registrado correctamente' });
+    } catch (error) {
+      const mensaje = error instanceof Error ? error.message : String(error);
+      registrador.error('error_registro', { mensaje });
+      res.status(400).json({ error: mensaje });
+    }
+  }
+
+  // Llamado internamente por ServicioGestion cuando el admin crea un conductor/operador/admin
+  async registrarInterno(req: Request, res: Response): Promise<void> {
+    try {
       const { cedula, password, rol } = req.body;
       if (!cedula || !password || !rol) {
         res.status(400).json({ error: 'cedula, password y rol son requeridos' });
         return;
       }
       await this.servicio.registrar(cedula, password, rol);
-      registrador.info('credencial_registrada', { cedula, rol });
-      res.status(201).json({ mensaje: 'Credencial registrada correctamente' });
+      registrador.info('credencial_registrada_interna', { cedula, rol });
+      res.status(201).json({ mensaje: 'Credencial creada' });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : String(error);
-      registrador.error('error_registro', { mensaje });
       res.status(400).json({ error: mensaje });
     }
   }

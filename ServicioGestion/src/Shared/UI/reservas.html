@@ -12,8 +12,9 @@
         a { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
         a:hover { background: #0052a3; }
         .formulario { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ddd; }
+        .seccion-asignar { background: #eef5ff; border: 1px solid #b0ccee; }
         label { display: block; margin-top: 10px; font-weight: bold; }
-        input, select { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; background: white; }
         button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
         button:hover { background: #0052a3; }
         .btn-cancelar { padding: 8px 15px; background: #888; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; margin-left: 8px; }
@@ -21,24 +22,53 @@
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background: #f0f0f0; font-weight: bold; }
-        .btn-editar { padding: 5px 10px; background: #e07b00; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-editar  { padding: 5px 10px; background: #e07b00; color: white; border: none; border-radius: 4px; cursor: pointer; }
         .btn-editar:hover { background: #b56200; }
-        .error { color: red; margin-top: 10px; }
-        .exito { color: green; margin-top: 10px; }
+        .btn-asignar { padding: 5px 10px; background: #0a7d4b; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 4px; }
+        .btn-asignar:hover { background: #085c38; }
+        .error  { color: red;   margin-top: 10px; }
+        .exito  { color: green; margin-top: 10px; }
         .oculto { display: none; }
         .id-cell { font-family: monospace; font-size: 0.82em; color: #555; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
-        .badge-Pendiente { background: #fff3cd; color: #856404; }
+        .badge-Pendiente  { background: #fff3cd; color: #856404; }
         .badge-Confirmada { background: #d4edda; color: #155724; }
-        .badge-EnCurso { background: #d1ecf1; color: #0c5460; }
+        .badge-EnCurso    { background: #d1ecf1; color: #0c5460; }
         .badge-Completada { background: #d4edda; color: #155724; }
-        .badge-Cancelada { background: #f8d7da; color: #721c24; }
+        .badge-Cancelada  { background: #f8d7da; color: #721c24; }
+        .badge-Pagado     { background: #d4edda; color: #155724; }
+        .seleccion-info { background: #d8f0ff; border: 1px solid #90c4e8; border-radius: 4px; padding: 8px 12px; margin-top: 10px; font-size: 0.9em; display: none; }
     </style>
 </head>
 <body>
     <div class="nav"><a href="/">← Volver</a></div>
     <h1>Gestión de Reservas</h1>
 
+    <!-- F12: Asignación de vehículo y conductor (Operador) -->
+    <div class="formulario seccion-asignar" id="formularioAsignar">
+        <h2>Asignar Vehículo y Conductor (F12)</h2>
+        <label>Reserva</label>
+        <select id="selReserva" onchange="onCambioReserva()">
+            <option value="">— Seleccioná una reserva —</option>
+        </select>
+        <div class="seleccion-info" id="infoReserva"></div>
+
+        <label>Conductor</label>
+        <select id="selConductor">
+            <option value="">— Seleccioná un conductor —</option>
+        </select>
+
+        <label>Vehículo</label>
+        <select id="selVehiculo">
+            <option value="">— Seleccioná un vehículo —</option>
+        </select>
+
+        <br>
+        <button onclick="guardarAsignacion()">Asignar</button>
+        <div id="mensajeAsignar"></div>
+    </div>
+
+    <!-- Cambiar estado -->
     <div class="formulario oculto" id="formularioEstado">
         <h2>Actualizar Estado — Reserva <span id="tituloIdEstado"></span></h2>
         <input type="hidden" id="estadoReservaId">
@@ -59,7 +89,11 @@
     <h2>Listado de Reservas</h2>
     <table id="tablaReservas">
         <thead>
-            <tr><th>ID</th><th>Cliente</th><th>Origen</th><th>Destino</th><th>Fecha</th><th>Estado</th><th>Costo</th><th>Conductor</th><th>Vehículo</th><th>Acción</th></tr>
+            <tr>
+                <th>ID</th><th>Cliente</th><th>Origen</th><th>Destino</th>
+                <th>Fecha</th><th>Estado</th><th>Costo</th>
+                <th>Conductor</th><th>Vehículo</th><th>Acción</th>
+            </tr>
         </thead>
         <tbody><tr><td colspan="10">Cargando...</td></tr></tbody>
     </table>
@@ -77,10 +111,166 @@
         }
 
         let items = [];
+        let reservasDisp = [];
+
+        // ── Carga de dropdowns ──────────────────────────────────────────────────
+
+        async function cargarDropdowns() {
+            await Promise.all([cargarReservasDisp(), cargarConductores(), cargarVehiculos()]);
+        }
+
+        async function cargarReservasDisp() {
+            try {
+                const res  = await apiFetch('/api/reservas/sin-viaje');
+                const json = await res.json();
+                reservasDisp = json.data || [];
+                const sel = document.getElementById('selReserva');
+                const valorActual = sel.value;
+                sel.innerHTML = '<option value="">— Seleccioná una reserva —</option>';
+                reservasDisp.forEach(r => {
+                    const fecha = new Date(r.fecha).toLocaleDateString('es-AR');
+                    const opt   = document.createElement('option');
+                    opt.value       = r.id;
+                    opt.textContent = `#${r.id} · ${r.origen} → ${r.destino} (${fecha})`;
+                    sel.appendChild(opt);
+                });
+                if (valorActual) sel.value = valorActual;
+                onCambioReserva();
+            } catch (e) { console.error('Error cargando reservas:', e); }
+        }
+
+        async function cargarConductores() {
+            try {
+                const res  = await apiFetch('/api/conductores/disponibles');
+                const json = await res.json();
+                const conductores = json.data || [];
+                const sel = document.getElementById('selConductor');
+                sel.innerHTML = '<option value="">— Seleccioná un conductor —</option>';
+                conductores.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value       = c.cedula;
+                    opt.textContent = `${c.nombre} (cédula: ${c.cedula})`;
+                    sel.appendChild(opt);
+                });
+            } catch (e) { console.error('Error cargando conductores:', e); }
+        }
+
+        async function cargarVehiculos() {
+            try {
+                const res  = await fetch('http://localhost:3000/api/vehiculos', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const json = await res.json();
+                const vehiculos = json.data || [];
+                const sel = document.getElementById('selVehiculo');
+                sel.innerHTML = '<option value="">— Seleccioná un vehículo —</option>';
+                vehiculos.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value       = v.matricula;
+                    opt.textContent = `${v.matricula} · ${v.tipo} (cap. ${v.capacidad})`;
+                    sel.appendChild(opt);
+                });
+            } catch (e) { console.error('Error cargando vehículos:', e); }
+        }
+
+        function onCambioReserva() {
+            const id    = document.getElementById('selReserva').value;
+            const panel = document.getElementById('infoReserva');
+            if (!id) { panel.style.display = 'none'; return; }
+            const r = reservasDisp.find(x => String(x.id) === String(id));
+            if (!r) { panel.style.display = 'none'; return; }
+            panel.innerHTML = `
+                <strong>Origen:</strong> ${r.origen} &nbsp;|&nbsp;
+                <strong>Destino:</strong> ${r.destino} &nbsp;|&nbsp;
+                <strong>Fecha:</strong> ${new Date(r.fecha).toLocaleString('es-AR')}
+            `;
+            panel.style.display = 'block';
+        }
+
+        async function guardarAsignacion() {
+            const reservaId = document.getElementById('selReserva').value;
+            const conductor = document.getElementById('selConductor').value;
+            const vehiculo  = document.getElementById('selVehiculo').value;
+            const msg       = document.getElementById('mensajeAsignar');
+
+            if (!reservaId || !conductor || !vehiculo) {
+                msg.innerHTML = '<div class="error">Seleccioná reserva, conductor y vehículo</div>';
+                return;
+            }
+            try {
+                const res = await apiFetch(`/api/reservas/${reservaId}/asignar`, {
+                    method:  'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ vehiculo, conductor })
+                });
+                if (res.ok) {
+                    msg.innerHTML = '<div class="exito">Asignación realizada y viaje creado</div>';
+                    document.getElementById('selReserva').value   = '';
+                    document.getElementById('selConductor').value = '';
+                    document.getElementById('selVehiculo').value  = '';
+                    document.getElementById('infoReserva').style.display = 'none';
+                    cargarDropdowns();
+                    cargarReservas();
+                } else {
+                    const err = await res.json();
+                    msg.innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                msg.innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        // pre-selecciona la reserva en el dropdown al hacer clic en "Asignar" desde la tabla
+        function preSeleccionarReserva(reservaId) {
+            document.getElementById('selReserva').value = String(reservaId);
+            onCambioReserva();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('mensajeAsignar').innerHTML = '';
+        }
+
+        // ── Estado ──────────────────────────────────────────────────────────────
+
+        function abrirCambioEstado(indice) {
+            const item = items[indice];
+            document.getElementById('formularioEstado').classList.remove('oculto');
+            document.getElementById('tituloIdEstado').textContent   = `#${item.id}`;
+            document.getElementById('estadoReservaId').value        = item.id;
+            document.getElementById('nuevoEstado').value            = item.estado;
+            document.getElementById('mensajeEstado').innerHTML      = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEstado() {
+            document.getElementById('formularioEstado').classList.add('oculto');
+        }
+
+        async function guardarEstado() {
+            const id     = document.getElementById('estadoReservaId').value;
+            const estado = document.getElementById('nuevoEstado').value;
+            try {
+                const res = await apiFetch(`/api/reservas/${id}/estado`, {
+                    method:  'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ estado })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeEstado').innerHTML = '<div class="exito">Estado actualizado</div>';
+                    cargarReservas();
+                    setTimeout(cancelarEstado, 1000);
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeEstado').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeEstado').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        // ── Tabla ───────────────────────────────────────────────────────────────
 
         async function cargarReservas() {
             try {
-                const res = await apiFetch('/api/reservas');
+                const res  = await apiFetch('/api/reservas');
                 const json = await res.json();
                 items = json.data || [];
                 const tbody = document.querySelector('#tablaReservas tbody');
@@ -98,8 +288,11 @@
                         <td><span class="badge badge-${item.estado.replace(/\s/g,'')}">${item.estado}</span></td>
                         <td>$${Number(item.costo).toFixed(2)}</td>
                         <td class="id-cell">${item.conductor || '—'}</td>
-                        <td class="id-cell">${item.vehiculo || '—'}</td>
-                        <td><button class="btn-editar" onclick="abrirCambioEstado(${i})">Estado</button></td>
+                        <td class="id-cell">${item.vehiculo  || '—'}</td>
+                        <td>
+                            <button class="btn-editar"  onclick="abrirCambioEstado(${i})">Estado</button>
+                            <button class="btn-asignar" onclick="preSeleccionarReserva('${item.id}')">Asignar</button>
+                        </td>
                     </tr>
                 `).join('');
             } catch (err) {
@@ -108,44 +301,9 @@
             }
         }
 
-        function abrirCambioEstado(indice) {
-            const item = items[indice];
-            document.getElementById('formularioEstado').classList.remove('oculto');
-            document.getElementById('tituloIdEstado').textContent = `#${item.id}`;
-            document.getElementById('estadoReservaId').value = item.id;
-            document.getElementById('nuevoEstado').value = item.estado;
-            document.getElementById('mensajeEstado').innerHTML = '';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function cancelarEstado() {
-            document.getElementById('formularioEstado').classList.add('oculto');
-        }
-
-        async function guardarEstado() {
-            const id = document.getElementById('estadoReservaId').value;
-            const estado = document.getElementById('nuevoEstado').value;
-            try {
-                const res = await apiFetch(`/api/reservas/${id}/estado`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ estado })
-                });
-                if (res.ok) {
-                    document.getElementById('mensajeEstado').innerHTML = '<div class="exito">Estado actualizado</div>';
-                    cargarReservas();
-                    setTimeout(cancelarEstado, 1000);
-                } else {
-                    const err = await res.json();
-                    document.getElementById('mensajeEstado').innerHTML = `<div class="error">Error: ${err.error}</div>`;
-                }
-            } catch (err) {
-                document.getElementById('mensajeEstado').innerHTML = `<div class="error">Error: ${err.message}</div>`;
-            }
-        }
-
+        cargarDropdowns();
         cargarReservas();
-        setInterval(cargarReservas, 5000);
+        setInterval(() => { cargarReservas(); cargarReservasDisp(); }, 5000);
     </script>
 </body>
 </html>

@@ -26,9 +26,9 @@ export class RepositorioReserva implements IRepositorioReserva {
     fecha: Date,
     estado: string,
     costo: number,
-    vehiculo: string,
+    vehiculo: string | null,
     productos: string[],
-    conductor: string,
+    conductor: string | null,
     categorias: string[]
   ): Promise<Reserva> {
     const res = await pool.query(
@@ -72,6 +72,26 @@ export class RepositorioReserva implements IRepositorioReserva {
     );
     if (!res.rows[0]) return undefined;
     return this.mapRow(res.rows[0]);
+  }
+
+  async asignarVehiculoConductor(id: string, vehiculo: string, conductor: string): Promise<Reserva | undefined> {
+    const res = await pool.query(
+      `UPDATE reserva SET vehiculo = $1, conductor = $2 WHERE id = $3
+       RETURNING id, cliente, origen, destino, fecha, estado, costo, vehiculo, productos, conductor, categorias`,
+      [vehiculo, conductor, id]
+    );
+    return res.rows[0] ? this.mapRow(res.rows[0]) : undefined;
+  }
+
+  async obtenerReservasSinViaje(): Promise<Reserva[]> {
+    const res = await pool.query(
+      `SELECT r.id, r.cliente, r.origen, r.destino, r.fecha, r.estado, r.costo,
+              r.vehiculo, r.productos, r.conductor, r.categorias
+       FROM reserva r
+       WHERE NOT EXISTS (SELECT 1 FROM viaje v WHERE v.reserva_id = r.id::text)
+       ORDER BY r.fecha ASC`
+    );
+    return res.rows.map((r: any) => this.mapRow(r));
   }
 
   async existe(id: string): Promise<boolean> {

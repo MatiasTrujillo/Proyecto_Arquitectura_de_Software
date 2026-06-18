@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import registrador from '../Logging/logger';
 
-const URL_AUTH = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
+const URL_AUTH              = process.env.AUTH_SERVICE_URL       || 'http://localhost:3002';
+const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN || '';
 
 const ACCESO_POR_PREFIJO: Record<string, string[]> = {
   '/administradores': ['Administrador'],
   '/operadores':      ['Operador', 'Administrador'],
-  '/conductores':     ['Conductor', 'Administrador'],
+  '/conductores':     ['Conductor', 'Administrador', 'Operador'],
   '/clientes-personales':    ['ClientePersonal', 'Administrador'],
   '/clientes-empresariales': ['ClienteEmpresa', 'Administrador'],
   '/productos':          ['Administrador', 'ClienteEmpresa'],
@@ -21,10 +22,13 @@ const ACCESO_POR_PREFIJO: Record<string, string[]> = {
 // Rutas donde solo el Administrador puede hacer la operación,
 // independientemente de lo que permita el prefijo general.
 const SOLO_ADMIN_EXACTO: Array<{ metodo: string; ruta: string }> = [
-  { metodo: 'POST', ruta: '/clientes-personales' },
-  { metodo: 'POST', ruta: '/clientes-empresariales' },
-  { metodo: 'POST', ruta: '/conductores' },
+  { metodo: 'POST',   ruta: '/clientes-personales' },
+  { metodo: 'POST',   ruta: '/clientes-empresariales' },
+  { metodo: 'POST',   ruta: '/conductores' },
 ];
+
+// Operador puede leer conductores pero no modificarlos
+const OPERADOR_SOLO_LECTURA_PREFIJOS = ['/conductores'];
 
 export async function verificarAutorizacion(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
@@ -41,6 +45,13 @@ export async function verificarAutorizacion(req: Request, res: Response, next: N
   }
 
   const token = authHeader.substring(7);
+
+  // Token de servicio interno: acceso total sin llamar al auth service
+  if (INTERNAL_SERVICE_TOKEN && token === INTERNAL_SERVICE_TOKEN) {
+    (req as any).usuario = { cedula: 'sistema', rol: 'Administrador' };
+    next();
+    return;
+  }
 
   try {
     const respuesta = await fetch(`${URL_AUTH}/api/auth/verificar`, {
@@ -60,6 +71,13 @@ export async function verificarAutorizacion(req: Request, res: Response, next: N
 
     const usuario = await respuesta.json() as { cedula: string; rol: string };
     (req as any).usuario = usuario;
+
+    // Operador no puede modificar conductores
+    const esSoloLectura = OPERADOR_SOLO_LECTURA_PREFIJOS.some(p => req.path.startsWith(p));
+    if (esSoloLectura && usuario.rol === 'Operador' && req.method !== 'GET') {
+      res.status(403).json({ error: `El rol 'Operador' solo puede consultar este recurso` });
+      return;
+    }
 
     const esRutaSoloAdmin = SOLO_ADMIN_EXACTO.some(
       r => r.metodo === req.method && r.ruta === req.path

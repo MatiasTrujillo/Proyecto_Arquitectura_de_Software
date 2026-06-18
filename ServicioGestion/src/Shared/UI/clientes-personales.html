@@ -95,10 +95,6 @@
         <input type="date" id="resFecha">
         <label>Costo</label>
         <input type="number" id="resCosto" placeholder="Ej: 500" min="0">
-        <label>Vehículo (ID)</label>
-        <input type="text" id="resVehiculo" placeholder="ID del vehículo">
-        <label>Conductor (ID)</label>
-        <input type="text" id="resConductor" placeholder="ID del conductor">
         <button onclick="realizarReserva()">Realizar</button>
         <div id="resultadoReserva" class="resultado oculto"></div>
     </div>
@@ -270,13 +266,11 @@
         }
 
         async function realizarReserva() {
-            const origen    = document.getElementById('resOrigen').value;
-            const destino   = document.getElementById('resDestino').value;
-            const fecha     = document.getElementById('resFecha').value;
-            const costo     = parseFloat(document.getElementById('resCosto').value);
-            const vehiculo  = document.getElementById('resVehiculo').value;
-            const conductor = document.getElementById('resConductor').value;
-            if (!origen || !destino || !fecha || isNaN(costo) || !vehiculo || !conductor) {
+            const origen  = document.getElementById('resOrigen').value;
+            const destino = document.getElementById('resDestino').value;
+            const fecha   = document.getElementById('resFecha').value;
+            const costo   = parseFloat(document.getElementById('resCosto').value);
+            if (!origen || !destino || !fecha || isNaN(costo)) {
                 mostrar('resultadoReserva', { error: 'Completá todos los campos de la reserva' });
                 return;
             }
@@ -284,7 +278,7 @@
                 const res = await apiFetch('/api/clientes-personales/realizar-reserva', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ origen, destino, fecha, costo, vehiculo, conductor, productos: [], categorias: [] })
+                    body: JSON.stringify({ origen, destino, fecha, costo, productos: [], categorias: [] })
                 });
                 const json = await res.json();
                 mostrar('resultadoReserva', json);

@@ -88,8 +88,7 @@ export class ControladorClientePersonal {
       const clienteId = (req as any).usuario?.cedula ?? req.body.clienteId;
       const { origen, destino, fecha, costo, vehiculo, productos, conductor, categorias } = req.body;
       const reserva = await this.servicioReserva.crearReserva(
-        clienteId, origen, destino, fecha, costo, vehiculo,
-        productos ?? [], conductor, categorias ?? []
+        clienteId, origen, destino, fecha, costo, productos ?? [], categorias ?? [], vehiculo, conductor
       );
       res.status(201).json({ data: reserva });
     } catch (error) {
