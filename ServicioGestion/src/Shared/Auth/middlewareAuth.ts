@@ -1,8 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import registrador from '../Logging/logger';
 
-const URL_AUTH              = process.env.AUTH_SERVICE_URL       || 'http://localhost:3002';
+// Federated Identity: cada servicio verifica el JWT localmente con el secreto compartido.
+// No se necesita llamar a ServicioAutenticacion en cada request.
+const JWT_SECRET             = process.env.JWT_SECRET             || 'clave-secreta-jwt-dev';
 const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN || '';
+
+interface JwtPayload { cedula: string; rol: string; }
 
 const ACCESO_POR_PREFIJO: Record<string, string[]> = {
   '/administradores': ['Administrador'],
@@ -46,7 +51,7 @@ export async function verificarAutorizacion(req: Request, res: Response, next: N
 
   const token = authHeader.substring(7);
 
-  // Token de servicio interno: acceso total sin llamar al auth service
+  // Token de servicio interno: acceso total sin verificación JWT
   if (INTERNAL_SERVICE_TOKEN && token === INTERNAL_SERVICE_TOKEN) {
     (req as any).usuario = { cedula: 'sistema', rol: 'Administrador' };
     next();
@@ -54,22 +59,17 @@ export async function verificarAutorizacion(req: Request, res: Response, next: N
   }
 
   try {
-    const respuesta = await fetch(`${URL_AUTH}/api/auth/verificar`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!respuesta.ok) {
-      registrador.warn('acceso_no_autorizado', {
-        motivo: 'token_invalido_o_expirado',
-        ruta: req.path,
-        metodo: req.method,
-        ip: req.ip,
-      });
+    // Verificación local del JWT — no requiere llamada HTTP a ServicioAutenticacion
+    let payload: JwtPayload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    } catch {
+      registrador.warn('acceso_no_autorizado', { motivo: 'jwt_invalido_o_expirado', ruta: req.path, metodo: req.method, ip: req.ip });
       res.status(401).json({ error: 'Token inválido o expirado' });
       return;
     }
 
-    const usuario = await respuesta.json() as { cedula: string; rol: string };
+    const usuario = { cedula: payload.cedula, rol: payload.rol };
     (req as any).usuario = usuario;
 
     // Operador no puede modificar conductores
@@ -117,11 +117,6 @@ export async function verificarAutorizacion(req: Request, res: Response, next: N
 
     next();
   } catch {
-    registrador.error('error_servicio_auth', {
-      ruta: req.path,
-      metodo: req.method,
-      detalle: 'ServicioAutenticacion no disponible',
-    });
-    res.status(503).json({ error: 'Servicio de autenticación no disponible' });
+    res.status(500).json({ error: 'Error interno de autorización' });
   }
 }

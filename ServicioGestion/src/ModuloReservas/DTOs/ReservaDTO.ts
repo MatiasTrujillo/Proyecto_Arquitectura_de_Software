@@ -1,4 +1,5 @@
 import { Reserva } from "../Dominio/Reserva";
+import { Prioridad } from "../WebApi/Cola/ColaPrioridad";
 
 export class ReservaDTO {
   id: string;
@@ -12,6 +13,7 @@ export class ReservaDTO {
   productos: string[];
   conductor: string | null;
   categorias: string[];
+  prioridad: Prioridad | null;
 
   constructor(
     id: string,
@@ -24,7 +26,8 @@ export class ReservaDTO {
     vehiculo: string | null,
     productos: string[],
     conductor: string | null,
-    categorias: string[]
+    categorias: string[],
+    prioridad: Prioridad | null = null
   ) {
     this.id = id;
     this.cliente = cliente;
@@ -37,9 +40,10 @@ export class ReservaDTO {
     this.productos = productos;
     this.conductor = conductor;
     this.categorias = categorias;
+    this.prioridad = prioridad;
   }
 
-  static fromEntity(entidad: Reserva): ReservaDTO {
+  static fromEntity(entidad: Reserva, prioridad: Prioridad | null = null): ReservaDTO {
     return new ReservaDTO(
       entidad.getId(),
       entidad.getCliente(),
@@ -51,7 +55,8 @@ export class ReservaDTO {
       entidad.getVehiculo(),
       entidad.getProductos(),
       entidad.getConductor(),
-      entidad.getCategorias()
+      entidad.getCategorias(),
+      prioridad
     );
   }
 

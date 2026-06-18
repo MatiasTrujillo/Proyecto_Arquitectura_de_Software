@@ -8,5 +8,6 @@ export interface IServicioReserva {
   consultarEstadoReserva(reservaId: string): Promise<string>;
   actualizarEstadoReserva(reservaId: string, estado: string): Promise<ReservaDTO>;
   asignarVehiculoConductor(reservaId: string, vehiculo: string, conductor: string): Promise<ReservaDTO>;
+  asignarVehiculoConductorConViaje(reservaId: string, vehiculo: string, conductor: string): Promise<ReservaDTO>;
   obtenerReservasSinViaje(): Promise<ReservaDTO[]>;
 }

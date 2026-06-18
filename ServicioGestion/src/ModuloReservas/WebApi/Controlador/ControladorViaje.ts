@@ -49,7 +49,7 @@ export class ControladorViaje {
     }
   }
 
-  // F18: traslados en curso con filtros opcionales (vehiculo, conductor, tieneAlertas)
+  // traslados en curso con filtros opcionales (vehiculo, conductor, tieneAlertas)
   async obtenerViajesEnCurso(req: Request, res: Response): Promise<void> {
     try {
       const { vehiculo, conductor, tieneAlertas } = req.query;
@@ -65,7 +65,7 @@ export class ControladorViaje {
     }
   }
 
-  // F13: conductor inicia el traslado
+  // conductor inicia el traslado
   async iniciarTraslado(req: Request, res: Response): Promise<void> {
     try {
       const conductorId = (req as any).usuario?.cedula;
@@ -77,7 +77,7 @@ export class ControladorViaje {
     }
   }
 
-  // F17: conductor finaliza el traslado
+  // conductor finaliza el traslado
   async finalizarTraslado(req: Request, res: Response): Promise<void> {
     try {
       const conductorId = (req as any).usuario?.cedula;

@@ -50,7 +50,7 @@ app.get('/', (_req, res) => {
 </head>
 <body>
   <h1>ServicioAutenticacion</h1>
-  <p>Puerto <strong>3002</strong> &mdash; Servicio externo de autenticación (F2)</p>
+  <p>Puerto <strong>3002</strong> &mdash; Servicio externo de autenticación</p>
 
   <div class="nav">
     <button onclick="mostrarSeccion('registrar')" id="btn-registrar">Registrar</button>
