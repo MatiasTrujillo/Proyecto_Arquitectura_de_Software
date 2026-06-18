@@ -18,6 +18,11 @@ export class ServicioConductor implements IServicioConductor {
     return conductores.map(c => ConductorDTO.fromEntity(c));
   }
 
+  async obtenerConductoresDisponibles(): Promise<ConductorDTO[]> {
+    const conductores = await this.repositorio.obtenerConductoresDisponibles();
+    return conductores.map(c => ConductorDTO.fromEntity(c));
+  }
+
   async obtenerConductorPorId(id: string): Promise<ConductorDTO> {
     this.validarId(id);
     const conductor = await this.repositorio.obtenerConductorPorId(id);

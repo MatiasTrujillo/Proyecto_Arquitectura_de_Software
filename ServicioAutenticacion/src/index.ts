@@ -1,6 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { ControladorAuth } from './WebApi/ControladorAuth';
+import ejecutarMigraciones from './Shared/Database/MigracionesRunner';
+import { ejecutarSeed } from './Shared/Database/SeedRunner';
 
 dotenv.config();
 
@@ -12,7 +14,8 @@ const controlador = new ControladorAuth();
 app.use(express.json());
 
 // ─── Rutas de autenticación ───────────────────────────────────────────────────
-app.post('/api/auth/registrar', controlador.registrar.bind(controlador));
+app.post('/api/auth/registrar',        controlador.registrar.bind(controlador));
+app.post('/api/auth/registrar-interno', controlador.registrarInterno.bind(controlador));
 app.post('/api/auth/login',     controlador.login.bind(controlador));
 app.post('/api/auth/logout',    controlador.logout.bind(controlador));
 app.get('/api/auth/verificar',  controlador.verificar.bind(controlador));
@@ -56,20 +59,19 @@ app.get('/', (_req, res) => {
   </div>
 
   <div id="sec-registrar" class="seccion">
-    <h2>Registrar credenciales</h2>
+    <h2>Crear cuenta</h2>
     <label>Cédula</label>
     <input type="text" id="regCedula" placeholder="Ej: 12345678">
+    <label>Nombre completo</label>
+    <input type="text" id="regNombre" placeholder="Ej: Juan Pérez">
     <label>Password</label>
     <input type="password" id="regPassword" placeholder="Contraseña">
-    <label>Rol</label>
+    <label>Tipo de cuenta</label>
     <select id="regRol">
-      <option value="Administrador">Administrador</option>
-      <option value="Operador">Operador</option>
-      <option value="Conductor">Conductor</option>
-      <option value="ClientePersonal">ClientePersonal</option>
-      <option value="ClienteEmpresa">ClienteEmpresa</option>
+      <option value="ClientePersonal">Cliente Personal</option>
+      <option value="ClienteEmpresa">Cliente Empresa</option>
     </select>
-    <button class="btn-accion" onclick="registrar()">Registrar</button>
+    <button class="btn-accion" onclick="registrar()">Crear cuenta</button>
     <div id="resRegistrar" class="resultado"></div>
   </div>
 
@@ -110,13 +112,19 @@ app.get('/', (_req, res) => {
     }
 
     async function registrar() {
-      const cedula = document.getElementById('regCedula').value;
+      const cedula   = document.getElementById('regCedula').value;
+      const nombre   = document.getElementById('regNombre').value;
       const password = document.getElementById('regPassword').value;
-      const rol = document.getElementById('regRol').value;
+      const rol      = document.getElementById('regRol').value;
+      if (!cedula || !nombre || !password) {
+        mostrar('resRegistrar', { error: 'Todos los campos son obligatorios' }, false);
+        return;
+      }
       try {
         const res = await fetch('/api/auth/registrar', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cedula, password, rol })
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cedula, nombre, password, rol })
         });
         mostrar('resRegistrar', await res.json(), res.ok);
       } catch (e) { mostrar('resRegistrar', { error: e.message }, false); }
@@ -166,6 +174,14 @@ app.get('/', (_req, res) => {
 </html>`);
 });
 
-app.listen(port, () => {
-  console.log(`ServicioAutenticacion escuchando en http://localhost:${port}`);
-});
+ejecutarMigraciones()
+  .then(() => ejecutarSeed())
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`ServicioAutenticacion escuchando en http://localhost:${port}`);
+    });
+  })
+  .catch(err => {
+    console.error('Error al iniciar ServicioAutenticacion:', err);
+    process.exit(1);
+  });

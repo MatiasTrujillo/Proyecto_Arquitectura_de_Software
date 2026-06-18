@@ -36,6 +36,19 @@
     <div class="nav"><a href="/">← Volver</a></div>
     <h1>Gestión de Conductores</h1>
 
+    <div class="formulario" id="formularioCrear">
+        <h2>Agregar Conductor</h2>
+        <label>Cédula</label>
+        <input type="text" id="crearCedula" placeholder="Ej: 12345678">
+        <label>Nombre completo</label>
+        <input type="text" id="crearNombre" placeholder="Ej: Juan Pérez">
+        <label>Contraseña (para el acceso al sistema)</label>
+        <input type="password" id="crearPassword" placeholder="Contraseña de acceso">
+        <br>
+        <button onclick="crearConductor()">Agregar</button>
+        <div id="mensajeCrear"></div>
+    </div>
+
     <div class="formulario oculto" id="formularioEditar">
         <h2>Editar Conductor <span id="tituloIdEditar"></span></h2>
         <input type="hidden" id="editarId">
@@ -100,6 +113,36 @@
         }
 
         let items = [];
+
+        async function crearConductor() {
+            const cedula   = document.getElementById('crearCedula').value.trim();
+            const nombre   = document.getElementById('crearNombre').value.trim();
+            const password = document.getElementById('crearPassword').value;
+            const msg      = document.getElementById('mensajeCrear');
+            if (!cedula || !nombre || !password) {
+                msg.innerHTML = '<div class="error">Completá cédula, nombre y contraseña</div>';
+                return;
+            }
+            try {
+                const res = await apiFetch('/api/conductores', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cedula, nombre, password })
+                });
+                if (res.ok) {
+                    msg.innerHTML = '<div class="exito">Conductor creado y acceso al sistema habilitado</div>';
+                    document.getElementById('crearCedula').value   = '';
+                    document.getElementById('crearNombre').value   = '';
+                    document.getElementById('crearPassword').value = '';
+                    cargarConductores();
+                } else {
+                    const err = await res.json();
+                    msg.innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                msg.innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
 
         async function cargarConductores() {
             try {

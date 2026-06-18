@@ -12,6 +12,13 @@ const vehiculoController = new ControladorVehiculo();
 const dispositivoController = new ControladorDispositivoGPS();
 
 app.use(express.json());
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') { res.sendStatus(204); return; }
+  next();
+});
 app.use(registradorSolicitudes);
 
 app.post('/api/vehiculos', vehiculoController.crearVehiculo.bind(vehiculoController));

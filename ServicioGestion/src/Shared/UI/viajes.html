@@ -13,7 +13,11 @@
         a:hover { background: #0052a3; }
         .formulario { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ddd; }
         label { display: block; margin-top: 10px; font-weight: bold; }
-        input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        select { background: white; }
+        .info-reserva { background: #e8f4e8; border: 1px solid #b8ddb8; border-radius: 4px; padding: 10px 14px; margin-top: 12px; font-size: 0.92em; display: none; }
+        .info-reserva p { margin: 4px 0; }
+        .info-reserva strong { color: #2a6a2a; }
         button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
         button:hover { background: #0052a3; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -25,6 +29,10 @@
         .btn-editar:hover { background: #b56200; }
         .btn-cancelar { padding: 8px 15px; background: #888; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; margin-left: 8px; }
         .btn-cancelar:hover { background: #666; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
+        .badge-Pendiente  { background: #fff3cd; color: #856404; }
+        .badge-EnCurso    { background: #d1ecf1; color: #0c5460; }
+        .badge-Finalizado { background: #d4edda; color: #155724; }
         .error { color: red; margin-top: 10px; }
         .exito { color: green; margin-top: 10px; }
         .oculto { display: none; }
@@ -37,20 +45,19 @@
 
     <div class="formulario" id="formularioCrear">
         <h2>Crear Viaje</h2>
-        <label>ID de Reserva</label>
-        <input type="text" id="reservaId" placeholder="ID de la reserva asociada">
-        <label>Origen</label>
-        <input type="text" id="origen" placeholder="Ej: Av. Corrientes 100">
-        <label>Destino</label>
-        <input type="text" id="destino" placeholder="Ej: Av. 9 de Julio 500">
-        <label>Fecha</label>
-        <input type="datetime-local" id="fecha">
-        <label>Estado</label>
-        <input type="text" id="estado" placeholder="Ej: pendiente">
-        <label>Conductor</label>
-        <input type="text" id="conductor" placeholder="ID o nombre del conductor">
+        <label>Reserva disponible</label>
+        <select id="selectReserva" onchange="onSeleccionarReserva()">
+            <option value="">— Seleccioná una reserva —</option>
+        </select>
+        <div class="info-reserva" id="infoReserva">
+            <p><strong>Origen:</strong> <span id="infoOrigen"></span></p>
+            <p><strong>Destino:</strong> <span id="infoDestino"></span></p>
+            <p><strong>Fecha:</strong> <span id="infoFecha"></span></p>
+            <p><strong>Conductor asignado:</strong> <span id="infoConductor"></span></p>
+            <p><strong>Vehículo asignado:</strong> <span id="infoVehiculo"></span></p>
+        </div>
         <br>
-        <button onclick="crearViaje()">Crear</button>
+        <button onclick="crearViaje()">Crear Viaje</button>
         <div id="mensajeCrear"></div>
     </div>
 
@@ -75,12 +82,12 @@
         <div id="mensajeEditar"></div>
     </div>
 
-    <h2>Listado</h2>
+    <h2>Listado de Viajes</h2>
     <table id="tablaViajes">
         <thead>
-            <tr><th>ID</th><th>Reserva</th><th>Origen</th><th>Destino</th><th>Fecha</th><th>Estado</th><th>Conductor</th><th>Acción</th></tr>
+            <tr><th>ID</th><th>Reserva</th><th>Origen</th><th>Destino</th><th>Fecha</th><th>Estado</th><th>Conductor</th><th>Vehículo</th><th>Acción</th></tr>
         </thead>
-        <tbody><tr><td colspan="8">Cargando...</td></tr></tbody>
+        <tbody><tr><td colspan="9">Cargando...</td></tr></tbody>
     </table>
 
     <script>
@@ -89,12 +96,89 @@
         if (token) sessionStorage.setItem('auth_token', token);
         if (rol)   sessionStorage.setItem('auth_rol',   rol);
         if (!token) window.location.href = 'http://localhost:3002/';
+
         function apiFetch(url, options = {}) {
             options.headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + token };
             return fetch(url, options);
         }
 
         let items = [];
+        let reservasDisponibles = [];
+
+        async function cargarReservasDisponibles() {
+            try {
+                const res = await apiFetch('/api/reservas/sin-viaje');
+                const json = await res.json();
+                reservasDisponibles = json.data || [];
+                const sel = document.getElementById('selectReserva');
+                sel.innerHTML = '<option value="">— Seleccioná una reserva —</option>';
+                reservasDisponibles.forEach(r => {
+                    const fecha = new Date(r.fecha).toLocaleDateString('es-AR');
+                    const opt = document.createElement('option');
+                    opt.value = r.id;
+                    opt.textContent = `#${r.id} · ${r.origen} → ${r.destino} (${fecha})`;
+                    sel.appendChild(opt);
+                });
+                if (reservasDisponibles.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.disabled = true;
+                    opt.textContent = 'No hay reservas disponibles';
+                    sel.appendChild(opt);
+                }
+            } catch (err) {
+                console.error('Error cargando reservas:', err);
+            }
+        }
+
+        function onSeleccionarReserva() {
+            const id = document.getElementById('selectReserva').value;
+            const panel = document.getElementById('infoReserva');
+            if (!id) { panel.style.display = 'none'; return; }
+            const r = reservasDisponibles.find(x => String(x.id) === String(id));
+            if (!r) { panel.style.display = 'none'; return; }
+            document.getElementById('infoOrigen').textContent    = r.origen;
+            document.getElementById('infoDestino').textContent   = r.destino;
+            document.getElementById('infoFecha').textContent     = new Date(r.fecha).toLocaleString('es-AR');
+            document.getElementById('infoConductor').textContent = r.conductor || '(sin asignar)';
+            document.getElementById('infoVehiculo').textContent  = r.vehiculo  || '(sin asignar)';
+            panel.style.display = 'block';
+        }
+
+        async function crearViaje() {
+            const reservaId = document.getElementById('selectReserva').value;
+            if (!reservaId) {
+                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Seleccioná una reserva</div>';
+                return;
+            }
+            const r = reservasDisponibles.find(x => String(x.id) === String(reservaId));
+            try {
+                const res = await apiFetch('/api/viajes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reservaId,
+                        origen:    r.origen,
+                        destino:   r.destino,
+                        fecha:     new Date(r.fecha).toISOString(),
+                        estado:    'Pendiente',
+                        conductor: r.conductor || '',
+                        vehiculo:  r.vehiculo  || ''
+                    })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Viaje creado</div>';
+                    document.getElementById('selectReserva').value = '';
+                    document.getElementById('infoReserva').style.display = 'none';
+                    cargarReservasDisponibles();
+                    cargarViajes();
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
 
         function fechaParaInput(fecha) {
             if (!fecha) return '';
@@ -108,7 +192,7 @@
                 items = json.data || [];
                 const tbody = document.querySelector('#tablaViajes tbody');
                 if (items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8">No hay viajes</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9">No hay viajes</td></tr>';
                     return;
                 }
                 tbody.innerHTML = items.map((item, i) => `
@@ -118,8 +202,9 @@
                         <td>${item.origen}</td>
                         <td>${item.destino}</td>
                         <td>${new Date(item.fecha).toLocaleString('es-AR')}</td>
-                        <td>${item.estado}</td>
-                        <td>${item.conductor}</td>
+                        <td><span class="badge badge-${item.estado.replace(/\s/g,'')}">${item.estado}</span></td>
+                        <td class="id-cell">${item.conductor || '—'}</td>
+                        <td class="id-cell">${item.vehiculo  || '—'}</td>
                         <td>
                             <button class="btn-editar" onclick="abrirEdicion(${i})">Editar</button>
                             <button class="btn-eliminar" onclick="eliminarViaje('${item.id}')">Eliminar</button>
@@ -128,37 +213,7 @@
                 `).join('');
             } catch (err) {
                 document.querySelector('#tablaViajes tbody').innerHTML =
-                    `<tr><td colspan="8" class="error">Error: ${err.message}</td></tr>`;
-            }
-        }
-
-        async function crearViaje() {
-            const reservaId = document.getElementById('reservaId').value;
-            const origen = document.getElementById('origen').value;
-            const destino = document.getElementById('destino').value;
-            const fecha = document.getElementById('fecha').value;
-            const estado = document.getElementById('estado').value;
-            const conductor = document.getElementById('conductor').value;
-            if (!reservaId || !origen || !destino || !fecha || !estado || !conductor) {
-                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos</div>';
-                return;
-            }
-            try {
-                const res = await apiFetch('/api/viajes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reservaId, origen, destino, fecha: new Date(fecha).toISOString(), estado, conductor })
-                });
-                if (res.ok) {
-                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Viaje creado</div>';
-                    ['reservaId','origen','destino','fecha','estado','conductor'].forEach(id => document.getElementById(id).value = '');
-                    cargarViajes();
-                } else {
-                    const err = await res.json();
-                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
-                }
-            } catch (err) {
-                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+                    `<tr><td colspan="9" class="error">Error: ${err.message}</td></tr>`;
             }
         }
 
@@ -167,13 +222,13 @@
             document.getElementById('formularioEditar').classList.remove('oculto');
             document.getElementById('formularioCrear').classList.add('oculto');
             document.getElementById('tituloIdEditar').textContent = `#${item.id}`;
-            document.getElementById('editarId').value = item.id;
+            document.getElementById('editarId').value        = item.id;
             document.getElementById('editarReservaId').value = item.reservaId;
-            document.getElementById('editarOrigen').value = item.origen;
-            document.getElementById('editarDestino').value = item.destino;
-            document.getElementById('editarFecha').value = fechaParaInput(item.fecha);
-            document.getElementById('editarEstado').value = item.estado;
-            document.getElementById('editarConductor').value = item.conductor;
+            document.getElementById('editarOrigen').value    = item.origen;
+            document.getElementById('editarDestino').value   = item.destino;
+            document.getElementById('editarFecha').value     = fechaParaInput(item.fecha);
+            document.getElementById('editarEstado').value    = item.estado;
+            document.getElementById('editarConductor').value = item.conductor || '';
             document.getElementById('mensajeEditar').innerHTML = '';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -184,14 +239,14 @@
         }
 
         async function guardarEdicion() {
-            const id = document.getElementById('editarId').value;
+            const id        = document.getElementById('editarId').value;
             const reservaId = document.getElementById('editarReservaId').value;
-            const origen = document.getElementById('editarOrigen').value;
-            const destino = document.getElementById('editarDestino').value;
-            const fecha = document.getElementById('editarFecha').value;
-            const estado = document.getElementById('editarEstado').value;
+            const origen    = document.getElementById('editarOrigen').value;
+            const destino   = document.getElementById('editarDestino').value;
+            const fecha     = document.getElementById('editarFecha').value;
+            const estado    = document.getElementById('editarEstado').value;
             const conductor = document.getElementById('editarConductor').value;
-            if (!reservaId || !origen || !destino || !fecha || !estado || !conductor) {
+            if (!reservaId || !origen || !destino || !fecha || !estado) {
                 document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá todos los campos</div>';
                 return;
             }
@@ -218,14 +273,15 @@
             if (!confirm('¿Eliminar este viaje?')) return;
             try {
                 const res = await apiFetch(`/api/viajes/${id}`, { method: 'DELETE' });
-                if (res.ok) cargarViajes();
+                if (res.ok) { cargarViajes(); cargarReservasDisponibles(); }
             } catch (err) {
                 alert('Error: ' + err.message);
             }
         }
 
+        cargarReservasDisponibles();
         cargarViajes();
-        setInterval(cargarViajes, 5000);
+        setInterval(() => { cargarViajes(); cargarReservasDisponibles(); }, 5000);
     </script>
 </body>
 </html>

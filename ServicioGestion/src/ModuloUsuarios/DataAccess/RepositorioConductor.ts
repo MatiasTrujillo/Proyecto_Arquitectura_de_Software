@@ -17,6 +17,18 @@ export class RepositorioConductor implements IRepositorioConductor {
     return res.rows.map((r: any) => new Conductor(String(r.id), r.cedula, r.nombre));
   }
 
+  async obtenerConductoresDisponibles(): Promise<Conductor[]> {
+    // Excluir conductores que tienen un viaje actualmente "En curso"
+    const res = await pool.query(`
+      SELECT id, cedula, nombre FROM conductor
+      WHERE cedula NOT IN (
+        SELECT conductor FROM viaje WHERE estado = 'En curso' AND conductor IS NOT NULL AND conductor <> ''
+      )
+      ORDER BY nombre ASC
+    `);
+    return res.rows.map((r: any) => new Conductor(String(r.id), r.cedula, r.nombre));
+  }
+
   async obtenerConductorPorId(id: string): Promise<Conductor | undefined> {
     const res = await pool.query('SELECT id, cedula, nombre FROM conductor WHERE id = $1', [id]);
     if (!res.rows[0]) return undefined;

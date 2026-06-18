@@ -3,6 +3,20 @@ import { ServicioConductor } from "../../Servicio/ServicioConductor";
 import { RepositorioConductor } from "../../DataAccess/RepositorioConductor";
 import { IServicioConductor } from "../../IServicio/IServicioConductor";
 
+const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
+
+async function registrarCredencial(cedula: string, password: string, rol: string): Promise<void> {
+  const res = await fetch(`${AUTH_URL}/api/auth/registrar-interno`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ cedula, password, rol }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as any).error || 'Error al crear credencial en ServicioAutenticacion');
+  }
+}
+
 export class ControladorConductor {
   private servicioConductor: IServicioConductor;
 
@@ -12,8 +26,13 @@ export class ControladorConductor {
 
   async crearConductor(req: Request, res: Response): Promise<void> {
     try {
-      const { cedula, nombre } = req.body;
+      const { cedula, nombre, password } = req.body;
+      if (!password) {
+        res.status(400).json({ error: 'La contraseña es requerida para crear un conductor' });
+        return;
+      }
       const conductorCreado = await this.servicioConductor.crearConductor(cedula, nombre);
+      await registrarCredencial(cedula, password, 'Conductor');
       res.status(201).json({ data: conductorCreado });
     } catch (error) {
       this.manejarError(res, error);
@@ -23,6 +42,15 @@ export class ControladorConductor {
   async obtenerConductor(req: Request, res: Response): Promise<void> {
     try {
       const conductores = await this.servicioConductor.obtenerConductores();
+      res.status(200).json({ data: conductores });
+    } catch (error) {
+      this.manejarError(res, error);
+    }
+  }
+
+  async obtenerConductoresDisponibles(_req: Request, res: Response): Promise<void> {
+    try {
+      const conductores = await this.servicioConductor.obtenerConductoresDisponibles();
       res.status(200).json({ data: conductores });
     } catch (error) {
       this.manejarError(res, error);
