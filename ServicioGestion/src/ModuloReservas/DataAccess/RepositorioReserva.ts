@@ -83,6 +83,42 @@ export class RepositorioReserva implements IRepositorioReserva {
     return res.rows[0] ? this.mapRow(res.rows[0]) : undefined;
   }
 
+  // ACID: actualiza la reserva y crea el viaje en una sola transacción.
+  // Si cualquier paso falla, se hace ROLLBACK y ningún cambio persiste.
+  async asignarYCrearViajeAtomico(reservaId: string, vehiculo: string, conductor: string): Promise<Reserva | undefined> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const resReserva = await client.query(
+        `UPDATE reserva SET vehiculo = $1, conductor = $2 WHERE id = $3
+         RETURNING id, cliente, origen, destino, fecha, estado, costo, vehiculo, productos, conductor, categorias`,
+        [vehiculo, conductor, reservaId]
+      );
+
+      if (!resReserva.rows[0]) {
+        await client.query('ROLLBACK');
+        return undefined;
+      }
+      const r = resReserva.rows[0];
+
+      await client.query(
+        `INSERT INTO viaje (reserva_id, origen, destino, fecha, estado, conductor, vehiculo)
+         SELECT $1, $2, $3, $4, 'Pendiente', $5, $6
+         WHERE NOT EXISTS (SELECT 1 FROM viaje WHERE reserva_id = $1::text)`,
+        [reservaId, r.origen, r.destino, r.fecha, conductor, vehiculo]
+      );
+
+      await client.query('COMMIT');
+      return this.mapRow(r);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async obtenerReservasSinViaje(): Promise<Reserva[]> {
     const res = await pool.query(
       `SELECT r.id, r.cliente, r.origen, r.destino, r.fecha, r.estado, r.costo,

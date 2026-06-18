@@ -6,9 +6,9 @@ export class Reserva {
   private fecha: Date;
   private estado: string;
   private costo: number; // int en TypeScript es number
-  private vehiculo: string | null; // VehiculoId — asignado por Operador (F12)
+  private vehiculo: string | null;
   private productos: string[]; // List<ProductoId>
-  private conductor: string | null; // ConductorId — asignado por Operador (F12)
+  private conductor: string | null;
   private categorias: string[]; // List<CategoriaId>
 
   constructor(

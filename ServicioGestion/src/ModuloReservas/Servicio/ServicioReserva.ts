@@ -1,6 +1,10 @@
 import { ReservaDTO } from "../DTOs/ReservaDTO";
 import { IRepositorioReserva } from "../IDataAccess/IRepositorioReserva";
 import { IServicioReserva } from "../IServicio/IServicioReserva";
+import { colaReservas, Prioridad } from "../WebApi/Cola/ColaPrioridad";
+import { RepositorioClientesFrecuentes } from "../../ModuloUsuarios/DataAccess/RepositorioClientesFrecuentes";
+
+const repoFrecuentes = new RepositorioClientesFrecuentes();
 
 export class ServicioReserva implements IServicioReserva {
   constructor(private repositorio: IRepositorioReserva) {}
@@ -21,13 +25,19 @@ export class ServicioReserva implements IServicioReserva {
     this.validarCampo(destino, "destino");
     const fechaValida = this.validarFechaFutura(fecha);
     this.validarCosto(costo);
-    // TODO F4.1/F4.2: validar al menos un bien cuando se implemente el formulario de bienes
+    // TODO: validar al menos un bien cuando se implemente el formulario de bienes
 
-    const reserva = await this.repositorio.crearReserva(
-      clienteId, origen, destino, fechaValida, "Pendiente", costo,
-      vehiculo ?? null, productos, conductor ?? null, categorias ?? []
+    // Priority Queue (R1): determinar prioridad antes de encolar
+    const prioridad: Prioridad = await repoFrecuentes.determinarPrioridad(clienteId);
+
+    const reserva = await colaReservas.encolar(prioridad, () =>
+      this.repositorio.crearReserva(
+        clienteId, origen, destino, fechaValida, "Pendiente", costo,
+        vehiculo ?? null, productos, conductor ?? null, categorias ?? []
+      )
     );
-    return ReservaDTO.fromEntity(reserva);
+
+    return ReservaDTO.fromEntity(reserva, prioridad);
   }
 
   async obtenerReservas(): Promise<ReservaDTO[]> {
@@ -59,6 +69,15 @@ export class ServicioReserva implements IServicioReserva {
     this.validarCampo(vehiculo, "vehiculo");
     this.validarCampo(conductor, "conductor");
     const reserva = await this.repositorio.asignarVehiculoConductor(reservaId, vehiculo, conductor);
+    if (!reserva) throw new Error(`No se encontró la reserva con id ${reservaId}`);
+    return ReservaDTO.fromEntity(reserva);
+  }
+
+  async asignarVehiculoConductorConViaje(reservaId: string, vehiculo: string, conductor: string): Promise<ReservaDTO> {
+    this.validarCampo(reservaId, 'reservaId');
+    this.validarCampo(vehiculo,  'vehiculo');
+    this.validarCampo(conductor, 'conductor');
+    const reserva = await this.repositorio.asignarYCrearViajeAtomico(reservaId, vehiculo, conductor);
     if (!reserva) throw new Error(`No se encontró la reserva con id ${reservaId}`);
     return ReservaDTO.fromEntity(reserva);
   }

@@ -17,6 +17,8 @@ import { registradorSolicitudes, manejadorErrores } from './Shared/Logging/reque
 import { manejadorMetricas } from './Shared/Metrics/metrics';
 import { verificarAutorizacion } from './Shared/Auth/middlewareAuth';
 import ejecutarMigraciones from './Shared/Database/MigracionesRunner';
+import { RepositorioClientesFrecuentes } from './ModuloUsuarios/DataAccess/RepositorioClientesFrecuentes';
+import { colaReservas } from './ModuloReservas/WebApi/Cola/ColaPrioridad';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -110,6 +112,22 @@ app.get('/api/pagos/:id', pagoController.obtenerPagoPorId.bind(pagoController));
 app.put('/api/pagos/:id', pagoController.actualizarPago.bind(pagoController));
 app.delete('/api/pagos/:id', pagoController.eliminarPago.bind(pagoController));
 
+// ─── Priority Queue: clientes frecuentes (R1) ─────────────────────────────────
+const repoFrecuentes = new RepositorioClientesFrecuentes();
+
+app.post('/api/clientes-frecuentes/actualizar', async (_req, res) => {
+  try {
+    const actualizados = await repoFrecuentes.actualizarTop20();
+    res.json({ mensaje: `Top 20 actualizado. Clientes frecuentes marcados: ${actualizados}` });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+app.get('/api/cola/estado', (_req, res) => {
+  res.json({ pendientes: colaReservas.pendientes });
+});
+
 // ─── Reservas ─────────────────────────────────────────────────────────────────
 app.post('/api/reservas', reservaController.crearReserva.bind(reservaController));
 app.get('/api/reservas', reservaController.obtenerReservas.bind(reservaController));
@@ -186,6 +204,19 @@ app.get('/metricas-ui', (req, res) => {
 app.use(manejadorErrores);
 
 ejecutarMigraciones()
+  .then(async () => {
+    // Calcular top 20 clientes frecuentes al arrancar (R1 - Priority Queue)
+    try {
+      const n = await new RepositorioClientesFrecuentes().actualizarTop20();
+      console.log(`[priority-queue] Clientes frecuentes actualizados: ${n}`);
+    } catch (e) {
+      console.warn('[priority-queue] No se pudo actualizar clientes frecuentes:', e);
+    }
+    // Repetir cada 7 días
+    setInterval(async () => {
+      try { await new RepositorioClientesFrecuentes().actualizarTop20(); } catch {}
+    }, 7 * 24 * 60 * 60 * 1000);
+  })
   .then(() => {
     app.listen(port, () => {
       console.log(`ServicioGestion escuchando en http://localhost:${port}`);

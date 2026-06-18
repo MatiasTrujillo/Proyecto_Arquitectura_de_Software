@@ -2,17 +2,12 @@ import { Request, Response } from "express";
 import { ServicioReserva } from "../../Servicio/ServicioReserva";
 import { RepositorioReserva } from "../../DataAccess/RepositorioReserva";
 import { IServicioReserva } from "../../IServicio/IServicioReserva";
-import { ServicioViaje } from "../../Servicio/ServicioViaje";
-import { RepositorioViaje } from "../../DataAccess/RepositorioViaje";
-import { IServicioViaje } from "../../IServicio/IServicioViaje";
 
 export class ControladorReserva {
   private servicioReserva: IServicioReserva;
-  private servicioViaje: IServicioViaje;
 
-  constructor(servicioReserva?: IServicioReserva, servicioViaje?: IServicioViaje) {
+  constructor(servicioReserva?: IServicioReserva) {
     this.servicioReserva = servicioReserva ?? new ServicioReserva(new RepositorioReserva());
-    this.servicioViaje   = servicioViaje   ?? new ServicioViaje(new RepositorioViaje());
   }
 
   async crearReserva(req: Request, res: Response): Promise<void> {
@@ -62,22 +57,12 @@ export class ControladorReserva {
     }
   }
 
-  // F12: Operador asigna vehículo y conductor a una reserva → crea el viaje automáticamente
+  // La operación es atómica (ACID): si falla cualquier paso se hace ROLLBACK completo.
   async asignarVehiculoConductor(req: Request, res: Response): Promise<void> {
     try {
       const { vehiculo, conductor } = req.body;
       if (!vehiculo || !conductor) { res.status(400).json({ error: "vehiculo y conductor son requeridos" }); return; }
-      const reserva = await this.servicioReserva.asignarVehiculoConductor(req.params.id as string, vehiculo, conductor);
-
-      // Crear viaje solo si no existe uno para esta reserva
-      const existente = await this.servicioViaje.obtenerViajePorReservaId(String(reserva.id));
-      if (!existente) {
-        await this.servicioViaje.crearViaje(
-          String(reserva.id), reserva.origen, reserva.destino,
-          reserva.fecha, 'Pendiente', conductor, vehiculo
-        );
-      }
-
+      const reserva = await this.servicioReserva.asignarVehiculoConductorConViaje(req.params.id as string, vehiculo, conductor);
       res.status(200).json({ data: reserva });
     } catch (error) {
       this.manejarError(res, error);
