@@ -11,10 +11,11 @@ async function registrarCredencial(cedula: string, password: string, rol: string
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify({ cedula, password, rol }),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as any).error || 'Error al crear credencial en ServicioAutenticacion');
-  }
+  if (res.ok) return;
+  const err = await res.json().catch(() => ({}));
+  const mensaje = (err as any).error || '';
+  if (/ya existe/i.test(mensaje)) return;
+  throw new Error(mensaje || 'Error al crear credencial en ServicioAutenticacion');
 }
 
 export class ControladorOperador {

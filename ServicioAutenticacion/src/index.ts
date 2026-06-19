@@ -1,10 +1,8 @@
+import 'dotenv/config';
 import express from 'express';
-import dotenv from 'dotenv';
 import { ControladorAuth } from './WebApi/ControladorAuth';
 import ejecutarMigraciones from './Shared/Database/MigracionesRunner';
 import { ejecutarSeed } from './Shared/Database/SeedRunner';
-
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3002;

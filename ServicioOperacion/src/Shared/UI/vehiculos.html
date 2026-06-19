@@ -51,7 +51,7 @@
     </style>
 </head>
 <body>
-    <div class="nav"><a href="/">← Volver</a></div>
+    <div class="nav"><a href="javascript:void(0)" onclick="volverAlHome()">← Volver</a></div>
     <h1>Gestión de Vehículos</h1>
 
     <!-- Formulario crear -->
@@ -106,6 +106,10 @@
     </table>
 
     <script>
+        function volverAlHome() {
+            window.location.href = 'http://localhost:3001/';
+        }
+
         async function cargarVehiculos() {
             try {
                 const respuesta = await fetch('/api/vehiculos');
