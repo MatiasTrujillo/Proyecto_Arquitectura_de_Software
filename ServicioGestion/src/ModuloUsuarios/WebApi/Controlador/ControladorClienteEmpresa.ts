@@ -139,19 +139,38 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  registrarOrigenFrecuente(req: Request, res: Response): void {
+  async registrarOrigenFrecuente(req: Request, res: Response): Promise<void> {
     try {
-      const { clienteId, origen } = req.body;
-      res.status(201).json({ mensaje: "Origen frecuente registrado" });
+      const cedula = (req as any).usuario?.cedula;
+      const { origen } = req.body;
+      if (!origen) { res.status(400).json({ error: 'Origen requerido' }); return; }
+      const repo = new (await import('../../DataAccess/RepositorioClienteEmpresa')).RepositorioClienteEmpresa();
+      await repo.agregarOrigenFrecuente(cedula, origen);
+      res.status(201).json({ mensaje: 'Origen frecuente registrado' });
     } catch (error) {
       this.manejarError(res, error);
     }
   }
 
-  registrarDestinoFrecuente(req: Request, res: Response): void {
+  async registrarDestinoFrecuente(req: Request, res: Response): Promise<void> {
     try {
-      const { clienteId, destino } = req.body;
-      res.status(201).json({ mensaje: "Destino frecuente registrado" });
+      const cedula = (req as any).usuario?.cedula;
+      const { destino } = req.body;
+      if (!destino) { res.status(400).json({ error: 'Destino requerido' }); return; }
+      const repo = new (await import('../../DataAccess/RepositorioClienteEmpresa')).RepositorioClienteEmpresa();
+      await repo.agregarDestinoFrecuente(cedula, destino);
+      res.status(201).json({ mensaje: 'Destino frecuente registrado' });
+    } catch (error) {
+      this.manejarError(res, error);
+    }
+  }
+
+  async obtenerFrecuentes(req: Request, res: Response): Promise<void> {
+    try {
+      const cedula = (req as any).usuario?.cedula;
+      const repo = new (await import('../../DataAccess/RepositorioClienteEmpresa')).RepositorioClienteEmpresa();
+      const datos = await repo.obtenerFrecuentes(cedula);
+      res.status(200).json({ data: datos });
     } catch (error) {
       this.manejarError(res, error);
     }

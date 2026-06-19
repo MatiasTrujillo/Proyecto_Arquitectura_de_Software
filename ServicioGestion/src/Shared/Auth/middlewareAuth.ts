@@ -15,7 +15,7 @@ const ACCESO_POR_PREFIJO: Record<string, string[]> = {
   '/conductores':     ['Conductor', 'Administrador', 'Operador'],
   '/clientes-personales':    ['ClientePersonal', 'Administrador'],
   '/clientes-empresariales': ['ClienteEmpresa', 'Administrador'],
-  '/productos':          ['Administrador', 'ClienteEmpresa'],
+  '/productos':          ['Administrador', 'ClienteEmpresa', 'ClientePersonal'],
   '/vehiculos':          ['Administrador'],
   '/zonas-geograficas':  ['Administrador'],
   '/pagos':              ['Administrador'],
