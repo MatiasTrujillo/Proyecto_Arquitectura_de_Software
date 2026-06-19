@@ -472,7 +472,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ origen })
                 });
-                mostrar('resultadoOrigen', await res.json());
+                const json = await res.json();
+                mostrar('resultadoOrigen', json);
+                if (res.ok) { document.getElementById('origenDireccion').value = ''; cargarFrecuentes(); }
             } catch (err) {
                 mostrar('resultadoOrigen', { error: err.message });
             }
@@ -487,7 +489,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ destino })
                 });
-                mostrar('resultadoDestino', await res.json());
+                const json = await res.json();
+                mostrar('resultadoDestino', json);
+                if (res.ok) { document.getElementById('destinoDireccion').value = ''; cargarFrecuentes(); }
             } catch (err) {
                 mostrar('resultadoDestino', { error: err.message });
             }
