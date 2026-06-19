@@ -43,4 +43,34 @@ export class RepositorioClienteEmpresa implements IRepositorioClienteEmpresa {
     const res = await pool.query('SELECT 1 FROM cliente_empresa WHERE id = $1', [id]);
     return res.rowCount! > 0;
   }
+
+  async agregarOrigenFrecuente(cedula: string, origen: string): Promise<void> {
+    await pool.query(
+      `UPDATE cliente_empresa
+       SET origenes_frecuentes = array_append(origenes_frecuentes, $2)
+       WHERE cedula = $1 AND NOT ($2 = ANY(origenes_frecuentes))`,
+      [cedula, origen]
+    );
+  }
+
+  async agregarDestinoFrecuente(cedula: string, destino: string): Promise<void> {
+    await pool.query(
+      `UPDATE cliente_empresa
+       SET destinos_frecuentes = array_append(destinos_frecuentes, $2)
+       WHERE cedula = $1 AND NOT ($2 = ANY(destinos_frecuentes))`,
+      [cedula, destino]
+    );
+  }
+
+  async obtenerFrecuentes(cedula: string): Promise<{ origenes: string[]; destinos: string[] }> {
+    const res = await pool.query(
+      'SELECT origenes_frecuentes, destinos_frecuentes FROM cliente_empresa WHERE cedula = $1',
+      [cedula]
+    );
+    if (!res.rows[0]) return { origenes: [], destinos: [] };
+    return {
+      origenes: res.rows[0].origenes_frecuentes ?? [],
+      destinos: res.rows[0].destinos_frecuentes ?? [],
+    };
+  }
 }

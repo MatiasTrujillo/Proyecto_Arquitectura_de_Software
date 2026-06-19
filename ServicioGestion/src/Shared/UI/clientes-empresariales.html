@@ -88,13 +88,23 @@
     <div class="accion">
         <strong>Realizar Reserva</strong>
         <label>Origen</label>
-        <input type="text" id="resOrigen" placeholder="Ej: Zona Norte">
+        <input type="text" id="resOrigen" list="listaOrigenes" placeholder="Seleccioná o escribí un origen">
+        <datalist id="listaOrigenes"></datalist>
         <label>Destino</label>
-        <input type="text" id="resDestino" placeholder="Ej: Zona Sur">
+        <input type="text" id="resDestino" list="listaDestinos" placeholder="Seleccioná o escribí un destino">
+        <datalist id="listaDestinos"></datalist>
         <label>Fecha</label>
         <input type="date" id="resFecha">
         <label>Costo</label>
         <input type="number" id="resCosto" placeholder="Ej: 500" min="0">
+        <label>Productos <span style="font-weight:normal;color:#666;font-size:0.85em">(opcional, podés agregar varios)</span></label>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:5px">
+            <select id="resProductoSel" style="flex:1;margin-top:0">
+                <option value="">— Seleccioná un producto —</option>
+            </select>
+            <button type="button" onclick="agregarProducto()" style="margin-top:0;padding:8px 14px;font-size:1.1em">+</button>
+        </div>
+        <div id="productosSeleccionados" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;min-height:10px"></div>
         <button onclick="realizarReserva()">Realizar</button>
         <div id="resultadoReserva" class="resultado oculto"></div>
     </div>
@@ -108,14 +118,10 @@
             <tbody></tbody>
         </table>
         <div id="sinReservas" class="resultado oculto">No tenés reservas registradas.</div>
-    </div>
-
-    <div class="accion">
-        <strong>Asociar Producto</strong>
-        <label>ID del Producto</label>
-        <input type="text" id="asociarProductoId" placeholder="ID del producto">
-        <button onclick="asociarProducto()">Asociar</button>
-        <div id="resultadoAsociar" class="resultado oculto"></div>
+        <div id="panelProductosReserva" style="display:none;margin-top:12px;background:#f0f6ff;border:1px solid #b0ccee;border-radius:4px;padding:12px">
+            <strong>Productos de la reserva <span id="panelReservaId"></span></strong>
+            <div id="panelProductosLista" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
     </div>
 
     <div class="accion">
@@ -288,6 +294,68 @@
             }
         }
 
+        let productosSeleccionados = [];
+        let productosMap = {};
+
+        async function cargarProductos() {
+            try {
+                const res = await apiFetch('/api/productos');
+                const json = await res.json();
+                const sel = document.getElementById('resProductoSel');
+                (json.data || []).forEach(p => {
+                    productosMap[String(p.id)] = p.descripcion || String(p.id);
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.descripcion || String(p.id);
+                    sel.appendChild(opt);
+                });
+            } catch(e) {}
+        }
+
+        function verProductosReserva(indice) {
+            const r = misReservas[indice];
+            const reservaId = r.id;
+            const productos = r.productos;
+            const panel = document.getElementById('panelProductosReserva');
+            document.getElementById('panelReservaId').textContent = '#' + reservaId;
+            const lista = document.getElementById('panelProductosLista');
+            if (!productos || productos.length === 0) {
+                lista.innerHTML = '<span style="color:#666;font-size:0.9em">Sin productos asociados</span>';
+            } else {
+                lista.innerHTML = productos.map(id => {
+                    const nombre = productosMap[String(id)] || 'Producto #' + id;
+                    return `<span style="background:#e8f0ff;border:1px solid #b0ccee;border-radius:12px;padding:4px 12px;font-size:0.85em">${nombre}</span>`;
+                }).join('');
+            }
+            panel.style.display = 'block';
+        }
+
+        function agregarProducto() {
+            const sel = document.getElementById('resProductoSel');
+            const id = sel.value;
+            if (!id || productosSeleccionados.includes(id)) return;
+            productosSeleccionados.push(id);
+            renderProductos();
+        }
+
+        function removerProducto(id) {
+            productosSeleccionados = productosSeleccionados.filter(p => p !== id);
+            renderProductos();
+        }
+
+        function renderProductos() {
+            const contenedor = document.getElementById('productosSeleccionados');
+            const sel = document.getElementById('resProductoSel');
+            contenedor.innerHTML = productosSeleccionados.map(id => {
+                const opt = Array.from(sel.options).find(o => o.value === id);
+                const nombre = opt ? opt.text : id;
+                return `<span style="background:#e8f0ff;border:1px solid #b0ccee;border-radius:12px;padding:3px 10px;font-size:0.85em;display:inline-flex;align-items:center;gap:5px">
+                    ${nombre}
+                    <button type="button" onclick="removerProducto('${id}')" style="background:none;border:none;color:#cc0000;cursor:pointer;padding:0;margin:0;font-size:1.1em;line-height:1">×</button>
+                </span>`;
+            }).join('');
+        }
+
         async function realizarReserva() {
             const origen  = document.getElementById('resOrigen').value;
             const destino = document.getElementById('resDestino').value;
@@ -301,13 +369,24 @@
                 const res = await apiFetch('/api/clientes-empresariales/realizar-reserva', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ origen, destino, fecha, costo, productos: [], categorias: [] })
+                    body: JSON.stringify({ origen, destino, fecha, costo, productos: productosSeleccionados, categorias: [] })
                 });
-                mostrar('resultadoReserva', await res.json());
+                const json = await res.json();
+                mostrar('resultadoReserva', json);
+                if (res.ok) {
+                    productosSeleccionados = [];
+                    renderProductos();
+                    document.getElementById('resOrigen').value  = '';
+                    document.getElementById('resDestino').value = '';
+                    document.getElementById('resFecha').value   = '';
+                    document.getElementById('resCosto').value   = '';
+                }
             } catch (err) {
                 mostrar('resultadoReserva', { error: err.message });
             }
         }
+
+        let misReservas = [];
 
         async function verMisReservas() {
             const msgEl = document.getElementById('mensajePago');
@@ -315,7 +394,8 @@
             try {
                 const res = await apiFetch('/api/clientes-empresariales/me/reservas');
                 const json = await res.json();
-                const lista = json.data || [];
+                misReservas = json.data || [];
+                const lista = misReservas;
                 const tabla = document.getElementById('tablaReservasCliente');
                 const sinReservas = document.getElementById('sinReservas');
                 if (lista.length === 0) {
@@ -325,7 +405,7 @@
                 }
                 sinReservas.classList.add('oculto');
                 tabla.style.display = 'table';
-                tabla.querySelector('tbody').innerHTML = lista.map(r => `
+                tabla.querySelector('tbody').innerHTML = lista.map((r, i) => `
                     <tr>
                         <td class="id-cell">${r.id}</td>
                         <td>${r.origen ?? '-'}</td>
@@ -333,10 +413,13 @@
                         <td>${r.fecha ? r.fecha.substring(0,10) : '-'}</td>
                         <td>${r.estado ?? '-'}</td>
                         <td>$${r.costo ?? 0}</td>
-                        <td>${r.estado === 'Pagado'
-                            ? '<span style="background:#28a745;color:white;padding:5px 10px;border-radius:4px;font-size:0.9em">Pagado</span>'
-                            : `<button onclick="pagarReserva('${r.id}', ${r.costo})">Pagar</button>`
-                        }</td>
+                        <td style="display:flex;gap:6px;flex-wrap:wrap">
+                            ${r.estado === 'Pagado'
+                                ? '<span style="background:#28a745;color:white;padding:5px 10px;border-radius:4px;font-size:0.9em">Pagado</span>'
+                                : `<button onclick="pagarReserva('${r.id}', ${r.costo})">Pagar</button>`
+                            }
+                            <button onclick="verProductosReserva(${i})" style="background:#6c757d">Ver productos</button>
+                        </td>
                     </tr>
                 `).join('');
             } catch (err) {
@@ -427,8 +510,22 @@
             el.textContent = JSON.stringify(data, null, 2);
         }
 
+        async function cargarFrecuentes() {
+            try {
+                const res = await apiFetch('/api/clientes-empresariales/frecuentes');
+                const json = await res.json();
+                const { origenes = [], destinos = [] } = json.data || {};
+                const dlOrigenes = document.getElementById('listaOrigenes');
+                const dlDestinos = document.getElementById('listaDestinos');
+                dlOrigenes.innerHTML = origenes.map(o => `<option value="${o}">`).join('');
+                dlDestinos.innerHTML = destinos.map(d => `<option value="${d}">`).join('');
+            } catch(e) {}
+        }
+
         cargarClientes();
         verMisReservas();
+        cargarProductos();
+        cargarFrecuentes();
     </script>
 </body>
 </html>

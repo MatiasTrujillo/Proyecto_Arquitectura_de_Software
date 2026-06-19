@@ -1,46 +1,64 @@
 import { Request, Response } from "express";
+import { ServicioProducto } from "../../Servicio/ServicioProducto";
+import { RepositorioProducto } from "../../DataAccess/RepositorioProducto";
 
 export class ControladorProducto {
-  crearProducto(req: Request, res: Response): void {
+  private servicio: ServicioProducto;
+
+  constructor() {
+    this.servicio = new ServicioProducto(new RepositorioProducto());
+  }
+
+  async crearProducto(req: Request, res: Response): Promise<void> {
     try {
-      res.status(201).json({ mensaje: "Producto creado" });
+      const { descripcion, valor, tamano, categoria } = req.body;
+      const producto = await this.servicio.crearProducto(descripcion, Number(valor), Number(tamano), categoria);
+      res.status(201).json({ data: producto });
     } catch (error) {
-      res.status(500).json({ error: error });
+      const mensaje = error instanceof Error ? error.message : String(error);
+      res.status(400).json({ error: mensaje });
     }
   }
 
-  obtenerProducto(req: Request, res: Response): void {
+  async obtenerProducto(_req: Request, res: Response): Promise<void> {
     try {
-      res.status(200).json({ data: [] });
+      const productos = await this.servicio.obtenerProductos();
+      res.status(200).json({ data: productos });
     } catch (error) {
-      res.status(500).json({ error: error });
+      const mensaje = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ error: mensaje });
     }
   }
 
-  obtenerProductoPorId(req: Request, res: Response): void {
+  async obtenerProductoPorId(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      res.status(200).json({ data: {} });
+      const producto = await this.servicio.obtenerProductoPorId(Number(req.params.id));
+      if (!producto) { res.status(404).json({ error: 'Producto no encontrado' }); return; }
+      res.status(200).json({ data: producto });
     } catch (error) {
-      res.status(500).json({ error: error });
+      const mensaje = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ error: mensaje });
     }
   }
 
-  actualizarProducto(req: Request, res: Response): void {
+  async actualizarProducto(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      res.status(200).json({ mensaje: "Producto actualizado" });
+      const { descripcion, valor, tamano, categoria } = req.body;
+      const producto = await this.servicio.actualizarProducto(Number(req.params.id), descripcion, Number(valor), Number(tamano), categoria);
+      res.status(200).json({ data: producto });
     } catch (error) {
-      res.status(500).json({ error: error });
+      const mensaje = error instanceof Error ? error.message : String(error);
+      res.status(400).json({ error: mensaje });
     }
   }
 
-  eliminarProducto(req: Request, res: Response): void {
+  async eliminarProducto(req: Request, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      res.status(204).json({ mensaje: "Producto eliminado" });
+      await this.servicio.eliminarProducto(Number(req.params.id));
+      res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: error });
+      const mensaje = error instanceof Error ? error.message : String(error);
+      res.status(400).json({ error: mensaje });
     }
   }
 }

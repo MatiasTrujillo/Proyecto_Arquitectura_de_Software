@@ -86,6 +86,7 @@ app.post('/api/clientes-empresariales/realizar-pago', clienteEmpresaController.r
 app.post('/api/clientes-empresariales/asociar-producto', clienteEmpresaController.asociarProducto.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/registrar-origen-frecuente', clienteEmpresaController.registrarOrigenFrecuente.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/registrar-destino-frecuente', clienteEmpresaController.registrarDestinoFrecuente.bind(clienteEmpresaController));
+app.get('/api/clientes-empresariales/frecuentes', clienteEmpresaController.obtenerFrecuentes.bind(clienteEmpresaController));
 app.get('/api/clientes-empresariales/:id', clienteEmpresaController.obtenerClienteEmpresaPorId.bind(clienteEmpresaController));
 app.put('/api/clientes-empresariales/:id', clienteEmpresaController.actualizarClienteEmpresa.bind(clienteEmpresaController));
 app.delete('/api/clientes-empresariales/:id', clienteEmpresaController.eliminarClienteEmpresa.bind(clienteEmpresaController));

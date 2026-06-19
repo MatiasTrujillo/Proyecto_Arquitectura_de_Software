@@ -118,6 +118,11 @@
         if (token) sessionStorage.setItem('auth_token', token);
         if (rol)   sessionStorage.setItem('auth_rol',   rol);
         if (!token) window.location.href = 'http://localhost:3002/';
+
+        if (rol !== 'Administrador') {
+            document.getElementById('formularioCrear').style.display = 'none';
+            document.getElementById('formularioEditar').style.display = 'none';
+        }
         function apiFetch(url, options = {}) {
             options.headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + token };
             return fetch(url, options);
@@ -142,8 +147,10 @@
                         <td>${item.nombre}</td>
                         <td>${item.rol}</td>
                         <td>
+                            ${rol === 'Administrador' ? `
                             <button class="btn-editar" onclick="abrirEdicion(${i})">Editar</button>
                             <button class="btn-eliminar" onclick="eliminarOperador('${item.id}')">Eliminar</button>
+                            ` : ''}
                         </td>
                     </tr>
                 `).join('');
