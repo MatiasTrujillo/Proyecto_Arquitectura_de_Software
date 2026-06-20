@@ -121,7 +121,7 @@
             const valor = document.getElementById('valor').value;
             const tamano = document.getElementById('tamano').value;
             const categoria = document.getElementById('categoria').value;
-            if (!descripcion || !valor || !tamano || !categoria) {
+            if (!descripcion || !tamano || !categoria) {
                 document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos</div>';
                 return;
             }
@@ -129,7 +129,7 @@
                 const res = await apiFetch('/api/productos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ descripcion, valor: Number(valor), tamano: Number(tamano), categoria })
+                    body: JSON.stringify({ descripcion, valor: valor !== '' ? Number(valor) : null, tamano: Number(tamano), categoria })
                 });
                 if (res.ok) {
                     document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Producto creado</div>';
@@ -172,7 +172,7 @@
             const valor = document.getElementById('editarValor').value;
             const tamano = document.getElementById('editarTamano').value;
             const categoria = document.getElementById('editarCategoria').value;
-            if (!descripcion || !valor || !tamano || !categoria) {
+            if (!descripcion || !tamano || !categoria) {
                 document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá todos los campos</div>';
                 return;
             }
@@ -180,7 +180,7 @@
                 const res = await apiFetch(`/api/productos/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ descripcion, valor: Number(valor), tamano: Number(tamano), categoria })
+                    body: JSON.stringify({ descripcion, valor: valor !== '' ? Number(valor) : null, tamano: Number(tamano), categoria })
                 });
                 if (res.ok) {
                     document.getElementById('mensajeEditar').innerHTML = '<div class="exito">Producto actualizado</div>';

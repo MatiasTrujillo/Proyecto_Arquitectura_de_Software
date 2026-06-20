@@ -5,9 +5,9 @@ import { IServicioProducto } from "../IServicio/IServicioProducto";
 export class ServicioProducto implements IServicioProducto {
   constructor(private repositorio: IRepositorioProducto) {}
 
-  async crearProducto(descripcion: string, valor: number, tamano: number, categoria: string): Promise<ProductoDTO> {
+  async crearProducto(descripcion: string, valor: number | null, tamano: number, categoria: string): Promise<ProductoDTO> {
     const descripcionValida = this.validarDescripcion(descripcion);
-    const valorValido = this.validarValor(valor);
+    const valorValido = valor != null ? this.validarValor(valor) : null;
     const tamanoValido = this.validarTamano(tamano);
     const categoriaValida = this.validarCategoria(categoria);
 
@@ -31,10 +31,10 @@ export class ServicioProducto implements IServicioProducto {
     return ProductoDTO.fromEntity(producto);
   }
 
-  async actualizarProducto(id: number, descripcion: string, valor: number, tamano: number, categoria: string): Promise<ProductoDTO> {
+  async actualizarProducto(id: number, descripcion: string, valor: number | null, tamano: number, categoria: string): Promise<ProductoDTO> {
     const idValido = this.validarId(id);
     const descripcionValida = this.validarDescripcion(descripcion);
-    const valorValido = this.validarValor(valor);
+    const valorValido = valor != null ? this.validarValor(valor) : null;
     const tamanoValido = this.validarTamano(tamano);
     const categoriaValida = this.validarCategoria(categoria);
 

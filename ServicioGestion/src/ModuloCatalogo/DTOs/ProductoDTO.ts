@@ -3,11 +3,11 @@ import { Producto } from "../Dominio/Producto";
 export class ProductoDTO {
   id: number;
   descripcion: string;
-  valor: number;
+  valor: number | null;
   tamano: number;
   categoria: string;
 
-  constructor(id: number, descripcion: string, valor: number, tamano: number, categoria: string) {
+  constructor(id: number, descripcion: string, valor: number | null, tamano: number, categoria: string) {
     this.id = id;
     this.descripcion = descripcion;
     this.valor = valor;
