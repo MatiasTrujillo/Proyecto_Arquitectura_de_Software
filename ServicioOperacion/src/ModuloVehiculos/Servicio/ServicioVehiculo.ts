@@ -43,6 +43,13 @@ export class ServicioVehiculo implements IServicioVehiculo {
     return VehiculoDTO.fromEntity(actualizado);
   }
 
+  async obtenerVehiculoPorMatricula(matricula: string): Promise<VehiculoDTO> {
+    if (!matricula || matricula.trim().length === 0) throw new Error("Matrícula inválida");
+    const v = await this.repositorio.obtenerPorMatricula(matricula.trim());
+    if (!v) throw new Error(`No se encontró el vehículo con matrícula ${matricula}`);
+    return VehiculoDTO.fromEntity(v);
+  }
+
   async eliminarVehiculo(id: number): Promise<void> {
     const idValido = this.validarId(id);
     if (!await this.repositorio.eliminarVehiculo(idValido)) {

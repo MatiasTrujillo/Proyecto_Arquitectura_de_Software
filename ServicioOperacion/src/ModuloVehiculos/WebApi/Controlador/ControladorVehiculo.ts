@@ -50,6 +50,15 @@ export class ControladorVehiculo {
     }
   }
 
+  async obtenerVehiculoPorMatricula(req: Request, res: Response): Promise<void> {
+    try {
+      const vehiculo = await this.servicio.obtenerVehiculoPorMatricula(req.params.matricula);
+      res.status(200).json({ data: vehiculo });
+    } catch (error) {
+      this.manejarError(res, error);
+    }
+  }
+
   async eliminarVehiculo(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;

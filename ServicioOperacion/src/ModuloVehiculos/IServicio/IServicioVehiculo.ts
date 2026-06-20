@@ -6,4 +6,5 @@ export interface IServicioVehiculo {
   obtenerVehiculoPorId(id: number): Promise<VehiculoDTO>;
   actualizarVehiculo(id: number, matricula: string, tipo: string, capacidad: number, dispositivoGps: string): Promise<VehiculoDTO>;
   eliminarVehiculo(id: number): Promise<void>;
+  obtenerVehiculoPorMatricula(matricula: string): Promise<VehiculoDTO>;
 }

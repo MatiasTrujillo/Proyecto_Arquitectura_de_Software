@@ -3,7 +3,7 @@ import { Producto } from "../Dominio/Producto";
 import { IRepositorioProducto } from "../IDataAccess/IRepositorioProducto";
 
 export class RepositorioProducto implements IRepositorioProducto {
-  async crearProducto(descripcion: string, valor: number, tamano: number, categoria: string): Promise<Producto> {
+  async crearProducto(descripcion: string, valor: number | null, tamano: number, categoria: string): Promise<Producto> {
     const res = await pool.query(
       'INSERT INTO producto (descripcion, valor, tamano, categoria) VALUES ($1, $2, $3, $4) RETURNING id, descripcion, valor, tamano, categoria',
       [descripcion, valor, tamano, categoria]
@@ -24,7 +24,7 @@ export class RepositorioProducto implements IRepositorioProducto {
     return new Producto(r.id, r.descripcion, r.valor, r.tamano, r.categoria);
   }
 
-  async actualizarProducto(id: number, descripcion: string, valor: number, tamano: number, categoria: string): Promise<Producto | undefined> {
+  async actualizarProducto(id: number, descripcion: string, valor: number | null, tamano: number, categoria: string): Promise<Producto | undefined> {
     const res = await pool.query(
       'UPDATE producto SET descripcion=$1, valor=$2, tamano=$3, categoria=$4 WHERE id=$5 RETURNING id, descripcion, valor, tamano, categoria',
       [descripcion, valor, tamano, categoria, id]

@@ -12,7 +12,7 @@ export class ControladorProducto {
   async crearProducto(req: Request, res: Response): Promise<void> {
     try {
       const { descripcion, valor, tamano, categoria } = req.body;
-      const producto = await this.servicio.crearProducto(descripcion, Number(valor), Number(tamano), categoria);
+      const producto = await this.servicio.crearProducto(descripcion, valor != null ? Number(valor) : null, Number(tamano), categoria);
       res.status(201).json({ data: producto });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : String(error);
@@ -44,7 +44,7 @@ export class ControladorProducto {
   async actualizarProducto(req: Request, res: Response): Promise<void> {
     try {
       const { descripcion, valor, tamano, categoria } = req.body;
-      const producto = await this.servicio.actualizarProducto(Number(req.params.id), descripcion, Number(valor), Number(tamano), categoria);
+      const producto = await this.servicio.actualizarProducto(Number(req.params.id), descripcion, valor != null ? Number(valor) : null, Number(tamano), categoria);
       res.status(200).json({ data: producto });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : String(error);
