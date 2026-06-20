@@ -6,8 +6,8 @@ class RepositorioPagoFalso {
   private data: Pago[] = [];
   private next = 1;
 
-  crearPago(fecha: Date, monto: number, estado: any) {
-    const p = new Pago(this.next++, fecha, monto, estado);
+  crearPago(fecha: Date, monto: number, estado: any, reservaId: string = "") {
+    const p = new Pago(this.next++, fecha, monto, estado, reservaId);
     this.data.push(p);
     return p;
   }
@@ -20,10 +20,10 @@ class RepositorioPagoFalso {
     return this.data.find((p) => p.getId() === id);
   }
 
-  actualizarPago(id: number, fecha: Date, monto: number, estado: any) {
+  actualizarPago(id: number, fecha: Date, monto: number, estado: any, reservaId: string = "") {
     const idx = this.data.findIndex((p) => p.getId() === id);
     if (idx === -1) return undefined;
-    const updated = new Pago(id, fecha, monto, estado);
+    const updated = new Pago(id, fecha, monto, estado, reservaId);
     this.data[idx] = updated;
     return updated;
   }
@@ -44,7 +44,7 @@ async function crearPagoPrueba() {
   const repositorio = new RepositorioPagoFalso();
   const servicio = new ServicioPago(repositorio as any);
 
-  const pago = await servicio.crearPago("2024-01-01", 100, "aceptado");
+  const pago = await servicio.crearPago("2024-01-01", 100, "aceptado", "");
   assert.strictEqual(pago.id, 1);
   assert.strictEqual(pago.monto, 100);
 }
@@ -89,7 +89,7 @@ async function actualizarPagoPrueba() {
   const servicio = new ServicioPago(repositorio as any);
   const pago = repositorio.crearPago(new Date(), 5, "aceptado");
 
-  const actualizado = await servicio.actualizarPago(pago.getId(), new Date(), 99, "aceptado");
+  const actualizado = await servicio.actualizarPago(pago.getId(), new Date(), 99, "aceptado", "");
   assert.ok(actualizado);
   assert.strictEqual(actualizado.monto, 99);
 }

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulación GPS - ServicioOperacion</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+    h1 { margin-top: 0; color: #333; }
+    .nav { margin-bottom: 20px; }
+    a.btn-nav { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+    a.btn-nav:hover { background: #0052a3; }
+    .panel {
+      background: #f9f9f9; padding: 16px; margin-bottom: 20px;
+      border-radius: 4px; border: 1px solid #ddd;
+    }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, select {
+      width: 100%; padding: 8px; margin-top: 5px;
+      border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
+    }
+    .fila-botones { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    button {
+      padding: 9px 18px; background: #0066cc; color: white;
+      border: none; border-radius: 4px; cursor: pointer; font-size: 14px;
+    }
+    button:hover { background: #0052a3; }
+    button:disabled { background: #aaa; cursor: not-allowed; }
+    .btn-stop { background: #cc0000; }
+    .btn-stop:hover { background: #990000; }
+    .btn-stop:disabled { background: #aaa; }
+
+    .log-container {
+      background: #111; color: #eee; padding: 14px; border-radius: 4px;
+      font-family: monospace; font-size: 13px; min-height: 220px;
+      max-height: 400px; overflow-y: auto; white-space: pre-wrap;
+    }
+    .log-ok   { color: #6dff6d; }
+    .log-alerta { color: #ffdd44; font-weight: bold; }
+    .log-error { color: #ff6060; }
+    .log-info  { color: #88ccff; }
+
+    .modos { display: flex; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+    .modo-card {
+      flex: 1; min-width: 160px; padding: 12px;
+      border: 2px solid #ddd; border-radius: 6px; cursor: pointer;
+      background: white; text-align: center; transition: border-color 0.15s;
+    }
+    .modo-card.seleccionado { border-color: #0066cc; background: #eaf2ff; }
+    .modo-card h3 { margin: 0 0 6px 0; font-size: 14px; }
+    .modo-card p { margin: 0; font-size: 12px; color: #555; }
+
+    .badge-alerta {
+      display: inline-block; background: #cc0000; color: white;
+      padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 6px;
+    }
+    .estado { margin-top: 10px; font-size: 13px; color: #555; }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <a class="btn-nav" href="/">← Volver</a>
+  </div>
+
+  <h1>Simulación GPS</h1>
+
+  <div class="panel">
+    <label>Dispositivo GPS</label>
+    <select id="selDispositivo">
+      <option value="">Cargando dispositivos...</option>
+    </select>
+
+    <label>Matrícula del vehículo</label>
+    <input type="text" id="inputMatricula" placeholder="Ej: ABC 1234">
+
+    <label style="margin-top:16px;">Modo de simulación</label>
+    <div class="modos">
+      <div class="modo-card seleccionado" data-modo="normal" onclick="seleccionarModo('normal', this)">
+        <h3>Ruta Normal</h3>
+        <p>Vehículo en movimiento por Montevideo</p>
+      </div>
+      <div class="modo-card" data-modo="detencion" onclick="seleccionarModo('detencion', this)">
+        <h3>Detención Prolongada</h3>
+        <p>Vehículo quieto por más de 60 segundos</p>
+      </div>
+      <div class="modo-card" data-modo="zona_roja" onclick="seleccionarModo('zona_roja', this)">
+        <h3>Zona Roja</h3>
+        <p>Vehículo ingresando a zona de riesgo</p>
+      </div>
+    </div>
+
+    <label style="margin-top:16px;">Intervalo entre lecturas (segundos)</label>
+    <input type="number" id="inputIntervalo" value="10" min="1" max="60" style="width:100px;">
+
+    <div class="fila-botones">
+      <button id="btnIniciar" onclick="iniciarSimulacion()">Iniciar simulación</button>
+      <button id="btnDetener" class="btn-stop" onclick="detenerSimulacion()" disabled>Detener</button>
+    </div>
+    <div class="estado" id="estadoSim"></div>
+  </div>
+
+  <h2>Log <span id="contadorAlertas" class="badge-alerta" style="display:none">0 alertas</span></h2>
+  <div class="log-container" id="logBox">Presioná "Iniciar simulación" para comenzar...<br></div>
+
+  <script>
+    // Auth guard — solo administradores
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token') || sessionStorage.getItem('auth_token');
+    const rolParam = params.get('rol') || sessionStorage.getItem('auth_rol');
+    if (token) sessionStorage.setItem('auth_token', token);
+    if (rolParam) sessionStorage.setItem('auth_rol', rolParam);
+
+    function rolDesdeJwt(t) {
+      try { return JSON.parse(atob(t.split('.')[1])).rol || null; } catch { return null; }
+    }
+    const rol = token ? (rolDesdeJwt(token) || rolParam) : rolParam;
+
+    if (!token) {
+      window.location.href = 'http://localhost:3002/';
+    } else if (rol !== 'administrador' && rol !== 'Administrador') {
+      document.body.innerHTML = '<div style="padding:40px;font-family:Arial"><h2>Acceso denegado</h2><p>Esta página es solo para administradores.</p><a href="javascript:history.back()">← Volver</a></div>';
+    }
+
+    const RUTAS = {
+      normal: [
+        { lat: -34.9011, lng: -56.1870, velocidad: 40 },
+        { lat: -34.9025, lng: -56.1845, velocidad: 45 },
+        { lat: -34.9038, lng: -56.1820, velocidad: 50 },
+        { lat: -34.9051, lng: -56.1795, velocidad: 48 },
+        { lat: -34.9063, lng: -56.1770, velocidad: 42 },
+        { lat: -34.9075, lng: -56.1745, velocidad: 38 },
+        { lat: -34.9085, lng: -56.1720, velocidad: 35 },
+        { lat: -34.9094, lng: -56.1695, velocidad: 40 },
+        { lat: -34.9102, lng: -56.1670, velocidad: 44 },
+        { lat: -34.9109, lng: -56.1645, velocidad: 46 },
+        { lat: -34.9115, lng: -56.1620, velocidad: 43 },
+        { lat: -34.9120, lng: -56.1595, velocidad: 39 },
+      ],
+      detencion: Array.from({ length: 12 }, (_, i) => ({
+        lat: -34.9050 + (Math.random() * 0.0001),
+        lng: -56.1800 + (Math.random() * 0.0001),
+        velocidad: i < 2 ? 15 : 0,
+      })),
+      zona_roja: [
+        { lat: -34.9030, lng: -56.1860, velocidad: 35 },
+        { lat: -34.9035, lng: -56.1852, velocidad: 30 },
+        { lat: -34.9040, lng: -56.1843, velocidad: 25 },
+        { lat: -34.9045, lng: -56.1838, velocidad: 20 },
+        { lat: -34.9050, lng: -56.1833, velocidad: 18 },
+        { lat: -34.9055, lng: -56.1828, velocidad: 22 },
+      ],
+    };
+
+    let modoActual = 'normal';
+    let simulacionActiva = false;
+    let timeoutHandle = null;
+    let totalAlertas = 0;
+    let lectura = 0;
+    let puntosRuta = [];
+
+    async function cargarDispositivos() {
+      try {
+        const resp = await fetch('/api/dispositivos');
+        const json = await resp.json();
+        const sel = document.getElementById('selDispositivo');
+        sel.innerHTML = '';
+        if (!json.data || json.data.length === 0) {
+          sel.innerHTML = '<option value="">No hay dispositivos registrados</option>';
+          return;
+        }
+        for (const d of json.data) {
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = `ID ${d.id} — ${d.ubicacion || 'sin descripción'}`;
+          sel.appendChild(opt);
+        }
+      } catch {
+        document.getElementById('selDispositivo').innerHTML = '<option value="">Error cargando dispositivos</option>';
+      }
+    }
+
+    function seleccionarModo(modo, el) {
+      modoActual = modo;
+      document.querySelectorAll('.modo-card').forEach(c => c.classList.remove('seleccionado'));
+      el.classList.add('seleccionado');
+    }
+
+    function log(texto, clase = '') {
+      const box = document.getElementById('logBox');
+      const linea = document.createElement('span');
+      if (clase) linea.className = clase;
+      const hora = new Date().toLocaleTimeString();
+      linea.textContent = `[${hora}] ${texto}\n`;
+      box.appendChild(linea);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function enviarPunto(punto) {
+      const dispositivoId = document.getElementById('selDispositivo').value;
+      const matricula = document.getElementById('inputMatricula').value.trim();
+
+      const body = {
+        dispositivoId: Number(dispositivoId),
+        vehiculoMatricula: matricula || undefined,
+        lat: punto.lat,
+        lng: punto.lng,
+        velocidad: punto.velocidad,
+      };
+
+      const resp = await fetch('/api/dispositivos/recibir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return resp.json();
+    }
+
+    async function tick() {
+      if (!simulacionActiva) return;
+
+      const punto = puntosRuta[lectura % puntosRuta.length];
+      lectura++;
+
+      try {
+        const data = await enviarPunto(punto);
+        const alertas = data.alertas || [];
+
+        if (alertas.length > 0) {
+          totalAlertas += alertas.length;
+          const badge = document.getElementById('contadorAlertas');
+          badge.style.display = 'inline-block';
+          badge.textContent = `${totalAlertas} alerta${totalAlertas > 1 ? 's' : ''}`;
+          log(`Lectura ${lectura}: lat=${punto.lat.toFixed(5)} lng=${punto.lng.toFixed(5)} vel=${punto.velocidad}km/h → ALERTA: ${alertas.join(', ')}`, 'log-alerta');
+        } else {
+          log(`Lectura ${lectura}: lat=${punto.lat.toFixed(5)} lng=${punto.lng.toFixed(5)} vel=${punto.velocidad}km/h → OK`, 'log-ok');
+        }
+      } catch (err) {
+        log(`Lectura ${lectura}: Error — ${err.message}`, 'log-error');
+      }
+
+      if (simulacionActiva) {
+        const intervalo = Number(document.getElementById('inputIntervalo').value) * 1000;
+        timeoutHandle = setTimeout(tick, intervalo);
+      }
+    }
+
+    function iniciarSimulacion() {
+      const dispositivoId = document.getElementById('selDispositivo').value;
+      if (!dispositivoId) {
+        log('Seleccioná un dispositivo GPS antes de iniciar.', 'log-error');
+        return;
+      }
+
+      simulacionActiva = true;
+      lectura = 0;
+      totalAlertas = 0;
+      puntosRuta = RUTAS[modoActual];
+
+      document.getElementById('btnIniciar').disabled = true;
+      document.getElementById('btnDetener').disabled = false;
+      document.getElementById('contadorAlertas').style.display = 'none';
+
+      const intervalo = Number(document.getElementById('inputIntervalo').value);
+      const nombreModo = { normal: 'Ruta Normal', detencion: 'Detención Prolongada', zona_roja: 'Zona Roja' }[modoActual];
+      document.getElementById('estadoSim').textContent = `Enviando cada ${intervalo}s — modo: ${nombreModo}`;
+      document.getElementById('logBox').innerHTML = '';
+
+      log(`Iniciando simulación: modo=${nombreModo}, dispositivo=${dispositivoId}, intervalo=${intervalo}s`, 'log-info');
+      tick();
+    }
+
+    function detenerSimulacion() {
+      simulacionActiva = false;
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+      document.getElementById('btnIniciar').disabled = false;
+      document.getElementById('btnDetener').disabled = true;
+      document.getElementById('estadoSim').textContent = 'Simulación detenida.';
+      log('--- Simulación detenida ---', 'log-info');
+    }
+
+    cargarDispositivos();
+  </script>
+</body>
+</html>

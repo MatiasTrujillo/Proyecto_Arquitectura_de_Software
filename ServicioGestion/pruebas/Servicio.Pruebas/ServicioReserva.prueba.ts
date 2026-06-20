@@ -42,7 +42,7 @@ async function crearReservaPrueba() {
   const repositorio = new RepositorioReservaFalso();
   const servicio = new ServicioReserva(repositorio as any);
 
-  const reserva = await servicio.crearReserva("c1", "ZonaA", "ZonaB", "2024-06-01", 150, "v1", [], "cond1", []);
+  const reserva = await servicio.crearReserva("c1", "ZonaA", "ZonaB", "2024-06-01", 150, [], [], "v1", "cond1");
   assert.strictEqual(reserva.cliente, "c1");
   assert.strictEqual(reserva.estado, "Pendiente");
   assert.strictEqual(reserva.costo, 150);
@@ -53,7 +53,7 @@ async function crearReservaClienteIdInvalidoPrueba() {
 
   let lanzo = false;
   try {
-    await servicio.crearReserva("", "ZonaA", "ZonaB", "2024-06-01", 100, "v1", [], "cond1", []);
+    await servicio.crearReserva("", "ZonaA", "ZonaB", "2024-06-01", 100, [], [], "v1", "cond1");
   } catch (e) {
     lanzo = true;
   }
@@ -65,7 +65,7 @@ async function crearReservaFechaInvalidaPrueba() {
 
   let lanzo = false;
   try {
-    await servicio.crearReserva("c1", "ZonaA", "ZonaB", "no-es-fecha", 100, "v1", [], "cond1", []);
+    await servicio.crearReserva("c1", "ZonaA", "ZonaB", "no-es-fecha", 100, [], [], "v1", "cond1");
   } catch (e) {
     lanzo = true;
   }
@@ -77,7 +77,7 @@ async function crearReservaCostoInvalidoPrueba() {
 
   let lanzo = false;
   try {
-    await servicio.crearReserva("c1", "ZonaA", "ZonaB", "2024-06-01", -50, "v1", [], "cond1", []);
+    await servicio.crearReserva("c1", "ZonaA", "ZonaB", "2024-06-01", -50, [], [], "v1", "cond1");
   } catch (e) {
     lanzo = true;
   }
@@ -88,9 +88,9 @@ async function obtenerReservasPorClientePrueba() {
   const repositorio = new RepositorioReservaFalso();
   const servicio = new ServicioReserva(repositorio as any);
 
-  await servicio.crearReserva("clienteA", "O1", "D1", "2024-01-01", 100, "v1", [], "c1", []);
-  await servicio.crearReserva("clienteA", "O2", "D2", "2024-01-02", 200, "v2", [], "c2", []);
-  await servicio.crearReserva("clienteB", "O3", "D3", "2024-01-03", 300, "v3", [], "c3", []);
+  await servicio.crearReserva("clienteA", "O1", "D1", "2024-01-01", 100, [], [], "v1", "c1");
+  await servicio.crearReserva("clienteA", "O2", "D2", "2024-01-02", 200, [], [], "v2", "c2");
+  await servicio.crearReserva("clienteB", "O3", "D3", "2024-01-03", 300, [], [], "v3", "c3");
 
   const reservas = await servicio.obtenerReservasPorCliente("clienteA");
   assert.strictEqual(reservas.length, 2);
@@ -101,7 +101,7 @@ async function consultarEstadoReservaPrueba() {
   const repositorio = new RepositorioReservaFalso();
   const servicio = new ServicioReserva(repositorio as any);
 
-  const reserva = await servicio.crearReserva("c1", "O", "D", "2024-01-01", 100, "v1", [], "cond1", []);
+  const reserva = await servicio.crearReserva("c1", "O", "D", "2024-01-01", 100, [], [], "v1", "cond1");
   const estado = await servicio.consultarEstadoReserva(reserva.id);
   assert.strictEqual(estado, "Pendiente");
 }

@@ -10,7 +10,7 @@ async function limpiarBD() {
 
 async function crearPagoTest() {
   const repo = new RepositorioPago();
-  const pago = await repo.crearPago(new Date("2026-01-01"), 100, EstadoPago.Pendiente);
+  const pago = await repo.crearPago(new Date("2026-01-01"), 100, EstadoPago.Pendiente, "R1");
 
   assert.strictEqual(pago.getId(), 1);
   assert.strictEqual(pago.getMonto(), 100);
@@ -20,7 +20,7 @@ async function crearPagoTest() {
 
 async function obtenerPagoPorIdTest() {
   const repo = new RepositorioPago();
-  const pago = await repo.crearPago(new Date("2026-02-01"), 150, EstadoPago.Aceptado);
+  const pago = await repo.crearPago(new Date("2026-02-01"), 150, EstadoPago.Aceptado, "R1");
 
   const encontrado = await repo.obtenerPagoPorId(pago.getId());
   assert.ok(encontrado);
@@ -31,8 +31,8 @@ async function obtenerPagoPorIdTest() {
 
 async function obtenerTodosLosPagosTest() {
   const repo = new RepositorioPago();
-  await repo.crearPago(new Date("2026-03-01"), 200, EstadoPago.Pendiente);
-  await repo.crearPago(new Date("2026-03-02"), 300, EstadoPago.Rechazado);
+  await repo.crearPago(new Date("2026-03-01"), 200, EstadoPago.Pendiente, "R1");
+  await repo.crearPago(new Date("2026-03-02"), 300, EstadoPago.Rechazado, "R1");
 
   const pagos = await repo.obtenerPagos();
   assert.strictEqual(pagos.length, 2);
@@ -42,7 +42,7 @@ async function obtenerTodosLosPagosTest() {
 
 async function existePagoTest() {
   const repo = new RepositorioPago();
-  const pago = await repo.crearPago(new Date("2026-04-01"), 400, EstadoPago.Pendiente);
+  const pago = await repo.crearPago(new Date("2026-04-01"), 400, EstadoPago.Pendiente, "R1");
 
   assert.strictEqual(await repo.existe(pago.getId()), true);
   assert.strictEqual(await repo.existe(999), false);
@@ -50,9 +50,9 @@ async function existePagoTest() {
 
 async function actualizarPagoTest() {
   const repo = new RepositorioPago();
-  const pago = await repo.crearPago(new Date("2026-05-01"), 500, EstadoPago.Pendiente);
+  const pago = await repo.crearPago(new Date("2026-05-01"), 500, EstadoPago.Pendiente, "R1");
 
-  const actualizado = await repo.actualizarPago(pago.getId(), new Date("2026-05-02"), 550, EstadoPago.Aceptado);
+  const actualizado = await repo.actualizarPago(pago.getId(), new Date("2026-05-02"), 550, EstadoPago.Aceptado, "R1");
   assert.ok(actualizado);
   assert.strictEqual(actualizado?.getMonto(), 550);
   assert.strictEqual(actualizado?.getEstado(), EstadoPago.Aceptado);
@@ -61,7 +61,7 @@ async function actualizarPagoTest() {
 
 async function eliminarPagoTest() {
   const repo = new RepositorioPago();
-  const pago = await repo.crearPago(new Date("2026-07-01"), 700, EstadoPago.Pendiente);
+  const pago = await repo.crearPago(new Date("2026-07-01"), 700, EstadoPago.Pendiente, "R1");
 
   assert.strictEqual(await repo.eliminarPago(pago.getId()), true);
   assert.strictEqual(await repo.existe(pago.getId()), false);

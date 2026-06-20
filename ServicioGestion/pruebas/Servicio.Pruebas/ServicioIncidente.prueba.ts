@@ -6,9 +6,9 @@ class RepositorioIncidenteFalso {
   private data: Incidente[] = [];
   private next = 1;
 
-  crearIncidente(descripcion: string, fecha: Date, reservaId: string, estado: string, severidad: string) {
+  crearIncidente(descripcion: string, fecha: Date, reservaId: string, estado: string, severidad: string, conductorId: string = "") {
     const id = `${this.next++}`;
-    const incidente = new Incidente(id, descripcion, fecha, reservaId, estado, severidad);
+    const incidente = new Incidente(id, descripcion, fecha, reservaId, estado, severidad, conductorId);
     this.data.push(incidente);
     return incidente;
   }
@@ -21,10 +21,10 @@ class RepositorioIncidenteFalso {
     return this.data.find((i) => i.getId() === id);
   }
 
-  actualizarIncidente(id: string, descripcion: string, fecha: Date, reservaId: string, estado: string, severidad: string) {
+  actualizarIncidente(id: string, descripcion: string, fecha: Date, reservaId: string, estado: string, severidad: string, conductorId: string = "") {
     const idx = this.data.findIndex((i) => i.getId() === id);
     if (idx === -1) return undefined;
-    const actualizado = new Incidente(id, descripcion, fecha, reservaId, estado, severidad);
+    const actualizado = new Incidente(id, descripcion, fecha, reservaId, estado, severidad, conductorId);
     this.data[idx] = actualizado;
     return actualizado;
   }
@@ -45,7 +45,7 @@ async function crearIncidentePrueba() {
   const repositorio = new RepositorioIncidenteFalso();
   const servicio = new ServicioIncidente(repositorio as any);
 
-  const inc = await servicio.crearIncidente("desc", "2024-01-01", "r1", "abierto", "alta");
+  const inc = await servicio.crearIncidente("desc", "2024-01-01", "r1", "abierto", "alta", "");
   assert.strictEqual(inc.reservaId, "r1");
 }
 
@@ -71,7 +71,7 @@ async function actualizarIncidentePrueba() {
   const servicio = new ServicioIncidente(repositorio as any);
   const incidente = repositorio.crearIncidente("d", new Date(), "r", "s", "baja");
 
-  const actualizado = await servicio.actualizarIncidente(incidente.getId(), "d2", new Date(), "r", "s2", "alta");
+  const actualizado = await servicio.actualizarIncidente(incidente.getId(), "d2", new Date(), "r", "s2", "alta", "");
   assert.ok(actualizado);
   assert.strictEqual(actualizado.reservaId, "r");
 }

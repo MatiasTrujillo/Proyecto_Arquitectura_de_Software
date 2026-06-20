@@ -6,9 +6,9 @@ class RepositorioViajeFalso {
   private data: Viaje[] = [];
   private next = 1;
 
-  crearViaje(reservaId: string, origen: string, destino: string, fecha: Date, estado: string, conductor: string) {
+  crearViaje(reservaId: string, origen: string, destino: string, fecha: Date, estado: string, conductor: string, vehiculo: string = "") {
     const id = `${this.next++}`;
-    const viaje = new Viaje(id, reservaId, origen, destino, fecha, estado, conductor);
+    const viaje = new Viaje(id, reservaId, origen, destino, fecha, estado, conductor, vehiculo);
     this.data.push(viaje);
     return viaje;
   }
@@ -21,10 +21,10 @@ class RepositorioViajeFalso {
     return this.data.find((v) => v.getId() === id);
   }
 
-  actualizarViaje(id: string, reservaId: string, origen: string, destino: string, fecha: Date, estado: string, conductor: string) {
+  actualizarViaje(id: string, reservaId: string, origen: string, destino: string, fecha: Date, estado: string, conductor: string, vehiculo: string = "") {
     const idx = this.data.findIndex((v) => v.getId() === id);
     if (idx === -1) return undefined;
-    const actualizado = new Viaje(id, reservaId, origen, destino, fecha, estado, conductor);
+    const actualizado = new Viaje(id, reservaId, origen, destino, fecha, estado, conductor, vehiculo);
     this.data[idx] = actualizado;
     return actualizado;
   }
@@ -45,7 +45,7 @@ async function crearViajePrueba() {
   const repositorio = new RepositorioViajeFalso();
   const servicio = new ServicioViaje(repositorio as any);
 
-  const viaje = await servicio.crearViaje("r1", "A", "B", "2024-01-01", "activo", "c1");
+  const viaje = await servicio.crearViaje("r1", "A", "B", "2024-01-01", "activo", "c1", "");
   assert.strictEqual(viaje.reservaId, "r1");
 }
 
@@ -81,7 +81,7 @@ async function actualizarViajePrueba() {
   const servicio = new ServicioViaje(repositorio as any);
   const viaje = repositorio.crearViaje("r", "A", "B", new Date(), "s", "c");
 
-  const actualizado = await servicio.actualizarViaje(viaje.getId(), "r-upd", "A2", "B2", new Date(), "s2", "c2");
+  const actualizado = await servicio.actualizarViaje(viaje.getId(), "r-upd", "A2", "B2", new Date(), "s2", "c2", "");
   assert.ok(actualizado);
   assert.strictEqual(actualizado.origen, "A2");
 }

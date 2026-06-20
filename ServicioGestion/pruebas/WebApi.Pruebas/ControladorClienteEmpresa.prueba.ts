@@ -66,11 +66,11 @@ class ServicioReservaFalso {
 
 class ServicioPagoFalso {
   crearPago(fecha: string | Date, monto: number, estado: string): PagoDTO {
-    return new PagoDTO(1, new Date(), monto, estado);
+    return new PagoDTO(1, new Date(), monto, estado, "");
   }
   obtenerPagos(): PagoDTO[] { return []; }
-  obtenerPagoPorId(id: number): PagoDTO { return new PagoDTO(id, new Date(), 0, "Pendiente"); }
-  actualizarPago(id: number, fecha: string | Date, monto: number, estado: string): PagoDTO { return new PagoDTO(id, new Date(), monto, estado); }
+  obtenerPagoPorId(id: number): PagoDTO { return new PagoDTO(id, new Date(), 0, "Pendiente", ""); }
+  actualizarPago(id: number, fecha: string | Date, monto: number, estado: string): PagoDTO { return new PagoDTO(id, new Date(), monto, estado, ""); }
   eliminarPago(_id: number): void {}
 }
 

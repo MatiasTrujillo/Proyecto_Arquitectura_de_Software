@@ -9,7 +9,7 @@ async function limpiarBD() {
 
 async function crearViajeTest() {
   const repo = new RepositorioViaje();
-  const viaje = await repo.crearViaje("R1", "Origen", "Destino", new Date("2026-01-01"), "Programado", "C1");
+  const viaje = await repo.crearViaje("R1", "Origen", "Destino", new Date("2026-01-01"), "Programado", "C1", "");
 
   assert.strictEqual(viaje.getId(), "1");
   assert.strictEqual(viaje.getReservaId(), "R1");
@@ -22,7 +22,7 @@ async function crearViajeTest() {
 
 async function obtenerViajePorIdTest() {
   const repo = new RepositorioViaje();
-  const viaje = await repo.crearViaje("R2", "O", "D", new Date("2026-02-01"), "EnCurso", "C2");
+  const viaje = await repo.crearViaje("R2", "O", "D", new Date("2026-02-01"), "EnCurso", "C2", "");
 
   const encontrado = await repo.obtenerViajePorId(viaje.getId());
   assert.ok(encontrado);
@@ -32,8 +32,8 @@ async function obtenerViajePorIdTest() {
 
 async function obtenerTodosLosViajesTest() {
   const repo = new RepositorioViaje();
-  await repo.crearViaje("R3", "A", "B", new Date("2026-03-01"), "X", "C");
-  await repo.crearViaje("R4", "A2", "B2", new Date("2026-03-02"), "Y", "C");
+  await repo.crearViaje("R3", "A", "B", new Date("2026-03-01"), "X", "C", "");
+  await repo.crearViaje("R4", "A2", "B2", new Date("2026-03-02"), "Y", "C", "");
 
   const viajes = await repo.obtenerViajes();
   assert.strictEqual(viajes.length, 2);
@@ -43,7 +43,7 @@ async function obtenerTodosLosViajesTest() {
 
 async function existeViajeTest() {
   const repo = new RepositorioViaje();
-  const viaje = await repo.crearViaje("R5", "X", "Y", new Date("2026-04-01"), "Z", "C");
+  const viaje = await repo.crearViaje("R5", "X", "Y", new Date("2026-04-01"), "Z", "C", "");
 
   assert.strictEqual(await repo.existe(viaje.getId()), true);
   assert.strictEqual(await repo.existe("999"), false);
@@ -51,9 +51,9 @@ async function existeViajeTest() {
 
 async function actualizarViajeTest() {
   const repo = new RepositorioViaje();
-  const viaje = await repo.crearViaje("R6", "OldOrigin", "OldDest", new Date("2026-05-01"), "Old", "C");
+  const viaje = await repo.crearViaje("R6", "OldOrigin", "OldDest", new Date("2026-05-01"), "Old", "C", "");
 
-  const actualizado = await repo.actualizarViaje(viaje.getId(), "R6", "NewOrigin", "NewDest", new Date("2026-05-02"), "Nuevo", "Cnew");
+  const actualizado = await repo.actualizarViaje(viaje.getId(), "R6", "NewOrigin", "NewDest", new Date("2026-05-02"), "Nuevo", "Cnew", "");
   assert.ok(actualizado);
   assert.strictEqual(actualizado?.getOrigen(), "NewOrigin");
   assert.strictEqual(actualizado?.getDestino(), "NewDest");
@@ -62,7 +62,7 @@ async function actualizarViajeTest() {
 
 async function eliminarViajeTest() {
   const repo = new RepositorioViaje();
-  const viaje = await repo.crearViaje("R7", "ToDel", "ToDel", new Date("2026-07-01"), "S", "C");
+  const viaje = await repo.crearViaje("R7", "ToDel", "ToDel", new Date("2026-07-01"), "S", "C", "");
 
   assert.strictEqual(await repo.eliminarViaje(viaje.getId()), true);
   assert.strictEqual(await repo.existe(viaje.getId()), false);

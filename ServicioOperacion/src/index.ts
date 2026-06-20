@@ -1,9 +1,12 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { ControladorVehiculo } from './ModuloVehiculos/WebApi/Controlador/ControladorVehiculo';
 import { ControladorDispositivoGPS } from './ModuloVehiculos/WebApi/Controlador/ControladorDispositivoGPS';
 import { registradorSolicitudes, manejadorErrores } from './Shared/Logging/requestLogger';
 import { manejadorMetricas } from './Shared/Metrics/metrics';
+import ejecutarMigraciones from './Shared/Database/MigracionesRunner';
+import { RepositorioAlerta } from './ModuloVehiculos/DataAccess/RepositorioAlerta';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -29,11 +32,43 @@ app.delete('/api/vehiculos/:id', vehiculoController.eliminarVehiculo.bind(vehicu
 
 app.post('/api/dispositivos', dispositivoController.crearDispositivoGPS.bind(dispositivoController));
 app.get('/api/dispositivos', dispositivoController.obtenerDispositivoGPS.bind(dispositivoController));
+app.post('/api/dispositivos/recibir', dispositivoController.recibirInformacion.bind(dispositivoController));
 app.get('/api/dispositivos/:id', dispositivoController.obtenerDispositivoGPSPorId.bind(dispositivoController));
 app.put('/api/dispositivos/:id', dispositivoController.actualizarDispositivoGPS.bind(dispositivoController));
 app.delete('/api/dispositivos/:id', dispositivoController.eliminarDispositivoGPS.bind(dispositivoController));
-app.post('/api/dispositivos/recibir', dispositivoController.recibirInformacion.bind(dispositivoController));
 app.get('/api/dispositivos/:dispositivoId/verificar', dispositivoController.verificarInformacion.bind(dispositivoController));
+
+// Proxy: zonas rojas reales desde ServicioGestion (para la simulación UI)
+const GESTION_URL = process.env.GESTION_URL || 'http://localhost:3001';
+app.get('/api/zonas-rojas', async (_req, res) => {
+  try {
+    const resp = await fetch(`${GESTION_URL}/internal/zonas-geograficas`);
+    if (!resp.ok) { res.status(502).json({ error: 'Error al obtener zonas' }); return; }
+    const zonas: any[] = await resp.json();
+    const rojas = zonas
+      .filter((z: any) => z.tipo === 'roja')
+      .map((z: any) => ({ id: z.id, nombre: z.nombre, delimitacion: z.delimitacion }));
+    res.json({ data: rojas });
+  } catch {
+    res.status(503).json({ error: 'ServicioGestion no disponible' });
+  }
+});
+
+// F16: Consulta de alertas generadas
+app.get('/api/alertas', async (req, res) => {
+  try {
+    const { vehiculo } = req.query;
+    const repo = new RepositorioAlerta();
+    if (vehiculo) {
+      const alertas = await repo.obtenerPorVehiculo(String(vehiculo));
+      res.json({ data: alertas });
+    } else {
+      res.status(400).json({ error: 'Parámetro vehiculo requerido' });
+    }
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'home.html'));
@@ -44,13 +79,23 @@ app.get('/vehiculos-ui', (req, res) => {
 app.get('/dispositivos-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'dispositivos.html'));
 });
+app.get('/simulacion-gps-ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'simulacion-gps.html'));
+});
 
 app.get('/metricas', manejadorMetricas);
 app.get('/metricas-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'Metrics', 'metricas.html'));
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'metricas.html'));
 });
 app.use(manejadorErrores);
 
-app.listen(port, () => {
-  console.log(`ServicioOperacion escuchando en http://localhost:${port}`);
-});
+ejecutarMigraciones()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`ServicioOperacion escuchando en http://localhost:${port}`);
+    });
+  })
+  .catch(err => {
+    console.error('Error al iniciar ServicioOperacion:', err);
+    process.exit(1);
+  });

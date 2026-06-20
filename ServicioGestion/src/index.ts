@@ -20,6 +20,7 @@ import { verificarAutorizacion } from './Shared/Auth/middlewareAuth';
 import ejecutarMigraciones from './Shared/Database/MigracionesRunner';
 import { RepositorioClientesFrecuentes } from './ModuloUsuarios/DataAccess/RepositorioClientesFrecuentes';
 import { colaReservas } from './ModuloReservas/WebApi/Cola/ColaPrioridad';
+import pool from './Shared/Database/DatabaseConnection';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -155,6 +156,31 @@ app.get('/api/incidentes', incidenteController.obtenerIncidente.bind(incidenteCo
 app.get('/api/incidentes/:id', incidenteController.obtenerIncidentePorId.bind(incidenteController));
 app.put('/api/incidentes/:id', incidenteController.actualizarIncidente.bind(incidenteController));
 app.delete('/api/incidentes/:id', incidenteController.eliminarIncidente.bind(incidenteController));
+
+// ─── Endpoints internos (sin autenticación, para comunicación entre servicios) ──
+app.get('/internal/zonas-geograficas', async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, nombre, delimitacion_geografica AS delimitacion, tipo FROM zona_geografica`
+    );
+    res.json(result.rows);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+app.patch('/internal/viajes/vehiculo/:matricula/alertas', async (req, res) => {
+  try {
+    await pool.query(
+      `UPDATE viaje SET tiene_alertas = true
+       WHERE vehiculo = $1 AND estado NOT IN ('Finalizado', 'Cancelado')`,
+      [req.params.matricula]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
 
 // ─── UI y métricas ────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {

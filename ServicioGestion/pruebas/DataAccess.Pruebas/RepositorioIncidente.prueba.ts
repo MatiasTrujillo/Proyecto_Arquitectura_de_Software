@@ -9,7 +9,7 @@ async function limpiarBD() {
 
 async function crearIncidenteTest() {
   const repo = new RepositorioIncidente();
-  const incidente = await repo.crearIncidente("Desc", new Date("2026-01-01"), "R1", "Abierto", "Alta");
+  const incidente = await repo.crearIncidente("Desc", new Date("2026-01-01"), "R1", "Abierto", "Alta", "");
 
   assert.strictEqual(incidente.getId(), "1");
   assert.strictEqual(incidente.getDescripcion(), "Desc");
@@ -21,7 +21,7 @@ async function crearIncidenteTest() {
 
 async function obtenerIncidentePorIdTest() {
   const repo = new RepositorioIncidente();
-  const incidente = await repo.crearIncidente("X", new Date("2026-02-01"), "R2", "Cerrado", "Baja");
+  const incidente = await repo.crearIncidente("X", new Date("2026-02-01"), "R2", "Cerrado", "Baja", "");
 
   const encontrado = await repo.obtenerIncidentePorId(incidente.getId());
   assert.ok(encontrado);
@@ -31,8 +31,8 @@ async function obtenerIncidentePorIdTest() {
 
 async function obtenerTodosLosIncidentesTest() {
   const repo = new RepositorioIncidente();
-  await repo.crearIncidente("A", new Date("2026-03-01"), "R3", "Abierto", "Media");
-  await repo.crearIncidente("B", new Date("2026-03-02"), "R4", "Abierto", "Baja");
+  await repo.crearIncidente("A", new Date("2026-03-01"), "R3", "Abierto", "Media", "");
+  await repo.crearIncidente("B", new Date("2026-03-02"), "R4", "Abierto", "Baja", "");
 
   const incidentes = await repo.obtenerIncidentes();
   assert.strictEqual(incidentes.length, 2);
@@ -42,7 +42,7 @@ async function obtenerTodosLosIncidentesTest() {
 
 async function existeIncidenteTest() {
   const repo = new RepositorioIncidente();
-  const incidente = await repo.crearIncidente("E", new Date("2026-04-01"), "R5", "Abierto", "Alta");
+  const incidente = await repo.crearIncidente("E", new Date("2026-04-01"), "R5", "Abierto", "Alta", "");
 
   assert.strictEqual(await repo.existe(incidente.getId()), true);
   assert.strictEqual(await repo.existe("999"), false);
@@ -50,9 +50,9 @@ async function existeIncidenteTest() {
 
 async function actualizarIncidenteTest() {
   const repo = new RepositorioIncidente();
-  const incidente = await repo.crearIncidente("Old", new Date("2026-05-01"), "R6", "Abierto", "Baja");
+  const incidente = await repo.crearIncidente("Old", new Date("2026-05-01"), "R6", "Abierto", "Baja", "");
 
-  const actualizado = await repo.actualizarIncidente(incidente.getId(), "New", new Date("2026-05-02"), "R6", "Cerrado", "Alta");
+  const actualizado = await repo.actualizarIncidente(incidente.getId(), "New", new Date("2026-05-02"), "R6", "Cerrado", "Alta", "");
   assert.ok(actualizado);
   assert.strictEqual(actualizado?.getDescripcion(), "New");
   assert.strictEqual(actualizado?.getEstado(), "Cerrado");
@@ -61,7 +61,7 @@ async function actualizarIncidenteTest() {
 
 async function eliminarIncidenteTest() {
   const repo = new RepositorioIncidente();
-  const incidente = await repo.crearIncidente("ToDel", new Date("2026-07-01"), "R7", "Abierto", "Media");
+  const incidente = await repo.crearIncidente("ToDel", new Date("2026-07-01"), "R7", "Abierto", "Media", "");
 
   assert.strictEqual(await repo.eliminarIncidente(incidente.getId()), true);
   assert.strictEqual(await repo.existe(incidente.getId()), false);
