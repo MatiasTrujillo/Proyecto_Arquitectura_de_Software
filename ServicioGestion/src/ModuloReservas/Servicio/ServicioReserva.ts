@@ -25,7 +25,7 @@ export class ServicioReserva implements IServicioReserva {
     this.validarCampo(destino, "destino");
     const fechaValida = this.validarFechaFutura(fecha);
     this.validarCosto(costo);
-    // TODO: validar al menos un bien cuando se implemente el formulario de bienes
+    if (!productos || productos.length === 0) throw new Error("La reserva debe tener al menos un producto");
 
     // Priority Queue (R1): determinar prioridad antes de encolar
     const prioridad: Prioridad = await repoFrecuentes.determinarPrioridad(clienteId);
