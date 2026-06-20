@@ -5,6 +5,7 @@ import { colaReservas, Prioridad } from "../WebApi/Cola/ColaPrioridad";
 import { RepositorioClientesFrecuentes } from "../../ModuloUsuarios/DataAccess/RepositorioClientesFrecuentes";
 
 const repoFrecuentes = new RepositorioClientesFrecuentes();
+const OPERACION_URL = process.env.OPERACION_URL || 'http://localhost:3000';
 
 export class ServicioReserva implements IServicioReserva {
   constructor(private repositorio: IRepositorioReserva) {}
@@ -68,6 +69,7 @@ export class ServicioReserva implements IServicioReserva {
     this.validarCampo(reservaId, "reservaId");
     this.validarCampo(vehiculo, "vehiculo");
     this.validarCampo(conductor, "conductor");
+    await this.validarCapacidadVehiculo(reservaId, vehiculo);
     const reserva = await this.repositorio.asignarVehiculoConductor(reservaId, vehiculo, conductor);
     if (!reserva) throw new Error(`No se encontró la reserva con id ${reservaId}`);
     return ReservaDTO.fromEntity(reserva);
@@ -77,9 +79,31 @@ export class ServicioReserva implements IServicioReserva {
     this.validarCampo(reservaId, 'reservaId');
     this.validarCampo(vehiculo,  'vehiculo');
     this.validarCampo(conductor, 'conductor');
+    await this.validarCapacidadVehiculo(reservaId, vehiculo);
     const reserva = await this.repositorio.asignarYCrearViajeAtomico(reservaId, vehiculo, conductor);
     if (!reserva) throw new Error(`No se encontró la reserva con id ${reservaId}`);
     return ReservaDTO.fromEntity(reserva);
+  }
+
+  private async validarCapacidadVehiculo(reservaId: string, vehiculoMatricula: string): Promise<void> {
+    const tamanoTotal = await this.repositorio.obtenerTamanoTotalProductos(reservaId);
+    if (tamanoTotal === 0) return; // si ningún producto tiene tamaño definido, se permite
+
+    try {
+      const resp = await fetch(`${OPERACION_URL}/api/vehiculos/matricula/${encodeURIComponent(vehiculoMatricula)}`);
+      if (!resp.ok) return; // ServicioOperacion no disponible: se permite en modo degradado
+      const json = await resp.json();
+      const capacidad: number = json.data?.capacidad ?? Infinity;
+      if (tamanoTotal > capacidad) {
+        throw new Error(
+          `El vehículo ${vehiculoMatricula} no tiene capacidad suficiente. ` +
+          `Tamaño total de productos: ${tamanoTotal}, capacidad del vehículo: ${capacidad}.`
+        );
+      }
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('capacidad suficiente')) throw e;
+      // ServicioOperacion no disponible: se permite en modo degradado
+    }
   }
 
   async obtenerReservasSinViaje(): Promise<ReservaDTO[]> {

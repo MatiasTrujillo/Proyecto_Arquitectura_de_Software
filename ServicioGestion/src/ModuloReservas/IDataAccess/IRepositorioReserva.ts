@@ -10,4 +10,5 @@ export interface IRepositorioReserva {
   asignarYCrearViajeAtomico(id: string, vehiculo: string, conductor: string): Promise<Reserva | undefined>;
   obtenerReservasSinViaje(): Promise<Reserva[]>;
   existe(id: string): Promise<boolean>;
+  obtenerTamanoTotalProductos(reservaId: string): Promise<number>;
 }

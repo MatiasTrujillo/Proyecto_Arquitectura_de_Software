@@ -26,6 +26,7 @@ app.use(registradorSolicitudes);
 
 app.post('/api/vehiculos', vehiculoController.crearVehiculo.bind(vehiculoController));
 app.get('/api/vehiculos', vehiculoController.obtenerVehiculos.bind(vehiculoController));
+app.get('/api/vehiculos/matricula/:matricula', vehiculoController.obtenerVehiculoPorMatricula.bind(vehiculoController));
 app.get('/api/vehiculos/:id', vehiculoController.obtenerVehiculoPorId.bind(vehiculoController));
 app.put('/api/vehiculos/:id', vehiculoController.actualizarVehiculo.bind(vehiculoController));
 app.delete('/api/vehiculos/:id', vehiculoController.eliminarVehiculo.bind(vehiculoController));

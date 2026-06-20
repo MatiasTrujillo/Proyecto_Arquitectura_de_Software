@@ -7,4 +7,5 @@ export interface IRepositorioVehiculo {
   actualizarVehiculo(id: number, matricula: string, tipo: string, capacidad: number, dispositivoGps: string): Promise<Vehiculo | undefined>;
   eliminarVehiculo(id: number): Promise<boolean>;
   existe(id: number): Promise<boolean>;
+  obtenerPorMatricula(matricula: string): Promise<Vehiculo | undefined>;
 }

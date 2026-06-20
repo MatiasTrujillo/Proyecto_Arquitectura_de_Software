@@ -134,4 +134,15 @@ export class RepositorioReserva implements IRepositorioReserva {
     const res = await pool.query('SELECT 1 FROM reserva WHERE id = $1', [id]);
     return res.rowCount! > 0;
   }
+
+  async obtenerTamanoTotalProductos(reservaId: string): Promise<number> {
+    const res = await pool.query(
+      `SELECT COALESCE(SUM(p.tamano), 0) AS total
+       FROM reserva r
+       JOIN producto p ON p.id = ANY(r.productos::int[])
+       WHERE r.id = $1`,
+      [reservaId]
+    );
+    return Number(res.rows[0]?.total ?? 0);
+  }
 }

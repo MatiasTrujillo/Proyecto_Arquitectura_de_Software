@@ -43,4 +43,14 @@ export class RepositorioVehiculo implements IRepositorioVehiculo {
 		const res = await pool.query('SELECT 1 FROM vehiculo WHERE id = $1', [id]);
 		return res.rowCount! > 0;
 	}
+
+	async obtenerPorMatricula(matricula: string): Promise<Vehiculo | undefined> {
+		const res = await pool.query(
+			'SELECT id, matricula, tipo, capacidad, dispositivo_gps FROM vehiculo WHERE matricula = $1',
+			[matricula]
+		);
+		if (!res.rows[0]) return undefined;
+		const r = res.rows[0];
+		return new Vehiculo(r.id, r.matricula, r.tipo, r.capacidad, r.dispositivo_gps);
+	}
 }
