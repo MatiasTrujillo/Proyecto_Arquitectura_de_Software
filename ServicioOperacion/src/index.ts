@@ -105,6 +105,18 @@ app.get('/api/zonas-rojas', async (_req, res) => {
   }
 });
 
+// Proxy: todas las zonas geográficas (para el mapa de monitoreo)
+app.get('/api/zonas', async (_req, res) => {
+  try {
+    const resp = await fetch(`${GESTION_URL}/internal/zonas-geograficas`);
+    if (!resp.ok) { res.status(502).json({ error: 'Error al obtener zonas' }); return; }
+    const zonas: any[] = await resp.json();
+    res.json({ data: zonas.map((z: any) => ({ id: z.id, nombre: z.nombre, tipo: z.tipo, delimitacion: z.delimitacion })) });
+  } catch {
+    res.status(503).json({ error: 'ServicioGestion no disponible' });
+  }
+});
+
 // Iniciar auto-simulación GPS cuando el conductor inicia un traslado
 app.post('/internal/simular-gps/iniciar', async (req, res) => {
   const { vehiculoMatricula } = req.body;

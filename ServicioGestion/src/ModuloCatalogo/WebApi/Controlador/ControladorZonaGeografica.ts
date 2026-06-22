@@ -13,7 +13,7 @@ export class ControladorZonaGeografica {
   async crearZona(req: Request, res: Response): Promise<void> {
     try {
       const { nombre, delimitacionGeografica, tipo } = req.body;
-      const zona = await this.servicioZona.crearZona(nombre, delimitacionGeografica, tipo ?? 'regular');
+      const zona = await this.servicioZona.crearZona(nombre, delimitacionGeografica, tipo ?? 'roja');
       res.status(201).json({ data: zona });
     } catch (error) {
       this.manejarError(res, error);
@@ -41,7 +41,7 @@ export class ControladorZonaGeografica {
   async actualizarZona(req: Request, res: Response): Promise<void> {
     try {
       const { nombre, delimitacionGeografica, tipo } = req.body;
-      const zona = await this.servicioZona.actualizarZona(req.params.id as string, nombre, delimitacionGeografica, tipo ?? 'regular');
+      const zona = await this.servicioZona.actualizarZona(req.params.id as string, nombre, delimitacionGeografica, tipo ?? 'roja');
       res.status(200).json({ data: zona });
     } catch (error) {
       this.manejarError(res, error);

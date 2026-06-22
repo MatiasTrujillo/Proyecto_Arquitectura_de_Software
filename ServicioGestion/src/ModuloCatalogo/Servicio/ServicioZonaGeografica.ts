@@ -8,7 +8,7 @@ export class ServicioZonaGeografica implements IServicioZonaGeografica {
   async crearZona(nombre: string, delimitacionGeografica: string, tipo: string): Promise<ZonaGeograficaDTO> {
     if (!nombre?.trim()) throw new Error("Nombre inválido.");
     if (!delimitacionGeografica?.trim()) throw new Error("Delimitación geográfica inválida.");
-    const tiposValidos = ['regular', 'roja', 'geocerca'];
+    const tiposValidos = ['roja', 'preferente'];
     if (!tiposValidos.includes(tipo)) throw new Error(`Tipo inválido. Debe ser: ${tiposValidos.join(', ')}`);
     const zona = await this.repositorio.crearZona(nombre.trim(), delimitacionGeografica.trim(), tipo);
     return ZonaGeograficaDTO.fromEntity(zona);
@@ -31,7 +31,7 @@ export class ServicioZonaGeografica implements IServicioZonaGeografica {
     if (!await this.repositorio.existe(id)) throw new Error(`No se encontró la zona con id ${id}`);
     if (!nombre?.trim()) throw new Error("Nombre inválido.");
     if (!delimitacionGeografica?.trim()) throw new Error("Delimitación geográfica inválida.");
-    const tiposValidos = ['regular', 'roja', 'geocerca'];
+    const tiposValidos = ['roja', 'preferente'];
     if (!tiposValidos.includes(tipo)) throw new Error(`Tipo inválido. Debe ser: ${tiposValidos.join(', ')}`);
     const actualizada = await this.repositorio.actualizarZona(id, nombre.trim(), delimitacionGeografica.trim(), tipo);
     if (!actualizada) throw new Error(`No se pudo actualizar la zona con id ${id}`);

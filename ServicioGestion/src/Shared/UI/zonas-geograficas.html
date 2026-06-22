@@ -32,9 +32,8 @@
         .oculto { display: none; }
         .id-cell { font-family: monospace; font-size: 0.82em; color: #555; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
-        .badge-regular { background: #d4edda; color: #155724; }
         .badge-roja { background: #f8d7da; color: #721c24; }
-        .badge-geocerca { background: #fff3cd; color: #856404; }
+        .badge-preferente { background: #d4edda; color: #155724; }
         td.delimitacion { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 0.8em; }
     </style>
 </head>
@@ -48,9 +47,8 @@
         <input type="text" id="nombre" placeholder="Ej: Zona Norte">
         <label>Tipo</label>
         <select id="tipo">
-            <option value="regular">Regular</option>
-            <option value="roja">Roja (zona prohibida)</option>
-            <option value="geocerca">Geocerca (zona habilitada)</option>
+            <option value="roja">Zona Roja (evitar trayectos)</option>
+            <option value="preferente">Zona Preferente (trayectos recomendados)</option>
         </select>
         <label>Delimitación geográfica</label>
         <textarea id="delimitacion" placeholder='Ej: POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))'></textarea>
@@ -67,9 +65,8 @@
         <input type="text" id="editarNombre">
         <label>Tipo</label>
         <select id="editarTipo">
-            <option value="regular">Regular</option>
-            <option value="roja">Roja (zona prohibida)</option>
-            <option value="geocerca">Geocerca (zona habilitada)</option>
+            <option value="roja">Zona Roja (evitar trayectos)</option>
+            <option value="preferente">Zona Preferente (trayectos recomendados)</option>
         </select>
         <label>Delimitación geográfica</label>
         <textarea id="editarDelimitacion"></textarea>
@@ -101,7 +98,7 @@
 
         let items = [];
 
-        const badgeClass = { regular: 'badge-regular', roja: 'badge-roja', geocerca: 'badge-geocerca' };
+        const badgeClass = { roja: 'badge-roja', preferente: 'badge-preferente' };
 
         async function cargarZonas() {
             try {
