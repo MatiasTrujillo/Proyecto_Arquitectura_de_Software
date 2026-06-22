@@ -14,6 +14,8 @@ import { ControladorReserva } from './ModuloReservas/WebApi/Controlador/Controla
 import { ControladorViaje } from './ModuloReservas/WebApi/Controlador/ControladorViaje';
 import { ControladorIncidente } from './ModuloReservas/WebApi/Controlador/ControladorIncidente';
 import * as reglaCtrl from './ModuloCatalogo/WebApi/Controlador/ControladorReglaCategoria';
+import { compararMetodos, clasificarRapido } from './ModuloCatalogo/Servicio/ServicioClasificacion';
+import { busEventos, EVENTO_RESERVA_CREADA, EVENTO_RESERVA_NO_RECONOCIDA, PayloadReservaNoReconocida, PayloadReservaCreada } from './Shared/Eventos/BusEventos';
 
 import { registradorSolicitudes, manejadorErrores } from './Shared/Logging/requestLogger';
 import { manejadorMetricas } from './Shared/Metrics/metrics';
@@ -275,6 +277,103 @@ app.get('/zonas-geograficas-ui', (req, res) => {
 });
 app.get('/categorias-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'categorias.html'));
+});
+app.get('/reservas-no-reconocidas-ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'reservas-no-reconocidas.html'));
+});
+
+// ── F19: SSE — operadores suscritos reciben notificaciones en tiempo real ──────
+// Patrón pub/sub: el servidor publica eventos en el bus interno;
+// este endpoint actúa como adaptador bus → SSE (HTTP streaming).
+const sseClients: Set<import('express').Response> = new Set();
+
+app.get('/api/notificaciones/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  res.write('data: {"tipo":"conectado"}\n\n');
+
+  sseClients.add(res);
+  req.on('close', () => sseClients.delete(res));
+});
+
+// Suscriptor 1: clasifica la reserva cuando se crea
+busEventos.on(EVENTO_RESERVA_CREADA, async (payload: PayloadReservaCreada) => {
+  try {
+    if (payload.productosIds.length === 0) return;
+    const prodRes = await pool.query(
+      'SELECT descripcion FROM producto WHERE id = ANY($1::int[])',
+      [payload.productosIds]
+    );
+    const descripciones: string[] = prodRes.rows.map((r: any) => r.descripcion).filter(Boolean);
+    if (descripciones.length === 0) return;
+
+    const descripcionCombinada = descripciones.join('. ');
+    const resultados = await clasificarRapido(descripcionCombinada, async (iaResult) => {
+      if (iaResult.categoria) {
+        await pool.query(
+          `UPDATE reserva SET categorias = array_append(categorias, $1) WHERE id = $2 AND NOT ($1 = ANY(categorias))`,
+          [iaResult.categoria, payload.reservaId]
+        ).catch(() => {});
+      }
+    });
+
+    const encontradas = [...new Set(resultados.map(r => r.categoria).filter((c): c is string => c !== null))];
+    if (encontradas.length > 0) {
+      await pool.query('UPDATE reserva SET categorias = $1 WHERE id = $2', [encontradas, payload.reservaId]);
+    } else {
+      // Suscriptor publica segundo evento — ningún método rápido clasificó
+      busEventos.emit(EVENTO_RESERVA_NO_RECONOCIDA, {
+        reservaId: payload.reservaId,
+        clienteId: payload.clienteId,
+        descripcionesBienes: descripciones,
+        resultadosClasificacion: resultados,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (e) {
+    console.error('[ClasificacionSuscriptor]', e);
+  }
+});
+
+// Suscriptor 2: notifica a operadores conectados por SSE
+busEventos.on(EVENTO_RESERVA_NO_RECONOCIDA, (payload: PayloadReservaNoReconocida) => {
+  const data = JSON.stringify({ tipo: 'reserva-no-reconocida', ...payload });
+  for (const client of sseClients) {
+    client.write(`data: ${data}\n\n`);
+  }
+});
+
+// ── R10: endpoint de comparación de los 3 métodos ─────────────────────────────
+app.post('/api/clasificacion/comparar', async (req, res) => {
+  const { descripcion } = req.body;
+  if (!descripcion) { res.status(400).json({ error: 'descripcion requerida' }); return; }
+  try {
+    const resultados = await compararMetodos(String(descripcion));
+    res.json({ descripcion, resultados });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── F19: operador asigna categoría manualmente a reserva no reconocida ─────────
+app.patch('/api/reservas/:id/categorias', async (req, res) => {
+  const { categorias } = req.body;
+  if (!categorias || !Array.isArray(categorias)) { res.status(400).json({ error: 'categorias requeridas' }); return; }
+  try {
+    await pool.query('UPDATE reserva SET categorias = $1 WHERE id = $2', [categorias, req.params.id]);
+    res.json({ mensaje: 'Categorías asignadas' });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── F19: bien fuera de catálogo → simular envío de correo al cliente ───────────
+app.post('/api/reservas/:id/notificar-sin-categoria', async (req, res) => {
+  const { clienteId } = req.body;
+  console.log(`[F19] Correo enviado a cliente ${clienteId}: reserva ${req.params.id} no puede satisfacerse`);
+  res.json({ mensaje: `Correo notificado al cliente ${clienteId}` });
 });
 app.get('/pagos-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'pagos.html'));

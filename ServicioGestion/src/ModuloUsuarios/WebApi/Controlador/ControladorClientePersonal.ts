@@ -8,6 +8,7 @@ import { RepositorioReserva } from "../../../ModuloReservas/DataAccess/Repositor
 import { IServicioPago } from "../../../ModuloPagos/IServicio/IServicioPago";
 import { ServicioPago } from "../../../ModuloPagos/Servicio/ServicioPago";
 import { RepositorioPago } from "../../../ModuloPagos/DataAccess/RepositorioPago";
+import { busEventos, EVENTO_RESERVA_CREADA } from "../../../Shared/Eventos/BusEventos";
 
 export class ControladorClientePersonal {
   private servicioClientePersonal: IServicioClientePersonal;
@@ -86,10 +87,19 @@ export class ControladorClientePersonal {
   async realizarReserva(req: Request, res: Response): Promise<void> {
     try {
       const clienteId = (req as any).usuario?.cedula ?? req.body.clienteId;
-      const { origen, destino, fecha, costo, vehiculo, productos, conductor, categorias } = req.body;
+      const { origen, destino, fecha, costo, vehiculo, productos, conductor } = req.body;
+
       const reserva = await this.servicioReserva.crearReserva(
-        clienteId, origen, destino, fecha, costo, productos ?? [], categorias ?? [], vehiculo, conductor
+        clienteId, origen, destino, fecha, costo, productos ?? [], [], vehiculo, conductor
       );
+
+      // Publicar evento en el bus — el suscriptor de clasificación lo procesa
+      busEventos.emit(EVENTO_RESERVA_CREADA, {
+        reservaId: reserva.getId(),
+        clienteId,
+        productosIds: (productos ?? []).map(Number).filter(Boolean),
+      });
+
       res.status(201).json({ data: reserva });
     } catch (error) {
       this.manejarError(res, error);

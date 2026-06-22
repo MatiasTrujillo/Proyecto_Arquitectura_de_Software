@@ -12,5 +12,31 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  ollama-setup:
+    image: ollama/ollama
+    container_name: ollama-setup
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: >
+      /bin/sh -c "
+        echo 'Esperando que Ollama inicie...';
+        sleep 10;
+        ollama pull tinyllama;
+        echo 'Modelo tinyllama descargado.';
+      "
+    restart: "no"
+
 volumes:
   postgres_data:
+  ollama_data:
