@@ -13,6 +13,7 @@ import { ControladorPago } from './ModuloPagos/WebApi/Controlador/ControladorPag
 import { ControladorReserva } from './ModuloReservas/WebApi/Controlador/ControladorReserva';
 import { ControladorViaje } from './ModuloReservas/WebApi/Controlador/ControladorViaje';
 import { ControladorIncidente } from './ModuloReservas/WebApi/Controlador/ControladorIncidente';
+import * as reglaCtrl from './ModuloCatalogo/WebApi/Controlador/ControladorReglaCategoria';
 
 import { registradorSolicitudes, manejadorErrores } from './Shared/Logging/requestLogger';
 import { manejadorMetricas } from './Shared/Metrics/metrics';
@@ -100,6 +101,15 @@ app.get('/api/productos', productoController.obtenerProducto.bind(productoContro
 app.get('/api/productos/:id', productoController.obtenerProductoPorId.bind(productoController));
 app.put('/api/productos/:id', productoController.actualizarProducto.bind(productoController));
 app.delete('/api/productos/:id', productoController.eliminarProducto.bind(productoController));
+
+// ─── Zonas Geográficas ────────────────────────────────────────────────────────
+// ─── Categorías y Reglas (F8) ─────────────────────────────────────────────────
+app.get('/api/categorias', reglaCtrl.obtenerCategorias);
+app.post('/api/categorias', reglaCtrl.crearCategoria);
+app.get('/api/reglas', reglaCtrl.obtenerReglas);
+app.post('/api/reglas', reglaCtrl.crearRegla);
+app.put('/api/reglas/:id', reglaCtrl.actualizarRegla);
+app.delete('/api/reglas/:id', reglaCtrl.eliminarRegla);
 
 // ─── Zonas Geográficas ────────────────────────────────────────────────────────
 app.post('/api/zonas-geograficas', zonaGeograficaController.crearZona.bind(zonaGeograficaController));
@@ -261,6 +271,9 @@ app.get('/productos-ui', (req, res) => {
 });
 app.get('/zonas-geograficas-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'zonas-geograficas.html'));
+});
+app.get('/categorias-ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'categorias.html'));
 });
 app.get('/pagos-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'pagos.html'));
