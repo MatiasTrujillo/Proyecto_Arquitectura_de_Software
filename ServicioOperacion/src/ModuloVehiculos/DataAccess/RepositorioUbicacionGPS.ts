@@ -44,4 +44,20 @@ export class RepositorioUbicacionGPS {
     if (!res.rows[0]) return null;
     return { lat: parseFloat(res.rows[0].lat), lng: parseFloat(res.rows[0].lng), timestamp: res.rows[0].timestamp };
   }
+
+  async obtenerUltimaByMatricula(matricula: string): Promise<{ lat: number; lng: number; velocidad: number; timestamp: Date } | null> {
+    const res = await pool.query(
+      `SELECT lat, lng, velocidad, timestamp FROM ubicacion_gps
+       WHERE vehiculo_matricula = $1
+       ORDER BY timestamp DESC LIMIT 1`,
+      [matricula]
+    );
+    if (!res.rows[0]) return null;
+    return {
+      lat: parseFloat(res.rows[0].lat),
+      lng: parseFloat(res.rows[0].lng),
+      velocidad: parseFloat(res.rows[0].velocidad),
+      timestamp: res.rows[0].timestamp,
+    };
+  }
 }

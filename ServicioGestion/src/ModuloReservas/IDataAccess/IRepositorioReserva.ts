@@ -11,4 +11,6 @@ export interface IRepositorioReserva {
   obtenerReservasSinViaje(): Promise<Reserva[]>;
   existe(id: string): Promise<boolean>;
   obtenerTamanoTotalProductos(reservaId: string): Promise<number>;
+  vehiculoEnViajeActivo(vehiculo: string): Promise<boolean>;
+  obtenerVehiculosOcupados(): Promise<string[]>;
 }

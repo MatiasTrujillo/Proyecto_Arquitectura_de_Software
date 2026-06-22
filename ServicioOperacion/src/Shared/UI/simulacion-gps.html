@@ -171,7 +171,7 @@
         for (const d of json.data) {
           const opt = document.createElement('option');
           opt.value = d.id;
-          opt.textContent = `ID ${d.id} — ${d.ubicacion || 'sin descripción'}`;
+          opt.textContent = `GPS #${d.id}${d.nombre ? ' — ' + d.nombre : ''}`;
           sel.appendChild(opt);
         }
       } catch {

@@ -80,9 +80,15 @@ export class ServicioReserva implements IServicioReserva {
     this.validarCampo(vehiculo,  'vehiculo');
     this.validarCampo(conductor, 'conductor');
     await this.validarCapacidadVehiculo(reservaId, vehiculo);
+    await this.validarVehiculoDisponible(vehiculo);
     const reserva = await this.repositorio.asignarYCrearViajeAtomico(reservaId, vehiculo, conductor);
     if (!reserva) throw new Error(`No se encontró la reserva con id ${reservaId}`);
     return ReservaDTO.fromEntity(reserva);
+  }
+
+  private async validarVehiculoDisponible(vehiculo: string): Promise<void> {
+    const ocupado = await this.repositorio.vehiculoEnViajeActivo(vehiculo);
+    if (ocupado) throw new Error(`El vehículo ${vehiculo} ya está asignado a un traslado activo`);
   }
 
   private async validarCapacidadVehiculo(reservaId: string, vehiculoMatricula: string): Promise<void> {

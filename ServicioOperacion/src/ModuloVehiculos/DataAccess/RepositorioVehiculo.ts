@@ -53,4 +53,14 @@ export class RepositorioVehiculo implements IRepositorioVehiculo {
 		const r = res.rows[0];
 		return new Vehiculo(r.id, r.matricula, r.tipo, r.capacidad, r.dispositivo_gps);
 	}
+
+	async obtenerPorDispositivoGps(dispositivoGpsId: string): Promise<Vehiculo | undefined> {
+		const res = await pool.query(
+			'SELECT id, matricula, tipo, capacidad, dispositivo_gps FROM vehiculo WHERE dispositivo_gps = $1',
+			[dispositivoGpsId]
+		);
+		if (!res.rows[0]) return undefined;
+		const r = res.rows[0];
+		return new Vehiculo(r.id, r.matricula, r.tipo, r.capacidad, r.dispositivo_gps);
+	}
 }

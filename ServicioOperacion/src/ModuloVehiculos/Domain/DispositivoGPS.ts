@@ -1,21 +1,21 @@
 export class DispositivoGPS {
   private id: number;
-  private ubicacion: string;
+  private nombre: string;
 
-  constructor(id: number, ubicacion: string = '') {
+  constructor(id: number, nombre: string = '') {
     this.id = id;
-    this.ubicacion = ubicacion;
+    this.nombre = nombre;
   }
 
   getId(): number {
     return this.id;
   }
 
-  getUbicacion(): string {
-    return this.ubicacion;
+  getNombre(): string {
+    return this.nombre;
   }
 
-  setUbicacion(ubicacion: string): void {
-    this.ubicacion = ubicacion;
+  setNombre(nombre: string): void {
+    this.nombre = nombre;
   }
 }

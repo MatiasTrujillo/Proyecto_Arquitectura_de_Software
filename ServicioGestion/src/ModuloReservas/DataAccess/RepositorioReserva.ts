@@ -104,7 +104,7 @@ export class RepositorioReserva implements IRepositorioReserva {
 
       await client.query(
         `INSERT INTO viaje (reserva_id, origen, destino, fecha, estado, conductor, vehiculo)
-         SELECT $1, $2, $3, $4, 'Pendiente', $5, $6
+         SELECT $1::text, $2, $3, $4, 'Pendiente', $5, $6
          WHERE NOT EXISTS (SELECT 1 FROM viaje WHERE reserva_id = $1::text)`,
         [reservaId, r.origen, r.destino, r.fecha, conductor, vehiculo]
       );
@@ -133,6 +133,30 @@ export class RepositorioReserva implements IRepositorioReserva {
   async existe(id: string): Promise<boolean> {
     const res = await pool.query('SELECT 1 FROM reserva WHERE id = $1', [id]);
     return res.rowCount! > 0;
+  }
+
+  async vehiculoEnViajeActivo(vehiculo: string): Promise<boolean> {
+    const res = await pool.query(
+      `SELECT 1 FROM reserva r
+       LEFT JOIN viaje v ON v.reserva_id = r.id::text
+       WHERE r.vehiculo = $1
+         AND r.estado != 'Cancelado'
+         AND (v.id IS NULL OR v.estado NOT IN ('Finalizado', 'Cancelado'))
+       LIMIT 1`,
+      [vehiculo]
+    );
+    return res.rowCount! > 0;
+  }
+
+  async obtenerVehiculosOcupados(): Promise<string[]> {
+    const res = await pool.query(
+      `SELECT DISTINCT r.vehiculo FROM reserva r
+       LEFT JOIN viaje v ON v.reserva_id = r.id::text
+       WHERE r.vehiculo IS NOT NULL AND r.vehiculo != ''
+         AND r.estado != 'Cancelado'
+         AND (v.id IS NULL OR v.estado NOT IN ('Finalizado', 'Cancelado'))`
+    );
+    return res.rows.map((r: any) => r.vehiculo);
   }
 
   async obtenerTamanoTotalProductos(reservaId: string): Promise<number> {

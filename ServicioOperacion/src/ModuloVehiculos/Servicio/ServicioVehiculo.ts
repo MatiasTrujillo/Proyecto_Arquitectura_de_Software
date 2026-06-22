@@ -78,7 +78,7 @@ export class ServicioVehiculo implements IServicioVehiculo {
   }
 
   private validarDispositivo(d: string): string {
-    if (!d) return "";
-    return d;
+    if (!d || String(d).trim().length === 0) throw new Error("El dispositivo GPS es obligatorio");
+    return String(d).trim();
   }
 }

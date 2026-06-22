@@ -156,17 +156,24 @@
 
         async function cargarVehiculos() {
             try {
-                const res  = await fetch('http://localhost:3000/api/vehiculos', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                const json = await res.json();
-                const vehiculos = json.data || [];
+                const resV = await fetch('http://localhost:3000/api/vehiculos', { headers: { 'Authorization': 'Bearer ' + token } });
+                const vehiculos = ((await resV.json()).data || []);
+
+                let ocupados = new Set();
+                try {
+                    const resOcup = await apiFetch('/api/viajes/vehiculos-ocupados');
+                    if (resOcup.ok) ocupados = new Set((await resOcup.json()).data || []);
+                } catch (e) { console.error('Error cargando ocupados:', e); }
+
                 const sel = document.getElementById('selVehiculo');
                 sel.innerHTML = '<option value="">— Seleccioná un vehículo —</option>';
                 vehiculos.forEach(v => {
+                    const enUso = ocupados.has(v.matricula);
                     const opt = document.createElement('option');
-                    opt.value       = v.matricula;
-                    opt.textContent = `${v.matricula} · ${v.tipo} (cap. ${v.capacidad})`;
+                    opt.value    = v.matricula;
+                    opt.textContent = `${v.matricula} · ${v.tipo} (cap. ${v.capacidad})${enUso ? ' — EN USO' : ''}`;
+                    opt.disabled = enUso;
+                    if (enUso) opt.style.color = '#aaa';
                     sel.appendChild(opt);
                 });
             } catch (e) { console.error('Error cargando vehículos:', e); }
@@ -302,7 +309,7 @@
 
         cargarDropdowns();
         cargarReservas();
-        setInterval(() => { cargarReservas(); cargarReservasDisp(); }, 5000);
+        setInterval(() => { cargarReservas(); cargarReservasDisp(); cargarVehiculos(); }, 5000);
     </script>
 </body>
 </html>

@@ -5,6 +5,7 @@ import { IServicioDispositivoGPS } from '../../IServicio/IServicioDispositivoGPS
 import { RepositorioUbicacionGPS } from '../../DataAccess/RepositorioUbicacionGPS';
 import { RepositorioAlerta } from '../../DataAccess/RepositorioAlerta';
 import { pointInPolygon, distanciaMetros } from '../../../Shared/Utils/geoUtils';
+import { RepositorioVehiculo } from '../../DataAccess/RepositorioVehiculo';
 
 const GESTION_URL = process.env.GESTION_URL || 'http://localhost:3001';
 
@@ -23,8 +24,8 @@ export class ControladorDispositivoGPS {
 
   async crearDispositivoGPS(req: Request, res: Response): Promise<void> {
     try {
-      const { ubicacion } = req.body;
-      const dispositivoDTO = await this.servicio.crearDispositivoGPS(ubicacion);
+      const { nombre } = req.body;
+      const dispositivoDTO = await this.servicio.crearDispositivoGPS(nombre);
       res.status(201).json({ data: dispositivoDTO });
     } catch (error) {
       this.manejarError(res, error);
@@ -53,8 +54,8 @@ export class ControladorDispositivoGPS {
   async actualizarDispositivoGPS(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { ubicacion } = req.body;
-      const dispositivoDTO = await this.servicio.actualizarDispositivoGPS(Number(id), ubicacion);
+      const { nombre } = req.body;
+      const dispositivoDTO = await this.servicio.actualizarDispositivoGPS(Number(id), nombre);
       res.status(200).json({ data: dispositivoDTO });
     } catch (error) {
       this.manejarError(res, error);
@@ -93,10 +94,20 @@ export class ControladorDispositivoGPS {
         return;
       }
 
+      // Auto-detectar el vehículo asociado al dispositivo GPS
+      let matriculaResuelta: string | undefined = vehiculoMatricula ?? undefined;
+      if (!matriculaResuelta) {
+        try {
+          const repoVehiculo = new RepositorioVehiculo();
+          const vehiculo = await repoVehiculo.obtenerPorDispositivoGps(String(idNum));
+          matriculaResuelta = vehiculo?.getMatricula() ?? undefined;
+        } catch {}
+      }
+
       // Guardar posición
       await this.repoUbicacion.guardar({
         dispositivoId: idNum,
-        vehiculoMatricula: vehiculoMatricula ?? undefined,
+        vehiculoMatricula: matriculaResuelta,
         lat: latNum,
         lng: lngNum,
         velocidad: velNum,
