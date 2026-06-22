@@ -210,19 +210,25 @@
     iconSize: [16, 16], iconAnchor: [8, 8],
   });
 
-  // Cargar zonas rojas como polígonos en el mapa
+  // Cargar zonas geográficas como polígonos en el mapa
   async function cargarZonas() {
     try {
-      const resp = await fetch('/api/zonas-rojas');
+      const resp = await fetch('/api/zonas');
       if (!resp.ok) return;
       const json = await resp.json();
       for (const zona of (json.data || [])) {
         try {
           const coords = JSON.parse(zona.delimitacion);
+          const esRoja = zona.tipo === 'roja';
           L.polygon(coords, {
-            color: '#cc0000', fillColor: '#ff000033',
-            fillOpacity: 0.25, weight: 2,
-          }).addTo(mapa).bindTooltip(`🔴 ${zona.nombre}`, { permanent: false });
+            color:       esRoja ? '#cc0000' : '#007700',
+            fillColor:   esRoja ? '#ff000033' : '#00aa0033',
+            fillOpacity: 0.25,
+            weight: 2,
+          }).addTo(mapa).bindTooltip(
+            `${esRoja ? '🔴' : '🟢'} ${zona.nombre} (${esRoja ? 'Zona Roja' : 'Zona Preferente'})`,
+            { permanent: false }
+          );
         } catch {}
       }
     } catch {}
