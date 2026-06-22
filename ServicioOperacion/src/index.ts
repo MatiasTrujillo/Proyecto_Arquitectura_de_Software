@@ -189,7 +189,13 @@ app.get('/api/ubicaciones/ultima', async (req, res) => {
 // Proxy: viajes en curso desde ServicioGestion (para el mapa de monitoreo del operador)
 app.get('/api/proxy/viajes-en-curso', async (req, res) => {
   try {
-    const resp = await fetch(`${GESTION_URL}/internal/viajes/en-curso`);
+    const params = new URLSearchParams();
+    if (req.query.vehiculo)     params.append('vehiculo',     String(req.query.vehiculo));
+    if (req.query.conductor)    params.append('conductor',    String(req.query.conductor));
+    if (req.query.categoria)    params.append('categoria',    String(req.query.categoria));
+    if (req.query.tieneAlertas) params.append('tieneAlertas', String(req.query.tieneAlertas));
+    const qs = params.toString();
+    const resp = await fetch(`${GESTION_URL}/internal/viajes/en-curso${qs ? '?' + qs : ''}`);
     if (!resp.ok) { res.status(502).json({ error: 'Error al obtener viajes' }); return; }
     const viajes = await resp.json();
     res.json({ data: viajes });

@@ -183,13 +183,39 @@ app.get('/internal/zonas-geograficas', async (_req, res) => {
   }
 });
 
-app.get('/internal/viajes/en-curso', async (_req, res) => {
+app.get('/internal/viajes/en-curso', async (req, res) => {
   try {
+    const { vehiculo, conductor, categoria, tieneAlertas } = req.query;
+    const condiciones: string[] = ["v.estado NOT IN ('Finalizado', 'Cancelado')"];
+    const valores: any[] = [];
+
+    if (vehiculo) {
+      valores.push(vehiculo);
+      condiciones.push(`v.vehiculo = $${valores.length}`);
+    }
+    if (conductor) {
+      valores.push(conductor);
+      condiciones.push(`v.conductor = $${valores.length}`);
+    }
+    if (categoria) {
+      valores.push(categoria);
+      condiciones.push(`$${valores.length} = ANY(r.categorias)`);
+    }
+    if (tieneAlertas !== undefined && tieneAlertas !== '') {
+      valores.push(tieneAlertas === 'true');
+      condiciones.push(`v.tiene_alertas = $${valores.length}`);
+    }
+
+    const joinClause = categoria
+      ? 'LEFT JOIN reserva r ON r.id::text = v.reserva_id'
+      : '';
+
     const result = await pool.query(
-      `SELECT id, reserva_id, origen, destino, fecha, estado, conductor, vehiculo, tiene_alertas
-       FROM viaje
-       WHERE estado NOT IN ('Finalizado', 'Cancelado')
-       ORDER BY fecha ASC`
+      `SELECT v.id, v.reserva_id, v.origen, v.destino, v.fecha, v.estado, v.conductor, v.vehiculo, v.tiene_alertas
+       FROM viaje v ${joinClause}
+       WHERE ${condiciones.join(' AND ')}
+       ORDER BY v.fecha ASC`,
+      valores
     );
     res.json(result.rows);
   } catch (e) {
