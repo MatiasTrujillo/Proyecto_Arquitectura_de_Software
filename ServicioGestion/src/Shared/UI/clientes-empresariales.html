@@ -111,7 +111,28 @@
 
     <div class="accion">
         <strong>Mis Reservas</strong>
-        <button onclick="verMisReservas()" style="margin-bottom:10px">Actualizar</button>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px;margin-top:8px">
+            <div>
+                <label style="display:block;font-size:0.85em;color:#555">Desde</label>
+                <input type="date" id="filtroFechaDesde" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+            </div>
+            <div>
+                <label style="display:block;font-size:0.85em;color:#555">Hasta</label>
+                <input type="date" id="filtroFechaHasta" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+            </div>
+            <div>
+                <label style="display:block;font-size:0.85em;color:#555">Estado</label>
+                <select id="filtroEstado" style="padding:6px;border:1px solid #ccc;border-radius:4px">
+                    <option value="">Todos</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Pagado">Pagado</option>
+                    <option value="En curso">En curso</option>
+                    <option value="Cancelado">Cancelado</option>
+                </select>
+            </div>
+            <button onclick="verMisReservas()">Filtrar</button>
+            <button onclick="limpiarFiltrosReservas()" style="background:#6c757d">Limpiar</button>
+        </div>
         <div id="mensajePago"></div>
         <table id="tablaReservasCliente" style="display:none">
             <thead><tr><th>ID</th><th>Origen</th><th>Destino</th><th>Fecha</th><th>Estado</th><th>Costo</th><th>Acción</th></tr></thead>
@@ -388,11 +409,30 @@
 
         let misReservas = [];
 
+        function limpiarFiltrosReservas() {
+            document.getElementById('filtroFechaDesde').value = '';
+            document.getElementById('filtroFechaHasta').value = '';
+            document.getElementById('filtroEstado').value = '';
+            verMisReservas();
+        }
+
         async function verMisReservas() {
             const msgEl = document.getElementById('mensajePago');
             msgEl.innerHTML = '';
+            const fechaDesde = document.getElementById('filtroFechaDesde').value;
+            const fechaHasta = document.getElementById('filtroFechaHasta').value;
+            const estado     = document.getElementById('filtroEstado').value;
+            if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
+                msgEl.innerHTML = '<div class="error">La fecha desde no puede ser mayor a la fecha hasta</div>';
+                return;
+            }
+            const params = new URLSearchParams();
+            if (fechaDesde) params.append('fechaDesde', fechaDesde);
+            if (fechaHasta) params.append('fechaHasta', fechaHasta);
+            if (estado)     params.append('estado', estado);
+            const qs = params.toString();
             try {
-                const res = await apiFetch('/api/clientes-empresariales/me/reservas');
+                const res = await apiFetch('/api/clientes-empresariales/me/reservas' + (qs ? '?' + qs : ''));
                 const json = await res.json();
                 misReservas = json.data || [];
                 const lista = misReservas;

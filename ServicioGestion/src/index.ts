@@ -19,6 +19,7 @@ import { registradorSolicitudes, manejadorErrores } from './Shared/Logging/reque
 import { manejadorMetricas } from './Shared/Metrics/metrics';
 import { verificarAutorizacion } from './Shared/Auth/middlewareAuth';
 import ejecutarMigraciones from './Shared/Database/MigracionesRunner';
+import { seedCategorias } from './Shared/Database/SeedCategorias';
 import { RepositorioClientesFrecuentes } from './ModuloUsuarios/DataAccess/RepositorioClientesFrecuentes';
 import { colaReservas } from './ModuloReservas/WebApi/Cola/ColaPrioridad';
 import pool from './Shared/Database/DatabaseConnection';
@@ -300,6 +301,9 @@ app.use(manejadorErrores);
 
 ejecutarMigraciones()
   .then(async () => {
+    // Seed categorías MOVE desde CSV
+    await seedCategorias();
+
     // Calcular top 20 clientes frecuentes al arrancar (R1 - Priority Queue)
     try {
       const n = await new RepositorioClientesFrecuentes().actualizarTop20();

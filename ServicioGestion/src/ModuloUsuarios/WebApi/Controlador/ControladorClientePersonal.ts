@@ -99,7 +99,8 @@ export class ControladorClientePersonal {
   async obtenerReservas(req: Request, res: Response): Promise<void> {
     try {
       const clienteId = (req as any).usuario?.cedula ?? req.params.clienteId;
-      const reservas = await this.servicioReserva.obtenerReservasPorCliente(clienteId as string);
+      const { fechaDesde, fechaHasta, estado } = req.query as Record<string, string>;
+      const reservas = await this.servicioReserva.obtenerReservasPorCliente(clienteId as string, fechaDesde, fechaHasta, estado);
       res.status(200).json({ data: reservas });
     } catch (error) {
       this.manejarError(res, error);
