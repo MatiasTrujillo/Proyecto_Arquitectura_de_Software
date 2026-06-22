@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Categorías y Reglas</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+    h1 { margin-top: 0; color: #333; }
+    .nav { margin-bottom: 20px; }
+    a.btn-nav { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+    a.btn-nav:hover { background: #0052a3; }
+
+    .formulario { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #ddd; }
+    label { display: block; margin-top: 10px; font-weight: bold; font-size: 13px; }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%; padding: 7px; margin-top: 4px; border: 1px solid #ddd;
+      border-radius: 4px; box-sizing: border-box; font-size: 13px;
+    }
+    .check-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; }
+    .check-row label { margin: 0; font-weight: normal; }
+    button { padding: 8px 14px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; font-size: 13px; }
+    button:hover { background: #0052a3; }
+    .btn-cancelar { background: #888; margin-left: 8px; }
+    .btn-cancelar:hover { background: #666; }
+    .oculto { display: none; }
+    .error { color: red; margin-top: 8px; font-size: 13px; }
+    .exito { color: green; margin-top: 8px; font-size: 13px; }
+
+    .info-reglas { background: #eaf2ff; border: 1px solid #b3d1f7; border-radius: 6px; padding: 10px 14px; margin-bottom: 18px; font-size: 13px; }
+    .info-reglas strong { color: #0055aa; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f0f0f0; font-weight: bold; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+    .badge-si  { background: #d4edda; color: #155724; }
+    .badge-no  { background: #f0f0f0; color: #555; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; color: white; margin: 0 2px; }
+    .btn-edit { background: #e07b00; }
+    .btn-edit:hover { background: #b56200; }
+    .btn-del  { background: #cc0000; }
+    .btn-del:hover { background: #990000; }
+    .btn-crear-regla { background: #0066cc; margin: 0; }
+    .btn-crear-regla:hover { background: #0052a3; }
+    .btn-crear-regla:disabled { background: #aaa; cursor: not-allowed; }
+    .sin-regla { color: #888; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="nav"><a class="btn-nav" href="javascript:history.back()">← Volver</a></div>
+  <h1>Categorías y Reglas de Traslado</h1>
+
+  <div class="info-reglas" id="infoReglas">
+    Reglas definidas: <strong id="contadorReglas">0 / 5</strong>
+    <span id="alertaMax" class="oculto" style="color:#cc0000;margin-left:10px;">⚠ Límite máximo alcanzado</span>
+  </div>
+
+  <!-- Crear regla -->
+  <div class="formulario oculto" id="formRegla">
+    <h2 id="tituloFormRegla">Crear regla</h2>
+    <input type="hidden" id="reglaId">
+    <label>Categoría</label>
+    <select id="reglaCategoria"></select>
+    <div class="check-row">
+      <input type="checkbox" id="reqMonitoreo">
+      <label for="reqMonitoreo">Requiere monitoreo especial</label>
+    </div>
+    <div class="check-row">
+      <input type="checkbox" id="genAlertas">
+      <label for="genAlertas">Genera alertas ante desvíos</label>
+    </div>
+    <label>Recargo en costo (%)</label>
+    <input type="number" id="recargoPct" min="0" max="100" step="0.5" value="0" style="width:120px">
+    <br>
+    <button onclick="guardarRegla()">Guardar</button>
+    <button class="btn-cancelar" onclick="cerrarFormRegla()">Cancelar</button>
+    <div id="mensajeRegla"></div>
+  </div>
+
+  <!-- Crear categoría personalizada -->
+  <div class="formulario oculto" id="formCategoria">
+    <h2>Agregar categoría personalizada</h2>
+    <label>Nombre (inglés)</label>
+    <input type="text" id="catNombre" placeholder="Ej: hazardous">
+    <label>Nombre (español)</label>
+    <input type="text" id="catNombreEs" placeholder="Ej: materiales peligrosos">
+    <label>Descripción</label>
+    <textarea id="catDescripcion" rows="2" placeholder="Descripción opcional"></textarea>
+    <br>
+    <button onclick="guardarCategoria()">Crear categoría</button>
+    <button class="btn-cancelar" onclick="document.getElementById('formCategoria').classList.add('oculto')">Cancelar</button>
+    <div id="mensajeCategoria"></div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-bottom:14px">
+    <button id="btnNuevaRegla" onclick="abrirFormRegla()" style="margin:0">+ Nueva regla</button>
+    <button onclick="document.getElementById('formCategoria').classList.toggle('oculto')" style="margin:0;background:#555">+ Nueva categoría</button>
+  </div>
+
+  <h2>Categorías MOVE</h2>
+  <table id="tablaCategoriasReglas">
+    <thead>
+      <tr>
+        <th>Categoría</th>
+        <th>Descripción</th>
+        <th>Monitoreo</th>
+        <th>Alertas</th>
+        <th>Recargo</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody><tr><td colspan="6">Cargando...</td></tr></tbody>
+  </table>
+
+  <script>
+    const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
+    const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
+    if (token) sessionStorage.setItem('auth_token', token);
+    if (rol)   sessionStorage.setItem('auth_rol',   rol);
+    if (!token) window.location.href = 'http://localhost:3002/';
+
+    const H = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+
+    let categorias = [];
+    let reglas = [];
+
+    async function cargar() {
+      try {
+        const [rc, rr] = await Promise.all([
+          fetch('/api/categorias', { headers: H }).then(r => r.json()),
+          fetch('/api/reglas',     { headers: H }).then(r => r.json()),
+        ]);
+        categorias = rc.data || [];
+        reglas     = rr.data || [];
+        renderTabla();
+        actualizarContador();
+      } catch (e) {
+        document.querySelector('#tablaCategoriasReglas tbody').innerHTML =
+          `<tr><td colspan="6" class="error">Error al cargar: ${e.message}</td></tr>`;
+      }
+    }
+
+    function reglaDeCategoria(categoriaId) {
+      return reglas.find(r => r.categoriaId === categoriaId);
+    }
+
+    function actualizarContador() {
+      const n = reglas.length;
+      document.getElementById('contadorReglas').textContent = `${n} / 5`;
+      document.getElementById('alertaMax').classList.toggle('oculto', n < 5);
+      document.getElementById('btnNuevaRegla').disabled = n >= 5;
+    }
+
+    function renderTabla() {
+      const tbody = document.querySelector('#tablaCategoriasReglas tbody');
+      if (categorias.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">No hay categorías</td></tr>';
+        return;
+      }
+      tbody.innerHTML = categorias.map(c => {
+        const regla = reglaDeCategoria(c.id);
+        if (regla) {
+          return `<tr>
+            <td><strong>${c.nombreEs}</strong><br><small style="color:#888">${c.nombre}</small></td>
+            <td>${c.descripcion || '—'}</td>
+            <td><span class="badge ${regla.requiereMonitoreo ? 'badge-si' : 'badge-no'}">${regla.requiereMonitoreo ? 'Sí' : 'No'}</span></td>
+            <td><span class="badge ${regla.generaAlertas ? 'badge-si' : 'badge-no'}">${regla.generaAlertas ? 'Sí' : 'No'}</span></td>
+            <td>${regla.recargoPorcentaje > 0 ? '+' + regla.recargoPorcentaje + '%' : '—'}</td>
+            <td>
+              <button class="btn-sm btn-edit" onclick="editarRegla(${regla.id})">Editar</button>
+              <button class="btn-sm btn-del"  onclick="eliminarRegla(${regla.id})">Eliminar</button>
+            </td>
+          </tr>`;
+        } else {
+          const max = reglas.length >= 5;
+          return `<tr>
+            <td><strong>${c.nombreEs}</strong><br><small style="color:#888">${c.nombre}</small></td>
+            <td>${c.descripcion || '—'}</td>
+            <td colspan="3"><span class="sin-regla">Sin regla</span></td>
+            <td><button class="btn-sm btn-crear-regla" onclick="abrirFormRegla(${c.id})" ${max ? 'disabled title="Límite de 5 reglas alcanzado"' : ''}>+ Regla</button></td>
+          </tr>`;
+        }
+      }).join('');
+    }
+
+    function abrirFormRegla(categoriaIdPreseleccionada) {
+      document.getElementById('reglaId').value = '';
+      document.getElementById('reqMonitoreo').checked = false;
+      document.getElementById('genAlertas').checked   = false;
+      document.getElementById('recargoPct').value     = 0;
+      document.getElementById('mensajeRegla').innerHTML = '';
+      document.getElementById('tituloFormRegla').textContent = 'Crear regla';
+
+      const sel = document.getElementById('reglaCategoria');
+      const sinRegla = categorias.filter(c => !reglaDeCategoria(c.id));
+      sel.innerHTML = sinRegla.map(c =>
+        `<option value="${c.id}" ${c.id === categoriaIdPreseleccionada ? 'selected' : ''}>${c.nombreEs} (${c.nombre})</option>`
+      ).join('');
+      sel.disabled = false;
+
+      document.getElementById('formRegla').classList.remove('oculto');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function editarRegla(id) {
+      const regla = reglas.find(r => r.id === id);
+      if (!regla) return;
+      document.getElementById('reglaId').value            = regla.id;
+      document.getElementById('reqMonitoreo').checked     = regla.requiereMonitoreo;
+      document.getElementById('genAlertas').checked       = regla.generaAlertas;
+      document.getElementById('recargoPct').value         = regla.recargoPorcentaje;
+      document.getElementById('mensajeRegla').innerHTML   = '';
+      document.getElementById('tituloFormRegla').textContent = `Editar regla — ${regla.categoriaNombreEs}`;
+
+      const sel = document.getElementById('reglaCategoria');
+      const cat = categorias.find(c => c.id === regla.categoriaId);
+      sel.innerHTML = `<option value="${cat.id}">${cat.nombreEs} (${cat.nombre})</option>`;
+      sel.disabled = true;
+
+      document.getElementById('formRegla').classList.remove('oculto');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cerrarFormRegla() {
+      document.getElementById('formRegla').classList.add('oculto');
+    }
+
+    async function guardarRegla() {
+      const id              = document.getElementById('reglaId').value;
+      const categoriaId     = Number(document.getElementById('reglaCategoria').value);
+      const reqMonitoreo    = document.getElementById('reqMonitoreo').checked;
+      const genAlertas      = document.getElementById('genAlertas').checked;
+      const recargoPct      = Number(document.getElementById('recargoPct').value);
+      const msgEl           = document.getElementById('mensajeRegla');
+
+      try {
+        let resp;
+        if (id) {
+          resp = await fetch(`/api/reglas/${id}`, {
+            method: 'PUT', headers: H,
+            body: JSON.stringify({ requiereMonitoreo: reqMonitoreo, generaAlertas: genAlertas, recargoPorcentaje: recargoPct })
+          });
+        } else {
+          resp = await fetch('/api/reglas', {
+            method: 'POST', headers: H,
+            body: JSON.stringify({ categoriaId, requiereMonitoreo: reqMonitoreo, generaAlertas: genAlertas, recargoPorcentaje: recargoPct })
+          });
+        }
+        if (resp.ok) {
+          msgEl.innerHTML = `<div class="exito">Regla ${id ? 'actualizada' : 'creada'} correctamente</div>`;
+          setTimeout(() => { cerrarFormRegla(); cargar(); }, 800);
+        } else {
+          const err = await resp.json();
+          msgEl.innerHTML = `<div class="error">Error: ${err.error}</div>`;
+        }
+      } catch (e) {
+        msgEl.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+      }
+    }
+
+    async function eliminarRegla(id) {
+      if (!confirm('¿Eliminar esta regla?')) return;
+      try {
+        const resp = await fetch(`/api/reglas/${id}`, { method: 'DELETE', headers: H });
+        if (resp.ok) {
+          cargar();
+        } else {
+          const err = await resp.json();
+          alert('No se pudo eliminar: ' + err.error);
+        }
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    }
+
+    async function guardarCategoria() {
+      const nombre      = document.getElementById('catNombre').value.trim();
+      const nombreEs    = document.getElementById('catNombreEs').value.trim();
+      const descripcion = document.getElementById('catDescripcion').value.trim();
+      const msgEl       = document.getElementById('mensajeCategoria');
+      try {
+        const resp = await fetch('/api/categorias', {
+          method: 'POST', headers: H,
+          body: JSON.stringify({ nombre, nombreEs, descripcion })
+        });
+        if (resp.ok) {
+          msgEl.innerHTML = '<div class="exito">Categoría creada</div>';
+          document.getElementById('catNombre').value = '';
+          document.getElementById('catNombreEs').value = '';
+          document.getElementById('catDescripcion').value = '';
+          cargar();
+        } else {
+          const err = await resp.json();
+          msgEl.innerHTML = `<div class="error">Error: ${err.error}</div>`;
+        }
+      } catch (e) {
+        msgEl.innerHTML = `<div class="error">Error: ${e.message}</div>`;
+      }
+    }
+
+    cargar();
+  </script>
+</body>
+</html>
