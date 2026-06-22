@@ -2,18 +2,18 @@ import { DispositivoGPS } from "../Domain/DispositivoGPS";
 
 export class DispositivoGPSDTO {
   id: number;
-  ubicacion: string;
+  nombre: string;
 
-  constructor(id: number, ubicacion: string = '') {
+  constructor(id: number, nombre: string = '') {
     this.id = id;
-    this.ubicacion = ubicacion;
+    this.nombre = nombre;
   }
 
   static fromEntity(entidad: DispositivoGPS): DispositivoGPSDTO {
-    return new DispositivoGPSDTO(entidad.getId(), entidad.getUbicacion());
+    return new DispositivoGPSDTO(entidad.getId(), entidad.getNombre());
   }
 
   toEntity(): DispositivoGPS {
-    return new DispositivoGPS(this.id, this.ubicacion);
+    return new DispositivoGPS(this.id, this.nombre);
   }
 }

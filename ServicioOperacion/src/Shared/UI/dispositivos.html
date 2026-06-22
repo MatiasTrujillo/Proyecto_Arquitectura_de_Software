@@ -57,8 +57,8 @@
     <!-- Formulario crear -->
     <div class="formulario" id="formularioCrear">
         <h2>Crear Dispositivo</h2>
-        <label>Ubicación</label>
-        <input type="text" id="ubicacion" placeholder="Ej: -34.6037,-58.3816">
+        <label>Nombre</label>
+        <input type="text" id="nombre">
         <br>
         <button onclick="crearDispositivo()">Crear</button>
         <div id="mensajeCrear"></div>
@@ -68,7 +68,7 @@
     <div class="formulario oculto" id="formularioEditar">
         <h2>Editar Dispositivo <span id="tituloIdEditar"></span></h2>
         <input type="hidden" id="editarId">
-        <label>Ubicación</label>
+        <label>Nombre</label>
         <input type="text" id="editarUbicacion">
         <br>
         <button onclick="guardarEdicion()">Guardar cambios</button>
@@ -81,7 +81,7 @@
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Ubicación</th>
+                <th>Nombre</th>
                 <th>Acción</th>
             </tr>
         </thead>
@@ -110,9 +110,9 @@
                 tbody.innerHTML = dispositivos.map(d => `
                     <tr>
                         <td>${d.id}</td>
-                        <td>${d.ubicacion}</td>
+                        <td>${d.nombre}</td>
                         <td>
-                            <button class="btn-editar" onclick="abrirEdicion(${d.id}, '${d.ubicacion}')">Editar</button>
+                            <button class="btn-editar" onclick="abrirEdicion(${d.id}, '${d.nombre}')">Editar</button>
                             <button class="btn-eliminar" onclick="eliminarDispositivo(${d.id})">Eliminar</button>
                         </td>
                     </tr>
@@ -124,9 +124,9 @@
         }
 
         async function crearDispositivo() {
-            const ubicacion = document.getElementById('ubicacion').value;
-            if (!ubicacion) {
-                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá la ubicación</div>';
+            const nombre = document.getElementById('nombre').value;
+            if (!nombre) {
+                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá el nombre</div>';
                 return;
             }
 
@@ -134,12 +134,12 @@
                 const respuesta = await fetch('/api/dispositivos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ubicacion })
+                    body: JSON.stringify({ nombre })
                 });
 
                 if (respuesta.ok) {
                     document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Dispositivo creado</div>';
-                    document.getElementById('ubicacion').value = '';
+                    document.getElementById('nombre').value = '';
                     cargarDispositivos();
                 } else {
                     const err = await respuesta.json();
@@ -150,12 +150,12 @@
             }
         }
 
-        function abrirEdicion(id, ubicacion) {
+        function abrirEdicion(id, nombre) {
             document.getElementById('formularioEditar').classList.remove('oculto');
             document.getElementById('formularioCrear').classList.add('oculto');
             document.getElementById('tituloIdEditar').textContent = `#${id}`;
             document.getElementById('editarId').value = id;
-            document.getElementById('editarUbicacion').value = ubicacion;
+            document.getElementById('editarUbicacion').value = nombre;
             document.getElementById('mensajeEditar').innerHTML = '';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -167,10 +167,10 @@
 
         async function guardarEdicion() {
             const id = document.getElementById('editarId').value;
-            const ubicacion = document.getElementById('editarUbicacion').value;
+            const nombre = document.getElementById('editarUbicacion').value;
 
-            if (!ubicacion) {
-                document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá la ubicación</div>';
+            if (!nombre) {
+                document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá el nombre</div>';
                 return;
             }
 
@@ -178,7 +178,7 @@
                 const respuesta = await fetch(`/api/dispositivos/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ubicacion })
+                    body: JSON.stringify({ nombre })
                 });
 
                 if (respuesta.ok) {

@@ -144,6 +144,20 @@ app.post('/api/viajes', viajeController.crearViaje.bind(viajeController));
 app.get('/api/viajes', viajeController.obtenerViaje.bind(viajeController));
 app.get('/api/viajes/en-curso', viajeController.obtenerViajesEnCurso.bind(viajeController));
 app.get('/api/viajes/mis-viajes', viajeController.obtenerMisViajes.bind(viajeController));
+app.get('/api/viajes/vehiculos-ocupados', async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT r.vehiculo FROM reserva r
+       LEFT JOIN viaje v ON v.reserva_id = r.id::text
+       WHERE r.vehiculo IS NOT NULL AND r.vehiculo != ''
+         AND r.estado != 'Cancelado'
+         AND (v.id IS NULL OR v.estado NOT IN ('Finalizado', 'Cancelado'))`
+    );
+    res.json({ data: result.rows.map((r: any) => r.vehiculo) });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
 app.get('/api/viajes/:id', viajeController.obtenerViajePorId.bind(viajeController));
 app.put('/api/viajes/:id', viajeController.actualizarViaje.bind(viajeController));
 app.delete('/api/viajes/:id', viajeController.eliminarViaje.bind(viajeController));
@@ -162,6 +176,20 @@ app.get('/internal/zonas-geograficas', async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, nombre, delimitacion_geografica AS delimitacion, tipo FROM zona_geografica`
+    );
+    res.json(result.rows);
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+app.get('/internal/viajes/en-curso', async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, reserva_id, origen, destino, fecha, estado, conductor, vehiculo, tiene_alertas
+       FROM viaje
+       WHERE estado NOT IN ('Finalizado', 'Cancelado')
+       ORDER BY fecha ASC`
     );
     res.json(result.rows);
   } catch (e) {

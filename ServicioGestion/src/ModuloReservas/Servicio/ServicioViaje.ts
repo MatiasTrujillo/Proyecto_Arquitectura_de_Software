@@ -2,6 +2,8 @@ import { IRepositorioViaje, FiltrosViajeEnCurso } from "../IDataAccess/IReposito
 import { IServicioViaje } from "../IServicio/IServicioViaje";
 import { ViajeDTO } from "../DTOs/ViajeDTO";
 
+const OPERACION_URL = process.env.OPERACION_URL || 'http://localhost:3000';
+
 export class ServicioViaje implements IServicioViaje {
   constructor(private repositorio: IRepositorioViaje) {}
 
@@ -52,6 +54,17 @@ export class ServicioViaje implements IServicioViaje {
     if (viaje.getEstado() === "En curso") throw new Error("El traslado ya está en curso");
     if (viaje.getEstado() === "Finalizado") throw new Error("El traslado ya fue finalizado");
     const actualizado = await this.repositorio.actualizarEstadoViaje(id, "En curso");
+
+    // Arrancar simulación GPS automática para el vehículo (fire-and-forget)
+    const vehiculo = viaje.getVehiculo();
+    if (vehiculo) {
+      fetch(`${OPERACION_URL}/internal/simular-gps/iniciar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehiculoMatricula: vehiculo }),
+      }).catch(() => {});
+    }
+
     return ViajeDTO.fromEntity(actualizado!);
   }
 
@@ -64,6 +77,17 @@ export class ServicioViaje implements IServicioViaje {
     if (viaje.getEstado() === "Finalizado") throw new Error("El traslado ya fue finalizado");
     if (viaje.getEstado() !== "En curso") throw new Error("El traslado debe estar en curso para poder finalizarlo");
     const actualizado = await this.repositorio.actualizarEstadoViaje(id, "Finalizado");
+
+    // Detener simulación GPS automática (fire-and-forget)
+    const vehiculo = viaje.getVehiculo();
+    if (vehiculo) {
+      fetch(`${OPERACION_URL}/internal/simular-gps/detener`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vehiculoMatricula: vehiculo }),
+      }).catch(() => {});
+    }
+
     return ViajeDTO.fromEntity(actualizado!);
   }
 
