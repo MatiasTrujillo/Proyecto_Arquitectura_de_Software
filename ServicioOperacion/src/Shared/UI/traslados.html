@@ -34,6 +34,21 @@
       border-right: 1px solid #ddd; display: flex; flex-direction: column; flex-shrink: 0;
     }
     .panel-left h2 { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #eee; background: #fafafa; }
+    .filtros {
+      padding: 10px 16px; border-bottom: 1px solid #eee; background: #f7f9ff; flex-shrink: 0;
+    }
+    .filtros label { font-size: 11px; color: #555; display: block; margin-top: 6px; }
+    .filtros input[type="text"] {
+      width: 100%; padding: 5px 7px; font-size: 12px; border: 1px solid #ccd;
+      border-radius: 4px; box-sizing: border-box; margin-top: 2px;
+    }
+    .filtros-check { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: #333; }
+    .filtros-btns { display: flex; gap: 6px; margin-top: 8px; }
+    .btn-filtrar { flex: 1; padding: 5px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-filtrar:hover { background: #0052a3; }
+    .btn-limpiar { flex: 1; padding: 5px; background: #888; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .btn-limpiar:hover { background: #666; }
+    .filtros-activos { font-size: 11px; color: #0066cc; margin-top: 4px; font-style: italic; }
     .viajes-list { overflow-y: auto; flex: 1; }
     .viaje-card {
       padding: 12px 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer;
@@ -90,6 +105,23 @@
 <div class="main">
   <div class="panel-left">
     <h2>Traslados activos</h2>
+    <div class="filtros">
+      <label>Vehículo</label>
+      <input type="text" id="filtroVehiculo" placeholder="Matrícula">
+      <label>Conductor</label>
+      <input type="text" id="filtroConductor" placeholder="Cédula del conductor">
+      <label>Categoría</label>
+      <input type="text" id="filtroCategoria" placeholder="Ej: electrónica">
+      <div class="filtros-check">
+        <input type="checkbox" id="filtroAlertas">
+        <label for="filtroAlertas" style="margin:0">Solo con alertas</label>
+      </div>
+      <div class="filtros-btns">
+        <button class="btn-filtrar" onclick="aplicarFiltros()">Filtrar</button>
+        <button class="btn-limpiar" onclick="limpiarFiltros()">Limpiar</button>
+      </div>
+      <div class="filtros-activos" id="filtrosActivos"></div>
+    </div>
     <div class="viajes-list" id="viajesList">
       <div class="sin-viajes">Cargando...</div>
     </div>
@@ -135,6 +167,36 @@
   const viajesData = {};   // id → viaje
   let alertasRecientes = [];
   let totalAlertasContadas = 0;
+  let filtrosActuales = {};
+
+  function aplicarFiltros() {
+    const vehiculo  = document.getElementById('filtroVehiculo').value.trim();
+    const conductor = document.getElementById('filtroConductor').value.trim();
+    const categoria = document.getElementById('filtroCategoria').value.trim();
+    const alertas   = document.getElementById('filtroAlertas').checked;
+
+    filtrosActuales = {};
+    if (vehiculo)  filtrosActuales.vehiculo  = vehiculo;
+    if (conductor) filtrosActuales.conductor = conductor;
+    if (categoria) filtrosActuales.categoria = categoria;
+    if (alertas)   filtrosActuales.tieneAlertas = 'true';
+
+    const activos = Object.keys(filtrosActuales).length;
+    document.getElementById('filtrosActivos').textContent =
+      activos > 0 ? `${activos} filtro${activos > 1 ? 's' : ''} activo${activos > 1 ? 's' : ''}` : '';
+
+    actualizar();
+  }
+
+  function limpiarFiltros() {
+    document.getElementById('filtroVehiculo').value  = '';
+    document.getElementById('filtroConductor').value = '';
+    document.getElementById('filtroCategoria').value = '';
+    document.getElementById('filtroAlertas').checked = false;
+    filtrosActuales = {};
+    document.getElementById('filtrosActivos').textContent = '';
+    actualizar();
+  }
 
   // Icono normal (azul) y con alerta (rojo)
   const iconoNormal = L.divIcon({
@@ -298,7 +360,8 @@
   // Ciclo principal de actualización
   async function actualizar() {
     try {
-      const resp = await fetch('/api/proxy/viajes-en-curso');
+      const qs = new URLSearchParams(filtrosActuales).toString();
+      const resp = await fetch(`/api/proxy/viajes-en-curso${qs ? '?' + qs : ''}`);
       if (!resp.ok) return;
       const json = await resp.json();
       const viajes = json.data || [];
