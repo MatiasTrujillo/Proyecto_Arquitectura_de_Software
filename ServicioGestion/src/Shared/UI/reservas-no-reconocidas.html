@@ -74,7 +74,7 @@
       source.onmessage = (e) => {
         const data = JSON.parse(e.data);
         if (data.tipo === 'reserva-no-reconocida') {
-          pendientes.set(data.reservaId, data);
+          pendientes.set(String(data.reservaId), data);
           renderPendientes();
           mostrarBadge();
         }
@@ -247,8 +247,8 @@
         }
         const json = await resp.json();
         for (const row of (json.data || [])) {
-          if (!pendientes.has(row.reserva_id)) {
-            pendientes.set(row.reserva_id, {
+          if (!pendientes.has(String(row.reserva_id))) {
+            pendientes.set(String(row.reserva_id), {
               reservaId: row.reserva_id,
               clienteId: row.cliente,
               descripcionesBienes: row.descripciones_bienes || [],
