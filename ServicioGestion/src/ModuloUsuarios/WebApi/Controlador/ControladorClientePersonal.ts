@@ -9,6 +9,7 @@ import { IServicioPago } from "../../../ModuloPagos/IServicio/IServicioPago";
 import { ServicioPago } from "../../../ModuloPagos/Servicio/ServicioPago";
 import { RepositorioPago } from "../../../ModuloPagos/DataAccess/RepositorioPago";
 import { busEventos, EVENTO_RESERVA_CREADA } from "../../../Shared/Eventos/BusEventos";
+import { RepositorioProductoReserva } from "../../../ModuloReservas/DataAccess/RepositorioProductoReserva";
 
 export class ControladorClientePersonal {
   private servicioClientePersonal: IServicioClientePersonal;
@@ -87,17 +88,28 @@ export class ControladorClientePersonal {
   async realizarReserva(req: Request, res: Response): Promise<void> {
     try {
       const clienteId = (req as any).usuario?.cedula ?? req.body.clienteId;
-      const { origen, destino, fecha, costo, vehiculo, productos, conductor } = req.body;
+      const { origen, destino, fecha, costo, vehiculo, bienes, conductor } = req.body;
+      const productosIds = (bienes ?? []).map((b: any) => b.productoId).filter(Boolean).map(Number);
 
       const reserva = await this.servicioReserva.crearReserva(
-        clienteId, origen, destino, fecha, costo, productos ?? [], [], vehiculo, conductor
+        clienteId, origen, destino, fecha, costo, productosIds, [], vehiculo, conductor
       );
 
-      // Publicar evento en el bus — el suscriptor de clasificación lo procesa
+      const repoProductos = new RepositorioProductoReserva();
+      await repoProductos.guardarProductos(Number(reserva.id), (bienes ?? []).map((b: any) => ({
+        productoId: b.productoId ? Number(b.productoId) : null,
+        descripcion: b.descripcion ?? '',
+        valor: b.valor != null ? Number(b.valor) : null,
+        tamano: b.tamano != null ? Number(b.tamano) : null,
+        categorias: b.categorias ?? [],
+      })));
+
       busEventos.emit(EVENTO_RESERVA_CREADA, {
-        reservaId: reserva.getId(),
+        reservaId: reserva.id,
         clienteId,
-        productosIds: (productos ?? []).map(Number).filter(Boolean),
+        productosIds,
+        bienes: bienes ?? [],
+        esEmpresa: false,
       });
 
       res.status(201).json({ data: reserva });

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pre-registro de Bienes - ClienteEmpresa</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        h2 { color: #444; }
+        .nav { margin-bottom: 20px; }
+        a { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        .formulario { background: #f0f4ff; padding: 15px; margin-bottom: 20px; border-radius: 4px; border: 1px solid #b0c4ee; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .campos-bien { margin-top: 12px; padding: 12px; background: #fff; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #0052a3; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .btn-eliminar { padding: 5px 10px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-eliminar:hover { background: #990000; }
+        .error { color: red; margin-top: 10px; }
+        .exito { color: green; margin-top: 10px; }
+        .badge-cat { display: inline-block; padding: 2px 8px; background: #0066cc; color: white; border-radius: 10px; font-size: 0.85em; }
+        .badge-sin { display: inline-block; padding: 2px 8px; background: #888; color: white; border-radius: 10px; font-size: 0.85em; }
+        .nota { color: #555; font-size: 0.9em; margin: 4px 0 0; }
+    </style>
+</head>
+<body>
+    <div class="nav"><a href="/">← Volver</a></div>
+    <h1>Pre-registro de Bienes (F3)</h1>
+    <p class="nota">Asociá un producto del catálogo con la descripción, valor y tamaño que usás habitualmente. El sistema detecta la categoría MOVE automáticamente. Al crear una reserva, estos datos se rellenan solos.</p>
+
+    <div class="formulario">
+        <h2>Nuevo Pre-registro</h2>
+
+        <label>Producto del catálogo</label>
+        <select id="selectProducto" onchange="onProductoSeleccionado()">
+            <option value="">— Seleccioná un producto —</option>
+        </select>
+
+        <div class="campos-bien" id="camposBien" style="display:none">
+            <label>Descripción <span style="color:red">*</span></label>
+            <input type="text" id="descripcion" placeholder="Ej: Monitor LED 27 pulgadas, resolución 4K">
+            <p class="nota">Esta descripción se usa para detectar la categoría MOVE automáticamente.</p>
+
+            <label>Valor estimado (opcional)</label>
+            <input type="number" id="valor" placeholder="Ej: 800" min="0" step="0.01">
+
+            <label>Tamaño / Volumen aproximado (opcional)</label>
+            <input type="number" id="tamano" placeholder="Ej: 2" min="0" step="0.01">
+
+            <button onclick="crearPreregistro()">Crear Pre-registro</button>
+            <div id="mensajeCrear"></div>
+        </div>
+    </div>
+
+    <h2>Mis Pre-registros</h2>
+    <table id="tablaPreregistros">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Producto</th>
+                <th>Descripción</th>
+                <th>Valor</th>
+                <th>Tamaño</th>
+                <th>Categoría MOVE</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody><tr><td colspan="7">Cargando...</td></tr></tbody>
+    </table>
+
+    <script>
+        const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
+        const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
+        if (token) sessionStorage.setItem('auth_token', token);
+        if (rol)   sessionStorage.setItem('auth_rol',   rol);
+        if (!token) window.location.href = 'http://localhost:3002/';
+
+        function apiFetch(url, options = {}) {
+            options.headers = { ...(options.headers || {}), 'Authorization': 'Bearer ' + token };
+            return fetch(url, options);
+        }
+
+        async function cargarProductos() {
+            const res = await apiFetch('/api/productos');
+            const json = await res.json();
+            const select = document.getElementById('selectProducto');
+            select.innerHTML = '<option value="">— Seleccioná un producto —</option>';
+            (json.data || []).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.nombre;
+                select.appendChild(opt);
+            });
+        }
+
+        function onProductoSeleccionado() {
+            const val = document.getElementById('selectProducto').value;
+            document.getElementById('camposBien').style.display = val ? 'block' : 'none';
+            document.getElementById('mensajeCrear').innerHTML = '';
+        }
+
+        async function crearPreregistro() {
+            const productoId = document.getElementById('selectProducto').value;
+            const productoNombre = document.getElementById('selectProducto').selectedOptions[0]?.text ?? '';
+            const descripcion = document.getElementById('descripcion').value.trim();
+            const valor = document.getElementById('valor').value;
+            const tamano = document.getElementById('tamano').value;
+
+            if (!descripcion) {
+                document.getElementById('mensajeCrear').innerHTML = '<div class="error">La descripción es obligatoria</div>';
+                return;
+            }
+
+            try {
+                const res = await apiFetch('/api/clientes-empresariales/me/preregistros', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        productoId: Number(productoId),
+                        productoNombre,
+                        descripcion,
+                        valor: valor !== '' ? Number(valor) : null,
+                        tamano: tamano !== '' ? Number(tamano) : null,
+                    })
+                });
+                if (res.ok) {
+                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Pre-registro creado. Categoría MOVE detectada automáticamente.</div>';
+                    document.getElementById('descripcion').value = '';
+                    document.getElementById('valor').value = '';
+                    document.getElementById('tamano').value = '';
+                    document.getElementById('selectProducto').value = '';
+                    document.getElementById('camposBien').style.display = 'none';
+                    cargarPreregistros();
+                } else {
+                    const err = await res.json();
+                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
+                }
+            } catch (err) {
+                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
+            }
+        }
+
+        async function cargarPreregistros() {
+            try {
+                const res = await apiFetch('/api/clientes-empresariales/me/preregistros');
+                const json = await res.json();
+                const items = json.data || [];
+                const tbody = document.querySelector('#tablaPreregistros tbody');
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7">No tenés pre-registros aún</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = items.map(item => `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td>${item.productoNombre}</td>
+                        <td>${item.descripcion}</td>
+                        <td>${item.valor ?? '—'}</td>
+                        <td>${item.tamano ?? '—'}</td>
+                        <td>${item.categoria
+                            ? `<span class="badge-cat">${item.categoria}</span>`
+                            : '<span class="badge-sin">Sin categoría</span>'}</td>
+                        <td>
+                            <button class="btn-eliminar" onclick="eliminarPreregistro(${item.id})">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                document.querySelector('#tablaPreregistros tbody').innerHTML =
+                    `<tr><td colspan="7" class="error">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function eliminarPreregistro(id) {
+            if (!confirm('¿Eliminar este pre-registro?')) return;
+            try {
+                const res = await apiFetch(`/api/clientes-empresariales/me/preregistros/${id}`, { method: 'DELETE' });
+                if (res.ok) cargarPreregistros();
+                else alert('No se pudo eliminar');
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        cargarProductos();
+        cargarPreregistros();
+    </script>
+</body>
+</html>

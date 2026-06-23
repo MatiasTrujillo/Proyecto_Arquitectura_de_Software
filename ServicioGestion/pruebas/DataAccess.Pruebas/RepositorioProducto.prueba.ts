@@ -9,39 +9,36 @@ async function limpiarBD() {
 
 async function crearProductoTest() {
   const repo = new RepositorioProducto();
-  const producto = await repo.crearProducto("Prod A", 100, 10, "Cat1");
+  const producto = await repo.crearProducto("Monitor");
 
   assert.strictEqual(producto.getId(), 1);
-  assert.strictEqual(producto.getDescripcion(), "Prod A");
-  assert.strictEqual(producto.getValor(), 100);
-  assert.strictEqual(producto.getTamano(), 10);
-  assert.strictEqual(producto.getCategoria(), "Cat1");
+  assert.strictEqual(producto.getNombre(), "Monitor");
 }
 
 async function obtenerProductoPorIdTest() {
   const repo = new RepositorioProducto();
-  const producto = await repo.crearProducto("Prod B", 50, 5, "Cat2");
+  const producto = await repo.crearProducto("Silla");
 
   const encontrado = await repo.obtenerProductoPorId(producto.getId());
   assert.ok(encontrado);
-  assert.strictEqual(encontrado?.getDescripcion(), "Prod B");
+  assert.strictEqual(encontrado?.getNombre(), "Silla");
   assert.strictEqual(await repo.obtenerProductoPorId(999), undefined);
 }
 
 async function obtenerTodosLosProductosTest() {
   const repo = new RepositorioProducto();
-  await repo.crearProducto("P1", 10, 1, "C");
-  await repo.crearProducto("P2", 20, 2, "C");
+  await repo.crearProducto("P1");
+  await repo.crearProducto("P2");
 
   const productos = await repo.obtenerProductos();
   assert.strictEqual(productos.length, 2);
-  assert.ok(productos.some(p => p.getDescripcion() === "P1"));
-  assert.ok(productos.some(p => p.getDescripcion() === "P2"));
+  assert.ok(productos.some(p => p.getNombre() === "P1"));
+  assert.ok(productos.some(p => p.getNombre() === "P2"));
 }
 
 async function existeTest() {
   const repo = new RepositorioProducto();
-  const producto = await repo.crearProducto("P3", 30, 3, "C");
+  const producto = await repo.crearProducto("P3");
 
   assert.strictEqual(await repo.existe(producto.getId()), true);
   assert.strictEqual(await repo.existe(12345), false);
@@ -49,19 +46,16 @@ async function existeTest() {
 
 async function actualizarProductoTest() {
   const repo = new RepositorioProducto();
-  const producto = await repo.crearProducto("Old", 5, 1, "C1");
+  const producto = await repo.crearProducto("Old");
 
-  const actualizado = await repo.actualizarProducto(producto.getId(), "New", 99, 9, "C2");
+  const actualizado = await repo.actualizarProducto(producto.getId(), "New");
   assert.ok(actualizado);
-  assert.strictEqual(actualizado?.getDescripcion(), "New");
-  assert.strictEqual(actualizado?.getValor(), 99);
-  assert.strictEqual(actualizado?.getTamano(), 9);
-  assert.strictEqual(actualizado?.getCategoria(), "C2");
+  assert.strictEqual(actualizado?.getNombre(), "New");
 }
 
 async function eliminarProductoTest() {
   const repo = new RepositorioProducto();
-  const producto = await repo.crearProducto("ToDelete", 1, 1, "C");
+  const producto = await repo.crearProducto("ToDelete");
 
   assert.strictEqual(await repo.eliminarProducto(producto.getId()), true);
   assert.strictEqual(await repo.existe(producto.getId()), false);

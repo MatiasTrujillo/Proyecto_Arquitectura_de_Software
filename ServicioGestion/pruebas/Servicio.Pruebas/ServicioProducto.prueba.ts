@@ -6,24 +6,22 @@ class RepositorioProductoFalso {
   private data: Producto[] = [];
   private next = 1;
 
-  crearProducto(descripcion: string, valor: number, tamano: number, categoria: string) {
-    const producto = new Producto(this.next++, descripcion, valor, tamano, categoria);
+  crearProducto(nombre: string) {
+    const producto = new Producto(this.next++, nombre);
     this.data.push(producto);
     return producto;
   }
 
-  obtenerProductos() {
-    return this.data;
-  }
+  obtenerProductos() { return this.data; }
 
   obtenerProductoPorId(id: number) {
     return this.data.find((p) => p.getId() === id);
   }
 
-  actualizarProducto(id: number, descripcion: string, valor: number, tamano: number, categoria: string) {
+  actualizarProducto(id: number, nombre: string) {
     const idx = this.data.findIndex((p) => p.getId() === id);
     if (idx === -1) return undefined;
-    const updated = new Producto(id, descripcion, valor, tamano, categoria);
+    const updated = new Producto(id, nombre);
     this.data[idx] = updated;
     return updated;
   }
@@ -35,24 +33,22 @@ class RepositorioProductoFalso {
     return true;
   }
 
-  existe(id: number) {
-    return this.data.some((p) => p.getId() === id);
-  }
+  existe(id: number) { return this.data.some((p) => p.getId() === id); }
 }
 
 async function crearProductoPrueba() {
   const repositorio = new RepositorioProductoFalso();
   const servicio = new ServicioProducto(repositorio as any);
 
-  const producto = await servicio.crearProducto("Prod A", 100, 10, "Cat1");
+  const producto = await servicio.crearProducto("Monitor");
   assert.strictEqual(producto.id, 1);
-  assert.strictEqual(producto.descripcion, "Prod A");
+  assert.strictEqual(producto.nombre, "Monitor");
 }
 
 async function obtenerProductoPorIdPrueba() {
   const repositorio = new RepositorioProductoFalso();
   const servicio = new ServicioProducto(repositorio as any);
-  const producto = repositorio.crearProducto("Prod B", 50, 5, "Cat2");
+  const producto = repositorio.crearProducto("Silla");
 
   const encontrado = await servicio.obtenerProductoPorId(producto.getId());
   assert.ok(encontrado);
@@ -69,8 +65,8 @@ async function obtenerProductoPorIdPrueba() {
 async function obtenerTodosLosProductosPrueba() {
   const repositorio = new RepositorioProductoFalso();
   const servicio = new ServicioProducto(repositorio as any);
-  repositorio.crearProducto("P1", 10, 1, "C");
-  repositorio.crearProducto("P2", 20, 2, "C");
+  repositorio.crearProducto("P1");
+  repositorio.crearProducto("P2");
 
   const productos = await servicio.obtenerProductos();
   assert.strictEqual(productos.length, 2);
@@ -78,7 +74,7 @@ async function obtenerTodosLosProductosPrueba() {
 
 function existePrueba() {
   const repositorio = new RepositorioProductoFalso();
-  const producto = repositorio.crearProducto("P3", 30, 3, "C");
+  const producto = repositorio.crearProducto("P3");
 
   assert.strictEqual(repositorio.existe(producto.getId()), true);
   assert.strictEqual(repositorio.existe(12345), false);
@@ -87,17 +83,17 @@ function existePrueba() {
 async function actualizarProductoPrueba() {
   const repositorio = new RepositorioProductoFalso();
   const servicio = new ServicioProducto(repositorio as any);
-  const producto = repositorio.crearProducto("Old", 5, 1, "C1");
+  const producto = repositorio.crearProducto("Old");
 
-  const actualizado = await servicio.actualizarProducto(producto.getId(), "New", 99, 9, "C2");
+  const actualizado = await servicio.actualizarProducto(producto.getId(), "New");
   assert.ok(actualizado);
-  assert.strictEqual(actualizado.descripcion, "New");
+  assert.strictEqual(actualizado.nombre, "New");
 }
 
 async function eliminarProductoPrueba() {
   const repositorio = new RepositorioProductoFalso();
   const servicio = new ServicioProducto(repositorio as any);
-  const producto = repositorio.crearProducto("ToDelete", 1, 1, "C");
+  const producto = repositorio.crearProducto("ToDelete");
 
   await servicio.eliminarProducto(producto.getId());
   assert.strictEqual(repositorio.existe(producto.getId()), false);

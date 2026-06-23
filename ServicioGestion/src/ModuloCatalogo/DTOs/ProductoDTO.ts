@@ -2,30 +2,18 @@ import { Producto } from "../Dominio/Producto";
 
 export class ProductoDTO {
   id: number;
-  descripcion: string;
-  valor: number | null;
-  tamano: number;
-  categoria: string;
+  nombre: string;
 
-  constructor(id: number, descripcion: string, valor: number | null, tamano: number, categoria: string) {
+  constructor(id: number, nombre: string) {
     this.id = id;
-    this.descripcion = descripcion;
-    this.valor = valor;
-    this.tamano = tamano;
-    this.categoria = categoria;
+    this.nombre = nombre;
   }
 
   static fromEntity(entidad: Producto): ProductoDTO {
-    return new ProductoDTO(
-      entidad.getId(),
-      entidad.getDescripcion(),
-      entidad.getValor(),
-      entidad.getTamano(),
-      entidad.getCategoria()
-    );
+    return new ProductoDTO(entidad.getId(), entidad.getNombre());
   }
 
   toEntity(): Producto {
-    return new Producto(this.id, this.descripcion, this.valor, this.tamano, this.categoria);
+    return new Producto(this.id, this.nombre);
   }
 }

@@ -45,6 +45,16 @@ app.use(express.json());
 app.use(registradorSolicitudes);
 app.use('/api', verificarAutorizacion);
 
+// Forzar charset=utf-8 en todas las respuestas HTML para evitar mojibake con tildes
+app.use((_req, res, next) => {
+  const send = res.sendFile.bind(res);
+  (res as any).sendFile = (filePath: string, ...args: any[]) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return send(filePath, ...args);
+  };
+  next();
+});
+
 // ─── Administradores ─────────────────────────────────────────────────────────
 app.post('/api/administradores', administradorController.crearAdministrador.bind(administradorController));
 app.get('/api/administradores', administradorController.obtenerAdministradores.bind(administradorController));
@@ -88,7 +98,11 @@ app.get('/api/clientes-empresariales', clienteEmpresaController.obtenerClienteEm
 app.post('/api/clientes-empresariales/calcular-traslado', clienteEmpresaController.calcularTraslado.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/realizar-reserva', clienteEmpresaController.realizarReserva.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/realizar-pago', clienteEmpresaController.realizarPago.bind(clienteEmpresaController));
-app.post('/api/clientes-empresariales/asociar-producto', clienteEmpresaController.asociarProducto.bind(clienteEmpresaController));
+app.post('/api/clientes-empresariales/me/preregistros', clienteEmpresaController.crearPreregistro.bind(clienteEmpresaController));
+app.get('/api/clientes-empresariales/me/preregistros', clienteEmpresaController.obtenerPreregistros.bind(clienteEmpresaController));
+app.get('/api/clientes-empresariales/me/preregistros/producto/:productoId', clienteEmpresaController.obtenerPreregistroPorProducto.bind(clienteEmpresaController));
+app.delete('/api/clientes-empresariales/me/preregistros/:id', clienteEmpresaController.eliminarPreregistro.bind(clienteEmpresaController));
+app.get('/api/clientes-empresariales/me/reservas', clienteEmpresaController.obtenerReservas.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/registrar-origen-frecuente', clienteEmpresaController.registrarOrigenFrecuente.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/registrar-destino-frecuente', clienteEmpresaController.registrarDestinoFrecuente.bind(clienteEmpresaController));
 app.get('/api/clientes-empresariales/frecuentes', clienteEmpresaController.obtenerFrecuentes.bind(clienteEmpresaController));
@@ -151,6 +165,12 @@ app.get('/api/reservas/sin-viaje', reservaController.obtenerReservasSinViaje.bin
 app.get('/api/reservas/:id', reservaController.obtenerReservaPorId.bind(reservaController));
 app.patch('/api/reservas/:id/estado', reservaController.actualizarEstadoReserva.bind(reservaController));
 app.patch('/api/reservas/:id/asignar', reservaController.asignarVehiculoConductor.bind(reservaController));
+app.get('/api/reservas/:id/productos', async (req, res) => {
+  const { RepositorioProductoReserva } = await import('./ModuloReservas/DataAccess/RepositorioProductoReserva');
+  const repo = new RepositorioProductoReserva();
+  const productos = await repo.obtenerPorReserva(Number(req.params.id));
+  res.json({ data: productos });
+});
 
 // ─── Viajes ───────────────────────────────────────────────────────────────────
 app.post('/api/viajes', viajeController.crearViaje.bind(viajeController));
@@ -281,6 +301,9 @@ app.get('/categorias-ui', (req, res) => {
 app.get('/reservas-no-reconocidas-ui', (req, res) => {
   res.sendFile(path.join(__dirname, 'Shared', 'UI', 'reservas-no-reconocidas.html'));
 });
+app.get('/preregistro-empresa-ui', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'preregistro-empresa.html'));
+});
 
 // ── F19: SSE — operadores suscritos reciben notificaciones en tiempo real ──────
 // Patrón pub/sub: el servidor publica eventos en el bus interno;
@@ -299,14 +322,20 @@ app.get('/api/notificaciones/stream', (req, res) => {
 });
 
 // Suscriptor 1: clasifica la reserva cuando se crea
+// Las descripciones vienen en el payload (bien_reserva inline), no de la tabla producto.
 busEventos.on(EVENTO_RESERVA_CREADA, async (payload: PayloadReservaCreada) => {
   try {
-    if (payload.productosIds.length === 0) return;
-    const prodRes = await pool.query(
-      'SELECT descripcion FROM producto WHERE id = ANY($1::int[])',
-      [payload.productosIds]
-    );
-    const descripciones: string[] = prodRes.rows.map((r: any) => r.descripcion).filter(Boolean);
+    const bienes: Array<{ descripcion: string; categorias?: string[] }> = (payload as any).bienes ?? [];
+    const descripciones: string[] = bienes.map((b: any) => b.descripcion).filter(Boolean);
+
+    // Para ClienteEmpresa con categorías ya conocidas del pre-registro, no re-clasificar
+    const todasCategorizadas = bienes.length > 0 && bienes.every((b: any) => b.categorias?.length > 0);
+    if (todasCategorizadas) {
+      const cats = [...new Set(bienes.flatMap((b: any) => b.categorias as string[]))];
+      await pool.query('UPDATE reserva SET categorias = $1 WHERE id = $2', [cats, payload.reservaId]);
+      return;
+    }
+
     if (descripciones.length === 0) return;
 
     const descripcionCombinada = descripciones.join('. ');
@@ -323,7 +352,6 @@ busEventos.on(EVENTO_RESERVA_CREADA, async (payload: PayloadReservaCreada) => {
     if (encontradas.length > 0) {
       await pool.query('UPDATE reserva SET categorias = $1 WHERE id = $2', [encontradas, payload.reservaId]);
     } else {
-      // Suscriptor publica segundo evento — ningún método rápido clasificó
       busEventos.emit(EVENTO_RESERVA_NO_RECONOCIDA, {
         reservaId: payload.reservaId,
         clienteId: payload.clienteId,

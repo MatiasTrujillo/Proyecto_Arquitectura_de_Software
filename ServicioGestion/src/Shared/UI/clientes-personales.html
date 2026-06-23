@@ -95,15 +95,25 @@
         <input type="date" id="resFecha">
         <label>Costo</label>
         <input type="number" id="resCosto" placeholder="Ej: 500" min="0">
-        <label>Productos <span style="font-weight:normal;color:#666;font-size:0.85em">(opcional, podés agregar varios)</span></label>
-        <div style="display:flex;gap:6px;align-items:center;margin-top:5px">
-            <select id="resProductoSel" style="flex:1;margin-top:0">
+
+        <label>Bienes a transportar <span style="font-weight:normal;color:#666;font-size:0.85em">(agregá al menos uno)</span></label>
+        <div style="margin-top:6px;padding:10px;background:#fff;border:1px solid #ddd;border-radius:4px">
+            <select id="resProductoSel" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px" onchange="onProductoSeleccionadoParticular()">
                 <option value="">— Seleccioná un producto —</option>
             </select>
-            <button type="button" onclick="agregarProducto()" style="margin-top:0;padding:8px 14px;font-size:1.1em">+</button>
+            <div id="camposBienParticular" style="display:none;margin-top:10px">
+                <label style="font-size:0.9em">Descripción del bien <span style="color:red">*</span></label>
+                <input type="text" id="bienDescripcion" placeholder="Ej: Monitor LED 27 pulgadas" style="margin-top:4px">
+                <label style="font-size:0.9em;margin-top:8px">Valor estimado (opcional)</label>
+                <input type="number" id="bienValor" placeholder="Ej: 500" min="0" step="0.01" style="margin-top:4px">
+                <label style="font-size:0.9em;margin-top:8px">Tamaño aproximado (opcional)</label>
+                <input type="number" id="bienTamano" placeholder="Ej: 2" min="0" step="0.01" style="margin-top:4px">
+                <button type="button" onclick="agregarBien()" style="margin-top:10px;background:#28a745">+ Agregar bien</button>
+            </div>
         </div>
-        <div id="productosSeleccionados" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;min-height:10px"></div>
-        <button onclick="realizarReserva()">Realizar</button>
+        <div id="bienesAgregados" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;min-height:10px"></div>
+
+        <button onclick="realizarReserva()" style="margin-top:12px">Realizar Reserva</button>
         <div id="resultadoReserva" class="resultado oculto"></div>
     </div>
 
@@ -298,8 +308,8 @@
             }
         }
 
-        let productosSeleccionados = [];
-        let productosMap = {};
+        let bienesAgregados = [];
+        const productosMap = {};
 
         async function cargarProductos() {
             try {
@@ -307,57 +317,94 @@
                 const json = await res.json();
                 const sel = document.getElementById('resProductoSel');
                 (json.data || []).forEach(p => {
-                    productosMap[String(p.id)] = p.descripcion || String(p.id);
+                    productosMap[String(p.id)] = p.nombre;
                     const opt = document.createElement('option');
                     opt.value = p.id;
-                    opt.textContent = p.descripcion || String(p.id);
+                    opt.textContent = p.nombre;
                     sel.appendChild(opt);
                 });
             } catch(e) {}
         }
 
-        function verProductosReserva(indice) {
-            const r = misReservas[indice];
-            const reservaId = r.id;
-            const productos = r.productos;
+        function onProductoSeleccionadoParticular() {
+            const val = document.getElementById('resProductoSel').value;
+            document.getElementById('camposBienParticular').style.display = val ? 'block' : 'none';
+            document.getElementById('bienDescripcion').value = '';
+            document.getElementById('bienValor').value = '';
+            document.getElementById('bienTamano').value = '';
+        }
+
+        function agregarBien() {
+            const sel = document.getElementById('resProductoSel');
+            const productoId = sel.value;
+            const productoNombre = sel.selectedOptions[0]?.text ?? '';
+            const descripcion = document.getElementById('bienDescripcion').value.trim();
+            const valor = document.getElementById('bienValor').value;
+            const tamano = document.getElementById('bienTamano').value;
+            if (!productoId || !descripcion) {
+                alert('Seleccioná un producto e ingresá la descripción');
+                return;
+            }
+            bienesAgregados.push({
+                productoId: Number(productoId),
+                productoNombre,
+                descripcion,
+                valor: valor !== '' ? Number(valor) : null,
+                tamano: tamano !== '' ? Number(tamano) : null,
+                categorias: [],
+            });
+            document.getElementById('resProductoSel').value = '';
+            document.getElementById('camposBienParticular').style.display = 'none';
+            document.getElementById('bienDescripcion').value = '';
+            document.getElementById('bienValor').value = '';
+            document.getElementById('bienTamano').value = '';
+            renderBienes();
+        }
+
+        function removerBien(idx) {
+            bienesAgregados.splice(idx, 1);
+            renderBienes();
+        }
+
+        function renderBienes() {
+            const contenedor = document.getElementById('bienesAgregados');
+            contenedor.innerHTML = bienesAgregados.map((b, i) =>
+                `<span style="background:#e8f0ff;border:1px solid #b0ccee;border-radius:12px;padding:4px 12px;font-size:0.85em;display:inline-flex;align-items:center;gap:6px">
+                    <strong>${b.productoNombre}</strong>: ${b.descripcion}
+                    <button type="button" onclick="removerBien(${i})" style="background:none;border:none;color:#cc0000;cursor:pointer;padding:0;margin:0;font-size:1.1em;line-height:1">×</button>
+                </span>`
+            ).join('');
+        }
+
+        async function verProductosReserva(reservaId) {
             const panel = document.getElementById('panelProductosReserva');
             document.getElementById('panelReservaId').textContent = '#' + reservaId;
             const lista = document.getElementById('panelProductosLista');
-            if (!productos || productos.length === 0) {
-                lista.innerHTML = '<span style="color:#666;font-size:0.9em">Sin productos asociados</span>';
-            } else {
-                lista.innerHTML = productos.map(id => {
-                    const nombre = productosMap[String(id)] || 'Producto #' + id;
-                    return `<span style="background:#e8f0ff;border:1px solid #b0ccee;border-radius:12px;padding:4px 12px;font-size:0.85em">${nombre}</span>`;
-                }).join('');
-            }
+            lista.innerHTML = '<span style="color:#999;font-size:0.9em">Cargando...</span>';
             panel.style.display = 'block';
-        }
-
-        function agregarProducto() {
-            const sel = document.getElementById('resProductoSel');
-            const id = sel.value;
-            if (!id || productosSeleccionados.includes(id)) return;
-            productosSeleccionados.push(id);
-            renderProductos();
-        }
-
-        function removerProducto(id) {
-            productosSeleccionados = productosSeleccionados.filter(p => p !== id);
-            renderProductos();
-        }
-
-        function renderProductos() {
-            const contenedor = document.getElementById('productosSeleccionados');
-            const sel = document.getElementById('resProductoSel');
-            contenedor.innerHTML = productosSeleccionados.map(id => {
-                const opt = Array.from(sel.options).find(o => o.value === id);
-                const nombre = opt ? opt.text : id;
-                return `<span style="background:#e8f0ff;border:1px solid #b0ccee;border-radius:12px;padding:3px 10px;font-size:0.85em;display:inline-flex;align-items:center;gap:5px">
-                    ${nombre}
-                    <button type="button" onclick="removerProducto('${id}')" style="background:none;border:none;color:#cc0000;cursor:pointer;padding:0;margin:0;font-size:1.1em;line-height:1">×</button>
-                </span>`;
-            }).join('');
+            try {
+                const res = await apiFetch(`/api/reservas/${reservaId}/productos`);
+                const json = await res.json();
+                const productos = json.data || [];
+                if (productos.length === 0) {
+                    lista.innerHTML = '<span style="color:#666;font-size:0.9em">Sin productos asociados</span>';
+                } else {
+                    lista.innerHTML = productos.map(p => `
+                        <div style="border:1px solid #cdd8ea;border-radius:8px;padding:12px 16px;margin-bottom:10px;background:#f7f9ff">
+                            <div style="font-weight:600;font-size:1em;margin-bottom:6px">${p.productoNombre || '(sin nombre)'}</div>
+                            <div style="font-size:0.88em;color:#444;display:grid;grid-template-columns:auto 1fr;gap:2px 12px">
+                                <span style="color:#888">Descripción</span><span>${p.descripcion || '-'}</span>
+                                <span style="color:#888">Valor</span><span>${p.valor != null ? '$' + p.valor : '-'}</span>
+                                <span style="color:#888">Tamaño</span><span>${p.tamano != null ? p.tamano + ' m³' : '-'}</span>
+                                <span style="color:#888">Categoría MOVE</span><span>${p.categorias && p.categorias.length > 0
+                                    ? p.categorias.map(c => `<span style="background:#0d6efd;color:white;border-radius:10px;padding:2px 8px;font-size:0.82em">${c}</span>`).join(' ')
+                                    : '<span style="color:#999">No detectada</span>'}</span>
+                            </div>
+                        </div>`).join('');
+                }
+            } catch (e) {
+                lista.innerHTML = '<span style="color:red;font-size:0.9em">Error al cargar productos</span>';
+            }
         }
 
         async function realizarReserva() {
@@ -369,17 +416,21 @@
                 mostrar('resultadoReserva', { error: 'Completá todos los campos de la reserva' });
                 return;
             }
+            if (bienesAgregados.length === 0) {
+                mostrar('resultadoReserva', { error: 'Agregá al menos un bien a transportar' });
+                return;
+            }
             try {
                 const res = await apiFetch('/api/clientes-personales/realizar-reserva', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ origen, destino, fecha, costo, productos: productosSeleccionados, categorias: [] })
+                    body: JSON.stringify({ origen, destino, fecha, costo, bienes: bienesAgregados })
                 });
                 const json = await res.json();
                 mostrar('resultadoReserva', json);
                 if (res.ok) {
-                    productosSeleccionados = [];
-                    renderProductos();
+                    bienesAgregados = [];
+                    renderBienes();
                     document.getElementById('resOrigen').value  = '';
                     document.getElementById('resDestino').value = '';
                     document.getElementById('resFecha').value   = '';
@@ -441,7 +492,7 @@
                                 ? '<span style="background:#28a745;color:white;padding:5px 10px;border-radius:4px;font-size:0.9em">Pagado</span>'
                                 : `<button onclick="pagarReserva('${r.id}', ${r.costo})">Pagar</button>`
                             }
-                            <button onclick="verProductosReserva(${i})" style="background:#6c757d">Ver productos</button>
+                            <button onclick="verProductosReserva(${r.id})" style="background:#6c757d">Ver productos</button>
                         </td>
                     </tr>
                 `).join('');
