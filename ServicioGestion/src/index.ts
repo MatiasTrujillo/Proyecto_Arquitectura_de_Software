@@ -1,4 +1,4 @@
-import 'dotenv/config';
+﻿import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 
@@ -14,7 +14,7 @@ import { ControladorReserva } from './ModuloReservas/WebApi/Controlador/Controla
 import { ControladorViaje } from './ModuloReservas/WebApi/Controlador/ControladorViaje';
 import { ControladorIncidente } from './ModuloReservas/WebApi/Controlador/ControladorIncidente';
 import * as reglaCtrl from './ModuloCatalogo/WebApi/Controlador/ControladorReglaCategoria';
-import { compararMetodos, clasificarRapido } from './ModuloCatalogo/Servicio/ServicioClasificacion';
+import { compararMetodos, clasificarConKeyword, clasificarConTFIDF, clasificarConIA } from './ModuloCatalogo/Servicio/ServicioClasificacion';
 import { busEventos, EVENTO_RESERVA_CREADA, EVENTO_RESERVA_NO_RECONOCIDA, PayloadReservaNoReconocida, PayloadReservaCreada } from './Shared/Eventos/BusEventos';
 
 import { registradorSolicitudes, manejadorErrores } from './Shared/Logging/requestLogger';
@@ -45,15 +45,13 @@ app.use(express.json());
 app.use(registradorSolicitudes);
 app.use('/api', verificarAutorizacion);
 
-// Forzar charset=utf-8 en todas las respuestas HTML para evitar mojibake con tildes
-app.use((_req, res, next) => {
-  const send = res.sendFile.bind(res);
-  (res as any).sendFile = (filePath: string, ...args: any[]) => {
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    return send(filePath, ...args);
-  };
-  next();
-});
+import fs from 'fs';
+
+function sendHtml(res: any, filePath: string) {
+  const content = fs.readFileSync(filePath, 'utf8');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(content);
+}
 
 // ─── Administradores ─────────────────────────────────────────────────────────
 app.post('/api/administradores', administradorController.crearAdministrador.bind(administradorController));
@@ -91,6 +89,14 @@ app.put('/api/clientes-personales/:id', clientePersonalController.actualizarClie
 app.delete('/api/clientes-personales/:id', clientePersonalController.eliminarClientePersonal.bind(clientePersonalController));
 app.get('/api/clientes-personales/:clienteId/reservas', clientePersonalController.obtenerReservas.bind(clientePersonalController));
 app.get('/api/clientes-personales/reservas/:reservaId/estado', clientePersonalController.consultarEstadoReserva.bind(clientePersonalController));
+app.get('/api/clientes-personales/reservas/:id/productos', async (req, res) => {
+  try {
+    const { RepositorioProductoReserva } = await import('./ModuloReservas/DataAccess/RepositorioProductoReserva');
+    const repo = new RepositorioProductoReserva();
+    const productos = await repo.obtenerPorReserva(Number(req.params.id));
+    res.json({ data: productos });
+  } catch (e) { res.status(500).json({ error: 'Error al obtener productos' }); }
+});
 
 // ─── Clientes Empresariales ───────────────────────────────────────────────────
 app.post('/api/clientes-empresariales', clienteEmpresaController.crearClienteEmpresa.bind(clienteEmpresaController));
@@ -103,6 +109,14 @@ app.get('/api/clientes-empresariales/me/preregistros', clienteEmpresaController.
 app.get('/api/clientes-empresariales/me/preregistros/producto/:productoId', clienteEmpresaController.obtenerPreregistroPorProducto.bind(clienteEmpresaController));
 app.delete('/api/clientes-empresariales/me/preregistros/:id', clienteEmpresaController.eliminarPreregistro.bind(clienteEmpresaController));
 app.get('/api/clientes-empresariales/me/reservas', clienteEmpresaController.obtenerReservas.bind(clienteEmpresaController));
+app.get('/api/clientes-empresariales/reservas/:id/productos', async (req, res) => {
+  try {
+    const { RepositorioProductoReserva } = await import('./ModuloReservas/DataAccess/RepositorioProductoReserva');
+    const repo = new RepositorioProductoReserva();
+    const productos = await repo.obtenerPorReserva(Number(req.params.id));
+    res.json({ data: productos });
+  } catch (e) { res.status(500).json({ error: 'Error al obtener productos' }); }
+});
 app.post('/api/clientes-empresariales/registrar-origen-frecuente', clienteEmpresaController.registrarOrigenFrecuente.bind(clienteEmpresaController));
 app.post('/api/clientes-empresariales/registrar-destino-frecuente', clienteEmpresaController.registrarDestinoFrecuente.bind(clienteEmpresaController));
 app.get('/api/clientes-empresariales/frecuentes', clienteEmpresaController.obtenerFrecuentes.bind(clienteEmpresaController));
@@ -162,15 +176,25 @@ app.get('/api/cola/estado', (_req, res) => {
 app.post('/api/reservas', reservaController.crearReserva.bind(reservaController));
 app.get('/api/reservas', reservaController.obtenerReservas.bind(reservaController));
 app.get('/api/reservas/sin-viaje', reservaController.obtenerReservasSinViaje.bind(reservaController));
+app.get('/api/reservas/sin-clasificar', async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT r.id AS reserva_id, r.cliente,
+              COALESCE(json_agg(br.descripcion) FILTER (WHERE br.descripcion IS NOT NULL), '[]') AS descripciones_bienes
+       FROM reserva r
+       LEFT JOIN bien_reserva br ON br.reserva_id = r.id
+       WHERE cardinality(r.categorias) = 0 AND r.estado != 'Cancelado'
+       GROUP BY r.id, r.cliente
+       ORDER BY r.id DESC`
+    );
+    res.json({ data: result.rows });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
 app.get('/api/reservas/:id', reservaController.obtenerReservaPorId.bind(reservaController));
 app.patch('/api/reservas/:id/estado', reservaController.actualizarEstadoReserva.bind(reservaController));
 app.patch('/api/reservas/:id/asignar', reservaController.asignarVehiculoConductor.bind(reservaController));
-app.get('/api/reservas/:id/productos', async (req, res) => {
-  const { RepositorioProductoReserva } = await import('./ModuloReservas/DataAccess/RepositorioProductoReserva');
-  const repo = new RepositorioProductoReserva();
-  const productos = await repo.obtenerPorReserva(Number(req.params.id));
-  res.json({ data: productos });
-});
 
 // ─── Viajes ───────────────────────────────────────────────────────────────────
 app.post('/api/viajes', viajeController.crearViaje.bind(viajeController));
@@ -271,38 +295,41 @@ app.patch('/internal/viajes/vehiculo/:matricula/alertas', async (req, res) => {
 
 // ─── UI y métricas ────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'home.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'home.html'));
 });
 
 app.get('/administradores-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'administradores.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'administradores.html'));
 });
 app.get('/operadores-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'operadores.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'operadores.html'));
 });
 app.get('/conductores-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'conductores.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'conductores.html'));
 });
 app.get('/clientes-personales-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'clientes-personales.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'clientes-personales.html'));
 });
 app.get('/clientes-empresariales-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'clientes-empresariales.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'clientes-empresariales.html'));
 });
 app.get('/productos-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'productos.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'productos.html'));
 });
 app.get('/zonas-geograficas-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'zonas-geograficas.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'zonas-geograficas.html'));
 });
 app.get('/categorias-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'categorias.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'categorias.html'));
+});
+app.get('/correos-ui', (req, res) => {
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'correos.html'));
 });
 app.get('/reservas-no-reconocidas-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'reservas-no-reconocidas.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'reservas-no-reconocidas.html'));
 });
 app.get('/preregistro-empresa-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'preregistro-empresa.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'preregistro-empresa.html'));
 });
 
 // ── F19: SSE — operadores suscritos reciben notificaciones en tiempo real ──────
@@ -321,14 +348,12 @@ app.get('/api/notificaciones/stream', (req, res) => {
   req.on('close', () => sseClients.delete(res));
 });
 
-// Suscriptor 1: clasifica la reserva cuando se crea
-// Las descripciones vienen en el payload (bien_reserva inline), no de la tabla producto.
+// Suscriptor 1: clasifica cada bien de la reserva cuando se crea
 busEventos.on(EVENTO_RESERVA_CREADA, async (payload: PayloadReservaCreada) => {
   try {
-    const bienes: Array<{ descripcion: string; categorias?: string[] }> = (payload as any).bienes ?? [];
-    const descripciones: string[] = bienes.map((b: any) => b.descripcion).filter(Boolean);
+    const bienes: Array<{ productoId?: number; descripcion: string; categorias?: string[] }> = (payload as any).bienes ?? [];
 
-    // Para ClienteEmpresa con categorías ya conocidas del pre-registro, no re-clasificar
+    // ClienteEmpresa: si todos los bienes ya tienen categoría del pre-registro, no re-clasificar
     const todasCategorizadas = bienes.length > 0 && bienes.every((b: any) => b.categorias?.length > 0);
     if (todasCategorizadas) {
       const cats = [...new Set(bienes.flatMap((b: any) => b.categorias as string[]))];
@@ -336,30 +361,72 @@ busEventos.on(EVENTO_RESERVA_CREADA, async (payload: PayloadReservaCreada) => {
       return;
     }
 
-    if (descripciones.length === 0) return;
+    // Leer los bien_reserva ya insertados para tener sus IDs reales
+    const bienesDB = await pool.query(
+      `SELECT br.id, br.descripcion, br.producto_id, p.nombre AS producto_nombre
+       FROM bien_reserva br LEFT JOIN producto p ON p.id = br.producto_id
+       WHERE br.reserva_id = $1 ORDER BY br.id ASC`,
+      [payload.reservaId]
+    );
 
-    const descripcionCombinada = descripciones.join('. ');
-    const resultados = await clasificarRapido(descripcionCombinada, async (iaResult) => {
-      if (iaResult.categoria) {
-        await pool.query(
-          `UPDATE reserva SET categorias = array_append(categorias, $1) WHERE id = $2 AND NOT ($1 = ANY(categorias))`,
-          [iaResult.categoria, payload.reservaId]
-        ).catch(() => {});
+    const todasCategorias = new Set<string>();
+    const descripciones: string[] = [];
+    let hayBienSinCategoria = false;
+
+    for (const row of bienesDB.rows) {
+      const descripcion = row.descripcion || '';
+      if (descripcion) descripciones.push(descripcion);
+      const texto = row.producto_nombre ? `${row.producto_nombre}: ${descripcion}` : descripcion;
+      if (!texto.trim()) continue;
+
+      const [kwResult, tfidfResult] = await Promise.all([
+        clasificarConKeyword(texto),
+        clasificarConTFIDF(texto),
+      ]);
+      const catKw = kwResult.categoria;
+      const catTf = tfidfResult.categoria;
+      console.log(`[Clasificacion #${payload.reservaId}] bien="${texto}" keyword→${catKw ?? 'null'}(${kwResult.confianza.toFixed(2)}) tfidf→${catTf ?? 'null'}(${tfidfResult.confianza.toFixed(2)})`);
+
+      const cats: string[] = [];
+      if (catTf) cats.push(catTf);
+      else if (catKw) cats.push(catKw);
+
+      if (cats.length > 0) {
+        await pool.query('UPDATE bien_reserva SET categorias = $1 WHERE id = $2', [cats, row.id]).catch(() => {});
+        cats.forEach(c => todasCategorias.add(c));
+      } else {
+        hayBienSinCategoria = true;
+        // IA en background para este bien
+        const textoLocal = texto;
+        const bienIdLocal = row.id;
+        clasificarConIA(textoLocal).then(async (iaResult) => {
+          const catIA = iaResult.categoria;
+          console.log(`[Clasificacion #${payload.reservaId}] ia(bg) bien="${textoLocal}" → ${catIA ?? 'null'}${iaResult.error ? ' ERROR:' + iaResult.error : ''}`);
+          if (catIA) {
+            await pool.query('UPDATE bien_reserva SET categorias = $1 WHERE id = $2', [[catIA], bienIdLocal]).catch(() => {});
+            await pool.query(
+              `UPDATE reserva SET categorias = array_append(categorias, $1) WHERE id = $2 AND NOT ($1 = ANY(categorias))`,
+              [catIA, payload.reservaId]
+            ).catch(() => {});
+          }
+        }).catch(() => {});
       }
-    });
+    }
 
-    const encontradas = [...new Set(resultados.map(r => r.categoria).filter((c): c is string => c !== null))];
+    const encontradas = [...todasCategorias];
     if (encontradas.length > 0) {
       await pool.query('UPDATE reserva SET categorias = $1 WHERE id = $2', [encontradas, payload.reservaId]);
-    } else {
+    }
+    if (hayBienSinCategoria && encontradas.length === 0) {
       busEventos.emit(EVENTO_RESERVA_NO_RECONOCIDA, {
         reservaId: payload.reservaId,
         clienteId: payload.clienteId,
         descripcionesBienes: descripciones,
-        resultadosClasificacion: resultados,
+        resultadosClasificacion: [],
         timestamp: new Date().toISOString(),
       });
     }
+    console.log(`[Clasificacion #${payload.reservaId}] resultado → ${encontradas.length > 0 ? encontradas.join(', ') : 'NO RECONOCIDA'}`);
   } catch (e) {
     console.error('[ClasificacionSuscriptor]', e);
   }
@@ -397,31 +464,70 @@ app.patch('/api/reservas/:id/categorias', async (req, res) => {
   }
 });
 
-// ── F19: bien fuera de catálogo → simular envío de correo al cliente ───────────
+// ── F19: bien fuera de catálogo → cancelar reserva + guardar correo al cliente ──
 app.post('/api/reservas/:id/notificar-sin-categoria', async (req, res) => {
   const { clienteId } = req.body;
-  console.log(`[F19] Correo enviado a cliente ${clienteId}: reserva ${req.params.id} no puede satisfacerse`);
-  res.json({ mensaje: `Correo notificado al cliente ${clienteId}` });
+  const reservaId = req.params.id;
+  try {
+    await pool.query("UPDATE reserva SET estado = 'Cancelado' WHERE id = $1", [reservaId]);
+    await pool.query(
+      `INSERT INTO correo (cliente, reserva_id, asunto, mensaje) VALUES ($1, $2, $3, $4)`,
+      [
+        clienteId,
+        reservaId,
+        `Reserva #${reservaId} cancelada`,
+        `Lamentablemente no podemos satisfacer su reserva #${reservaId}. El bien indicado no se encuentra dentro de las categorías que maneja MOVE. Si tiene consultas, contáctese con nosotros.`,
+      ]
+    );
+    console.log(`[F19] Reserva #${reservaId} cancelada y correo enviado a cliente "${clienteId}"`);
+    res.json({ mensaje: `Reserva cancelada y correo enviado al cliente ${clienteId}` });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Correos del cliente ────────────────────────────────────────────────────────
+app.get('/api/correos', async (req, res) => {
+  const { cliente } = req.query;
+  if (!cliente) { res.status(400).json({ error: 'cliente requerido' }); return; }
+  try {
+    const result = await pool.query(
+      `SELECT id, reserva_id, asunto, mensaje, leido, created_at FROM correo WHERE cliente = $1 ORDER BY created_at DESC`,
+      [cliente]
+    );
+    res.json({ data: result.rows });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/correos/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM correo WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
 });
 app.get('/pagos-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'pagos.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'pagos.html'));
 });
 app.get('/reservas-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'reservas.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'reservas.html'));
 });
 app.get('/viajes-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'viajes.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'viajes.html'));
 });
 app.get('/mis-viajes-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'mis-viajes.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'mis-viajes.html'));
 });
 app.get('/incidentes-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'incidentes.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'UI', 'incidentes.html'));
 });
 
 app.get('/metricas', manejadorMetricas);
 app.get('/metricas-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'Metrics', 'metricas.html'));
+  sendHtml(res, path.join(__dirname, 'Shared', 'Metrics', 'metricas.html'));
 });
 
 app.use(manejadorErrores);

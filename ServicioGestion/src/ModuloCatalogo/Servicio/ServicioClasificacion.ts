@@ -3,7 +3,7 @@ import { ResultadoClasificacion } from '../../Shared/Eventos/BusEventos';
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'tinyllama';
-const OLLAMA_TIMEOUT_MS = 800;
+const OLLAMA_TIMEOUT_MS = 8000;
 
 interface Categoria { nombre: string; nombreEs: string; descripcion: string | null }
 
@@ -15,12 +15,22 @@ async function cargarCategorias(): Promise<Categoria[]> {
 // ── Método 1: Keyword matching ────────────────────────────────────────────────
 // Tokeniza descripción y categorías, cuenta palabras en común.
 // Complejidad O(n*m), ~1ms para 250 categorías.
+
+// Stemmer mínimo para español: quita plurales comunes (mesas→mesa, sillas→silla)
+function stemEsp(w: string): string {
+  if (w.length > 4 && w.endsWith('es')) return w.slice(0, -2);
+  if (w.length > 3 && w.endsWith('s')) return w.slice(0, -1);
+  return w;
+}
+
 function tokenizar(texto: string): Set<string> {
   return new Set(
     texto.toLowerCase()
       .normalize('NFD').replace(/[̀-ͯ]/g, '') // quita tildes
       .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
+      .filter(w => w.length > 2)
+      .map(stemEsp)
       .filter(w => w.length > 2)
   );
 }
@@ -44,7 +54,7 @@ export async function clasificarConKeyword(descripcion: string): Promise<Resulta
     const confianza = mejorScore > 0 ? Math.min(mejorScore / tokens.size, 1) : 0;
     return {
       metodo: 'keyword',
-      categoria: confianza > 0.05 ? mejorCategoria : null,
+      categoria: confianza >= 0.3 ? mejorCategoria : null,
       confianza,
       tiempoMs: Date.now() - t0,
     };
@@ -105,7 +115,7 @@ export async function clasificarConTFIDF(descripcion: string): Promise<Resultado
       if (score > mejorScore) { mejorScore = score; mejorCategoria = cat.nombreEs; }
     });
 
-    const umbral = 0.1;
+    const umbral = 0.15;
     return {
       metodo: 'tfidf',
       categoria: mejorScore >= umbral ? mejorCategoria : null,
@@ -124,7 +134,7 @@ export async function clasificarConIA(descripcion: string): Promise<ResultadoCla
   const t0 = Date.now();
   try {
     const categorias = await cargarCategorias();
-    const listaCats = categorias.map(c => c.nombreEs).slice(0, 50).join(', '); // primeras 50 como referencia
+    const listaCats = categorias.map(c => c.nombreEs).join(', ');
 
     const prompt =
       `Tenés las siguientes categorías de bienes: ${listaCats}.\n` +

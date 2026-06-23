@@ -154,13 +154,18 @@ export class ControladorClienteEmpresa {
       );
 
       const repoProductos = new RepositorioProductoReserva();
-      await repoProductos.guardarProductos(Number(reserva.id), (bienes ?? []).map((b: any) => ({
-        productoId: b.productoId ? Number(b.productoId) : null,
-        descripcion: b.descripcion ?? '',
-        valor: b.valor != null ? Number(b.valor) : null,
-        tamano: b.tamano != null ? Number(b.tamano) : null,
-        categorias: b.categorias ?? [],
-      })));
+      try {
+        await repoProductos.guardarProductos(Number(reserva.id), (bienes ?? []).map((b: any) => ({
+          productoId: b.productoId ? Number(b.productoId) : null,
+          descripcion: b.descripcion ?? '',
+          valor: b.valor != null ? Number(b.valor) : null,
+          tamano: b.tamano != null ? Number(b.tamano) : null,
+          categorias: b.categorias ?? [],
+        })));
+        console.log(`[Reserva #${reserva.id}] Guardados ${(bienes ?? []).length} producto(s) en bien_reserva`);
+      } catch (e) {
+        console.error(`[Reserva #${reserva.id}] Error guardando productos en bien_reserva:`, e);
+      }
 
       busEventos.emit(EVENTO_RESERVA_CREADA, {
         reservaId: reserva.id,

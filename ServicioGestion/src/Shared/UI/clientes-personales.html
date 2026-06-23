@@ -383,7 +383,7 @@
             lista.innerHTML = '<span style="color:#999;font-size:0.9em">Cargando...</span>';
             panel.style.display = 'block';
             try {
-                const res = await apiFetch(`/api/reservas/${reservaId}/productos`);
+                const res = await apiFetch(`/api/clientes-personales/reservas/${reservaId}/productos`);
                 const json = await res.json();
                 const productos = json.data || [];
                 if (productos.length === 0) {

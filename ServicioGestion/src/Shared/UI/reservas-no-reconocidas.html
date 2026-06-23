@@ -148,8 +148,9 @@
         if (!sel) return;
         (json.data || []).forEach(c => {
           const opt = document.createElement('option');
-          opt.value = c.nombre_es;
-          opt.textContent = c.nombre_es;
+          const nombre = c.nombreEs || c.nombre_es || c.nombre;
+          opt.value = nombre;
+          opt.textContent = nombre;
           sel.appendChild(opt);
         });
       } catch {}
@@ -167,10 +168,10 @@
           body: JSON.stringify({ categorias: [cat] })
         });
         if (resp.ok) {
-          msg.innerHTML = `<div class="exito">Categoría "${cat}" asignada correctamente</div>`;
-          const card = document.getElementById(`notif-${reservaId}`);
-          if (card) card.classList.add('resuelta');
           pendientes.delete(reservaId);
+          const card = document.getElementById(`notif-${reservaId}`);
+          if (card) card.remove();
+          renderPendientes();
           mostrarBadge();
         } else {
           const j = await resp.json();
@@ -191,8 +192,10 @@
         });
         const j = await resp.json();
         if (resp.ok) {
-          msg.innerHTML = `<div class="exito">${j.mensaje || 'Correo enviado al cliente'}</div>`;
           pendientes.delete(reservaId);
+          const card = document.getElementById(`notif-${reservaId}`);
+          if (card) card.remove();
+          renderPendientes();
           mostrarBadge();
         } else {
           msg.innerHTML = `<div class="error-msg">Error: ${j.error}</div>`;
@@ -234,6 +237,34 @@
       }
     }
 
+    async function cargarPendientesDesdeDB() {
+      const panel = document.getElementById('panelReservas');
+      try {
+        const resp = await fetch('/api/reservas/sin-clasificar', { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) {
+          panel.innerHTML = `<div class="error-msg">Error al cargar desde DB: HTTP ${resp.status} — ${await resp.text()}</div>`;
+          return;
+        }
+        const json = await resp.json();
+        for (const row of (json.data || [])) {
+          if (!pendientes.has(row.reserva_id)) {
+            pendientes.set(row.reserva_id, {
+              reservaId: row.reserva_id,
+              clienteId: row.cliente,
+              descripcionesBienes: row.descripciones_bienes || [],
+              resultadosClasificacion: [],
+              timestamp: new Date().toISOString(),
+            });
+          }
+        }
+        renderPendientes();
+        if (pendientes.size > 0) mostrarBadge();
+      } catch (e) {
+        panel.innerHTML = `<div class="error-msg">Error de red al cargar pendientes: ${e.message}</div>`;
+      }
+    }
+
+    cargarPendientesDesdeDB();
     conectarSSE();
   </script>
 </body>
