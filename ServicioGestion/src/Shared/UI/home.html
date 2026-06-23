@@ -78,6 +78,7 @@
                 ]},
                 { seccion: 'Monitoreo', links: [
                     { label: 'Monitoreo de Traslados', href: 'http://localhost:3000/traslados-ui' },
+                    { label: 'Reservas No Reconocidas', href: '/reservas-no-reconocidas-ui' },
                 ]},
             ],
             'Conductor': [
@@ -85,12 +86,16 @@
                 { seccion: 'Mi perfil',  links: [{ label: 'Mis datos',            href: '/conductores-ui' }] },
             ],
             'ClientePersonal': [
-                { seccion: 'Mi sección', links: [{ label: 'Mis datos y reservas', href: '/clientes-personales-ui' }] },
+                { seccion: 'Mi sección', links: [
+                    { label: 'Mis datos y reservas', href: '/clientes-personales-ui' },
+                    { label: 'Mis Correos',          href: '/correos-ui' },
+                ]},
             ],
             'ClienteEmpresa': [
                 { seccion: 'Mi sección', links: [
-                    { label: 'Mis datos y reservas', href: '/clientes-empresariales-ui' },
-                    { label: 'Productos',             href: '/productos-ui' },
+                    { label: 'Mis datos y reservas',   href: '/clientes-empresariales-ui' },
+                    { label: 'Pre-registro de Bienes', href: '/preregistro-empresa-ui' },
+                    { label: 'Mis Correos',            href: '/correos-ui' },
                 ]},
             ],
         };

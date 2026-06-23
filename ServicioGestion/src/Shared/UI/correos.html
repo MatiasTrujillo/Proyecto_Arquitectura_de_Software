@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mis Correos - MOVE</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    .header { background: #1a1a2e; color: white; padding: 14px 20px; margin: -20px -20px 24px; display: flex; align-items: center; gap: 16px; }
+    .header a { color: #aac4ff; text-decoration: none; font-size: 0.9em; }
+    h2 { margin: 0 0 20px; color: #333; }
+    .correo-card { background: white; border: 1px solid #dee2e6; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .correo-card.no-leido { border-left: 4px solid #0066cc; background: #f0f6ff; }
+    .correo-card.leido { border-left: 4px solid #dee2e6; color: #888; }
+    .correo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .correo-asunto { font-weight: bold; font-size: 1em; color: #222; }
+    .correo-fecha { font-size: 0.8em; color: #888; }
+    .correo-mensaje { color: #444; margin: 6px 0 10px; line-height: 1.5; }
+    .btn { padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
+    .btn-leido { background: #6c757d; color: white; }
+    .btn-leido:hover { background: #5a6268; }
+    .sin-correos { text-align: center; color: #888; font-style: italic; padding: 40px; background: white; border-radius: 8px; }
+    .badge { background: #dc3545; color: white; border-radius: 12px; padding: 2px 10px; font-size: 0.85em; margin-left: 8px; }
+    .error-msg { color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; padding: 10px 14px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="javascript:history.back()">← Volver</a>
+    <strong>Mis Correos</strong>
+    <span id="badgeNoLeidos" class="badge" style="display:none"></span>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <h2 style="margin:0">Bandeja de entrada</h2>
+    <button class="btn btn-leido" onclick="cargarCorreos()">Actualizar</button>
+  </div>
+
+  <div id="contenido">
+    <div class="sin-correos">Cargando...</div>
+  </div>
+
+  <script>
+    const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
+    if (!token) window.location.href = 'http://localhost:3002/';
+
+    function getCedula() {
+      try { return JSON.parse(atob(token.split('.')[1])).cedula || null; }
+      catch { return null; }
+    }
+
+    function apiFetch(url, opts = {}) {
+      opts.headers = { ...(opts.headers || {}), Authorization: 'Bearer ' + token };
+      return fetch(url, opts);
+    }
+
+    async function cargarCorreos() {
+      const cedula = getCedula();
+      const contenido = document.getElementById('contenido');
+      if (!cedula) {
+        contenido.innerHTML = '<div class="error-msg">No se pudo identificar al usuario.</div>';
+        return;
+      }
+      try {
+        const res = await apiFetch(`/api/correos?cliente=${encodeURIComponent(cedula)}`);
+        if (!res.ok) {
+          contenido.innerHTML = `<div class="error-msg">Error HTTP ${res.status}</div>`;
+          return;
+        }
+        const json = await res.json();
+        const correos = json.data || [];
+        const noLeidos = correos.filter(c => !c.leido).length;
+        const badge = document.getElementById('badgeNoLeidos');
+        if (noLeidos > 0) { badge.textContent = noLeidos + ' nuevo' + (noLeidos > 1 ? 's' : ''); badge.style.display = 'inline'; document.title = `(${noLeidos}) Mis Correos`; }
+        else { badge.style.display = 'none'; document.title = 'Mis Correos'; }
+
+        if (correos.length === 0) {
+          contenido.innerHTML = '<div class="sin-correos">No tenés correos.</div>';
+          return;
+        }
+        contenido.innerHTML = correos.map(c => `
+          <div class="correo-card no-leido">
+            <div class="correo-header">
+              <span class="correo-asunto">${c.asunto}</span>
+              <span class="correo-fecha">${new Date(c.created_at).toLocaleString('es-UY')}</span>
+            </div>
+            <p class="correo-mensaje">${c.mensaje}</p>
+            <button class="btn btn-leido" onclick="marcarLeido(${c.id})">Marcar como leído</button>
+          </div>
+        `).join('');
+      } catch (e) {
+        contenido.innerHTML = `<div class="error-msg">Error: ${e.message}</div>`;
+      }
+    }
+
+    async function marcarLeido(id) {
+      await apiFetch(`/api/correos/${id}`, { method: 'DELETE' });
+      cargarCorreos();
+    }
+
+    cargarCorreos();
+  </script>
+</body>
+</html>

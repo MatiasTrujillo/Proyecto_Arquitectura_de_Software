@@ -5,93 +5,38 @@ import { IServicioProducto } from "../IServicio/IServicioProducto";
 export class ServicioProducto implements IServicioProducto {
   constructor(private repositorio: IRepositorioProducto) {}
 
-  async crearProducto(descripcion: string, valor: number | null, tamano: number, categoria: string): Promise<ProductoDTO> {
-    const descripcionValida = this.validarDescripcion(descripcion);
-    const valorValido = valor != null ? this.validarValor(valor) : null;
-    const tamanoValido = this.validarTamano(tamano);
-    const categoriaValida = this.validarCategoria(categoria);
-
-    const producto = await this.repositorio.crearProducto(descripcionValida, valorValido, tamanoValido, categoriaValida);
+  async crearProducto(nombre: string): Promise<ProductoDTO> {
+    const nombreValido = this.validarNombre(nombre);
+    const producto = await this.repositorio.crearProducto(nombreValido);
     return ProductoDTO.fromEntity(producto);
   }
 
   async obtenerProductos(): Promise<ProductoDTO[]> {
     const productos = await this.repositorio.obtenerProductos();
-    return productos.map(producto => ProductoDTO.fromEntity(producto));
+    return productos.map(p => ProductoDTO.fromEntity(p));
   }
 
   async obtenerProductoPorId(id: number): Promise<ProductoDTO> {
-    const idValido = this.validarId(id);
-    const producto = await this.repositorio.obtenerProductoPorId(idValido);
-
-    if (!producto) {
-      throw new Error(`No se encontró el producto con id ${idValido}`);
-    }
-
+    const producto = await this.repositorio.obtenerProductoPorId(id);
+    if (!producto) throw new Error(`No se encontró el producto con id ${id}`);
     return ProductoDTO.fromEntity(producto);
   }
 
-  async actualizarProducto(id: number, descripcion: string, valor: number | null, tamano: number, categoria: string): Promise<ProductoDTO> {
-    const idValido = this.validarId(id);
-    const descripcionValida = this.validarDescripcion(descripcion);
-    const valorValido = valor != null ? this.validarValor(valor) : null;
-    const tamanoValido = this.validarTamano(tamano);
-    const categoriaValida = this.validarCategoria(categoria);
-
-    if (!await this.repositorio.existe(idValido)) {
-      throw new Error(`No se encontró el producto con id ${idValido}`);
-    }
-
-    const productoActualizado = await this.repositorio.actualizarProducto(idValido, descripcionValida, valorValido, tamanoValido, categoriaValida);
-    if (!productoActualizado) {
-      throw new Error(`No se pudo actualizar el producto con id ${idValido}`);
-    }
-
-    return ProductoDTO.fromEntity(productoActualizado);
+  async actualizarProducto(id: number, nombre: string): Promise<ProductoDTO> {
+    if (!await this.repositorio.existe(id)) throw new Error(`No se encontró el producto con id ${id}`);
+    const nombreValido = this.validarNombre(nombre);
+    const actualizado = await this.repositorio.actualizarProducto(id, nombreValido);
+    if (!actualizado) throw new Error(`No se pudo actualizar el producto con id ${id}`);
+    return ProductoDTO.fromEntity(actualizado);
   }
 
   async eliminarProducto(id: number): Promise<void> {
-    const idValido = this.validarId(id);
-
-    if (!await this.repositorio.existe(idValido)) {
-      throw new Error(`No se encontró el producto con id ${idValido}`);
-    }
-
-    await this.repositorio.eliminarProducto(idValido);
+    if (!await this.repositorio.existe(id)) throw new Error(`No se encontró el producto con id ${id}`);
+    await this.repositorio.eliminarProducto(id);
   }
 
-  private validarId(id: number): number {
-    if (typeof id !== "number" || Number.isNaN(id) || id <= 0) {
-      throw new Error("Id de producto inválido");
-    }
-    return id;
-  }
-
-  private validarDescripcion(descripcion: string): string {
-    if (!descripcion || descripcion.trim().length === 0) {
-      throw new Error("Descripción inválida. Debe contener texto.");
-    }
-    return descripcion.trim();
-  }
-
-  private validarValor(valor: number): number {
-    if (typeof valor !== "number" || Number.isNaN(valor) || valor < 0) {
-      throw new Error("Valor inválido. Debe ser un número mayor o igual a cero.");
-    }
-    return valor;
-  }
-
-  private validarTamano(tamano: number): number {
-    if (typeof tamano !== "number" || Number.isNaN(tamano) || tamano < 0) {
-      throw new Error("Tamaño inválido. Debe ser un número mayor o igual a cero.");
-    }
-    return tamano;
-  }
-
-  private validarCategoria(categoria: string): string {
-    if (!categoria || categoria.trim().length === 0) {
-      throw new Error("Categoría inválida. Debe contener texto.");
-    }
-    return categoria.trim();
+  private validarNombre(nombre: string): string {
+    if (!nombre || nombre.trim().length === 0) throw new Error("El nombre del producto no puede estar vacío");
+    return nombre.trim();
   }
 }

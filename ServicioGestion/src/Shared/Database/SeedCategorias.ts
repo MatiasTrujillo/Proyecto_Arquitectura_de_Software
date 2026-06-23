@@ -10,7 +10,9 @@ export async function seedCategorias(): Promise<void> {
       return;
     }
 
-    const content = fs.readFileSync(csvPath, 'utf-8');
+    // El CSV está en ISO-8859-1; leerlo como latin1 y reinterpretar como UTF-8 evita el mojibake
+    const rawContent = fs.readFileSync(csvPath, 'latin1');
+    const content = Buffer.from(rawContent, 'latin1').toString('utf8');
     const lines = content.split('\n').slice(1); // skip header
 
     let insertadas = 0;
@@ -35,7 +37,8 @@ export async function seedCategorias(): Promise<void> {
       if (!nombre || !nombreEs) continue;
 
       await pool.query(
-        'INSERT INTO categoria (nombre, nombre_es, descripcion) VALUES ($1, $2, $3) ON CONFLICT (nombre) DO NOTHING',
+        `INSERT INTO categoria (nombre, nombre_es, descripcion) VALUES ($1, $2, $3)
+         ON CONFLICT (nombre) DO UPDATE SET nombre_es = EXCLUDED.nombre_es, descripcion = EXCLUDED.descripcion`,
         [nombre, nombreEs, descripcion || null]
       );
       insertadas++;

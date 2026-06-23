@@ -8,11 +8,16 @@ import { RepositorioReserva } from "../../../ModuloReservas/DataAccess/Repositor
 import { IServicioPago } from "../../../ModuloPagos/IServicio/IServicioPago";
 import { ServicioPago } from "../../../ModuloPagos/Servicio/ServicioPago";
 import { RepositorioPago } from "../../../ModuloPagos/DataAccess/RepositorioPago";
+import { ServicioPreregistroProducto } from "../../Servicio/ServicioPreregistroProducto";
+import { RepositorioPreregistroProducto } from "../../DataAccess/RepositorioPreregistroProducto";
+import { busEventos, EVENTO_RESERVA_CREADA } from "../../../Shared/Eventos/BusEventos";
+import { RepositorioProductoReserva } from "../../../ModuloReservas/DataAccess/RepositorioProductoReserva";
 
 export class ControladorClienteEmpresa {
   private servicioClienteEmpresa: IServicioClienteEmpresa;
   private servicioReserva: IServicioReserva;
   private servicioPago: IServicioPago;
+  private servicioPreregistro: ServicioPreregistroProducto;
 
   constructor(
     servicioClienteEmpresa?: IServicioClienteEmpresa,
@@ -22,6 +27,7 @@ export class ControladorClienteEmpresa {
     this.servicioClienteEmpresa = servicioClienteEmpresa ?? new ServicioClienteEmpresa(new RepositorioClienteEmpresa());
     this.servicioReserva = servicioReserva ?? new ServicioReserva(new RepositorioReserva());
     this.servicioPago = servicioPago ?? new ServicioPago(new RepositorioPago());
+    this.servicioPreregistro = new ServicioPreregistroProducto(new RepositorioPreregistroProducto());
   }
 
   async crearClienteEmpresa(req: Request, res: Response): Promise<void> {
@@ -76,20 +82,99 @@ export class ControladorClienteEmpresa {
 
   calcularTraslado(req: Request, res: Response): void {
     try {
-      const { origen, destino } = req.body;
       res.status(200).json({ data: { costo: 0, tiempo: 0 } });
     } catch (error) {
       res.status(500).json({ error: error });
     }
   }
 
+  // ── Pre-registro de bienes (F3) ─────────────────────────────────────────────
+
+  async crearPreregistro(req: Request, res: Response): Promise<void> {
+    try {
+      const clienteEmpresaId = (req as any).usuario?.cedula;
+      const { productoId, productoNombre, descripcion, valor, tamano } = req.body;
+      if (!productoId) { res.status(400).json({ error: 'productoId es requerido' }); return; }
+      const preregistro = await this.servicioPreregistro.crearPreregistro(
+        clienteEmpresaId,
+        Number(productoId),
+        productoNombre ?? '',
+        descripcion,
+        valor != null ? Number(valor) : null,
+        tamano != null ? Number(tamano) : null,
+      );
+      res.status(201).json({ data: preregistro });
+    } catch (error) {
+      this.manejarError(res, error);
+    }
+  }
+
+  async obtenerPreregistros(req: Request, res: Response): Promise<void> {
+    try {
+      const clienteEmpresaId = (req as any).usuario?.cedula;
+      const preregistros = await this.servicioPreregistro.obtenerPreregistros(clienteEmpresaId);
+      res.status(200).json({ data: preregistros });
+    } catch (error) {
+      this.manejarError(res, error);
+    }
+  }
+
+  async obtenerPreregistroPorProducto(req: Request, res: Response): Promise<void> {
+    try {
+      const clienteEmpresaId = (req as any).usuario?.cedula;
+      const productoId = Number(req.params.productoId);
+      const preregistro = await this.servicioPreregistro.obtenerPreregistroPorProducto(clienteEmpresaId, productoId);
+      res.status(200).json({ data: preregistro ?? null });
+    } catch (error) {
+      this.manejarError(res, error);
+    }
+  }
+
+  async eliminarPreregistro(req: Request, res: Response): Promise<void> {
+    try {
+      const clienteEmpresaId = (req as any).usuario?.cedula;
+      await this.servicioPreregistro.eliminarPreregistro(Number(req.params.id), clienteEmpresaId);
+      res.status(204).send();
+    } catch (error) {
+      this.manejarError(res, error);
+    }
+  }
+
+  // ── Reservas ────────────────────────────────────────────────────────────────
+
   async realizarReserva(req: Request, res: Response): Promise<void> {
     try {
       const clienteId = (req as any).usuario?.cedula ?? req.body.clienteId;
-      const { origen, destino, fecha, costo, vehiculo, productos, conductor, categorias } = req.body;
+      const { origen, destino, fecha, costo, vehiculo, bienes, conductor } = req.body;
+
+      const productosIds = (bienes ?? []).map((b: any) => b.productoId).filter(Boolean).map(Number);
+
       const reserva = await this.servicioReserva.crearReserva(
-        clienteId, origen, destino, fecha, costo, productos ?? [], categorias ?? [], vehiculo, conductor
+        clienteId, origen, destino, fecha, costo, productosIds, [], vehiculo, conductor
       );
+
+      const repoProductos = new RepositorioProductoReserva();
+      try {
+        await repoProductos.guardarProductos(Number(reserva.id), (bienes ?? []).map((b: any) => ({
+          productoId: b.productoId ? Number(b.productoId) : null,
+          descripcion: b.descripcion ?? '',
+          valor: b.valor != null ? Number(b.valor) : null,
+          tamano: b.tamano != null ? Number(b.tamano) : null,
+          categorias: b.categorias ?? [],
+        })));
+        console.log(`[Reserva #${reserva.id}] Guardados ${(bienes ?? []).length} producto(s) en bien_reserva`);
+      } catch (e) {
+        console.error(`[Reserva #${reserva.id}] Error guardando productos en bien_reserva:`, e);
+      }
+
+      busEventos.emit(EVENTO_RESERVA_CREADA, {
+        reservaId: reserva.id,
+        clienteId,
+        productosIds,
+        bienes: bienes ?? [],
+        esEmpresa: true,
+      });
+
       res.status(201).json({ data: reserva });
     } catch (error) {
       this.manejarError(res, error);
@@ -126,15 +211,6 @@ export class ControladorClienteEmpresa {
       const pago = await this.servicioPago.crearPago(new Date(), reserva.costo, "Completado", reservaId);
       await this.servicioReserva.actualizarEstadoReserva(reservaId, "Pagado");
       res.status(201).json({ data: pago });
-    } catch (error) {
-      this.manejarError(res, error);
-    }
-  }
-
-  asociarProducto(req: Request, res: Response): void {
-    try {
-      const { clienteId, productoId } = req.body;
-      res.status(200).json({ mensaje: "Producto asociado al clienteEmpresa" });
     } catch (error) {
       this.manejarError(res, error);
     }
@@ -179,12 +255,10 @@ export class ControladorClienteEmpresa {
 
   private manejarError(res: Response, error: unknown): void {
     const mensaje = error instanceof Error ? error.message : String(error);
-
     if (/no se encontr|no encontrado/i.test(mensaje)) {
       res.status(404).json({ error: mensaje });
       return;
     }
-
     res.status(400).json({ error: mensaje });
   }
 }

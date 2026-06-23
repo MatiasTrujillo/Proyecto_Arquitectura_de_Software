@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Reservas No Reconocidas - F19</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+    .header { background: #1a1a2e; color: white; padding: 14px 20px; margin: -20px -20px 20px; display: flex; align-items: center; gap: 16px; }
+    .header a { color: #aac4ff; text-decoration: none; font-size: 0.9em; }
+    h2 { margin: 0 0 20px; color: #333; }
+    .badge-nuevo { background: #dc3545; color: white; border-radius: 12px; padding: 2px 10px; font-size: 0.8em; margin-left: 8px; display: none; }
+    .notif-panel { background: white; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); padding: 16px; margin-bottom: 20px; }
+    .notif-item { border: 1px solid #dee2e6; border-radius: 6px; padding: 14px; margin-bottom: 12px; background: #fffbe6; }
+    .notif-item.resuelta { background: #f0fff4; border-color: #28a745; }
+    .notif-item h4 { margin: 0 0 8px; font-size: 1em; color: #333; }
+    .metodos { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+    .metodo-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
+    .metodo-keyword { background: #e3f2fd; color: #0d47a1; }
+    .metodo-tfidf { background: #f3e5f5; color: #6a1b9a; }
+    .metodo-ia { background: #e8f5e9; color: #1b5e20; }
+    .metodo-none { background: #fce4ec; color: #880e4f; }
+    .acciones { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+    select, input[type=text] { padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9em; }
+    button { padding: 7px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+    .btn-asignar { background: #0066cc; color: white; }
+    .btn-asignar:hover { background: #0052a3; }
+    .btn-email { background: #6c757d; color: white; }
+    .btn-email:hover { background: #5a6268; }
+    .sin-pendientes { color: #666; font-style: italic; text-align: center; padding: 30px; }
+    .tiempo { font-size: 0.8em; color: #888; }
+    .comparacion-panel { background: white; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); padding: 16px; margin-bottom: 20px; }
+    .comp-resultado { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+    .comp-card { border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; min-width: 180px; flex: 1; }
+    .comp-card h5 { margin: 0 0 6px; font-size: 0.9em; }
+    .comp-cat { font-weight: bold; font-size: 1.1em; color: #0066cc; }
+    .comp-no { color: #dc3545; font-style: italic; }
+    .exito { color: #155724; background: #d4edda; border: 1px solid #c3e6cb; padding: 8px 12px; border-radius: 4px; }
+    .error-msg { color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; padding: 8px 12px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="javascript:history.back()">← Volver</a>
+    <strong>Clasificación de Reservas No Reconocidas (F19)</strong>
+    <span class="badge-nuevo" id="badgeNuevo">● NUEVO</span>
+  </div>
+
+  <div class="comparacion-panel">
+    <h2 style="margin:0 0 10px">Comparador de métodos (R10)</h2>
+    <p style="margin:0 0 10px;color:#555;font-size:0.9em">Ingresá una descripción para ver cómo clasifican los 3 métodos y comparar tiempos de respuesta.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <input type="text" id="descComparar" placeholder="ej: quiero trasladar un sillón y un monitor" style="flex:1;min-width:250px">
+      <button class="btn-asignar" onclick="comparar()">Comparar los 3 métodos</button>
+    </div>
+    <div id="resultadoComparacion"></div>
+  </div>
+
+  <h2>Reservas pendientes de clasificación <span class="badge-nuevo" id="badgePendientes" style="display:none">0</span></h2>
+  <div class="notif-panel" id="panelReservas">
+    <div class="sin-pendientes" id="sinPendientes">No hay reservas pendientes.</div>
+  </div>
+
+  <script>
+    const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
+    const rol   = sessionStorage.getItem('auth_rol');
+
+    // Cola local de reservas no reconocidas (llegan por SSE)
+    const pendientes = new Map(); // reservaId → payload
+
+    // ── SSE: suscribirse al bus de eventos del servidor ───────────────────────
+    function conectarSSE() {
+      const source = new EventSource(`/api/notificaciones/stream?token=${token}`);
+
+      source.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.tipo === 'reserva-no-reconocida') {
+          pendientes.set(String(data.reservaId), data);
+          renderPendientes();
+          mostrarBadge();
+        }
+      };
+
+      source.onerror = () => {
+        // Reconexión automática gestionada por el browser (SSE estándar)
+        console.warn('[SSE] Reconectando...');
+      };
+    }
+
+    function mostrarBadge() {
+      const badge = document.getElementById('badgePendientes');
+      badge.textContent = pendientes.size;
+      badge.style.display = 'inline';
+      document.title = `(${pendientes.size}) Reservas No Reconocidas`;
+    }
+
+    function renderPendientes() {
+      const panel = document.getElementById('panelReservas');
+      const sin   = document.getElementById('sinPendientes');
+
+      if (pendientes.size === 0) {
+        sin.style.display = 'block';
+        // limpiar cards resueltas
+        [...panel.querySelectorAll('.notif-item')].forEach(el => el.remove());
+        return;
+      }
+      sin.style.display = 'none';
+
+      for (const [id, p] of pendientes) {
+        if (document.getElementById(`notif-${id}`)) continue; // ya renderizada
+
+        const div = document.createElement('div');
+        div.className = 'notif-item';
+        div.id = `notif-${id}`;
+
+        const metodosHtml = (p.resultadosClasificacion || []).map(r => {
+          const cls = r.categoria ? `metodo-${r.metodo.replace('-','').replace('generativa','')}` : 'metodo-none';
+          const cat = r.categoria ? `→ <em>${r.categoria}</em>` : '→ sin resultado';
+          const err = r.error ? ` (${r.error})` : '';
+          return `<span class="metodo-badge ${cls}">${r.metodo} ${cat} · ${r.tiempoMs}ms${err}</span>`;
+        }).join('');
+
+        div.innerHTML = `
+          <h4>Reserva #${p.reservaId} · Cliente: ${p.clienteId}</h4>
+          <div class="tiempo">Recibida: ${new Date(p.timestamp).toLocaleTimeString()}</div>
+          <p style="margin:8px 0 4px"><strong>Descripción de los bienes:</strong><br>
+            ${(p.descripcionesBienes || []).map(d => `• ${d}`).join('<br>')}
+          </p>
+          <div class="metodos">${metodosHtml || '<span style="color:#999">Sin resultados de clasificación</span>'}</div>
+          <div class="acciones">
+            <select id="cat-${p.reservaId}" style="min-width:200px">
+              <option value="">— Seleccioná una categoría —</option>
+            </select>
+            <button class="btn-asignar" onclick="asignarCategoria('${p.reservaId}')">Asignar categoría</button>
+            <button class="btn-email" onclick="notificarSinCategoria('${p.reservaId}', '${p.clienteId}')">Enviar correo (bien fuera de catálogo)</button>
+          </div>
+          <div id="msg-${p.reservaId}"></div>
+        `;
+        panel.appendChild(div);
+        cargarCategorias(`cat-${p.reservaId}`);
+      }
+    }
+
+    async function cargarCategorias(selectId) {
+      try {
+        const resp = await fetch('/api/categorias', { headers: { Authorization: 'Bearer ' + token } });
+        const json = await resp.json();
+        const sel  = document.getElementById(selectId);
+        if (!sel) return;
+        (json.data || []).forEach(c => {
+          const opt = document.createElement('option');
+          const nombre = c.nombreEs || c.nombre_es || c.nombre;
+          opt.value = nombre;
+          opt.textContent = nombre;
+          sel.appendChild(opt);
+        });
+      } catch {}
+    }
+
+    async function asignarCategoria(reservaId) {
+      const sel = document.getElementById(`cat-${reservaId}`);
+      const cat = sel?.value;
+      const msg = document.getElementById(`msg-${reservaId}`);
+      if (!cat) { msg.innerHTML = '<div class="error-msg">Seleccioná una categoría</div>'; return; }
+      try {
+        const resp = await fetch(`/api/reservas/${reservaId}/categorias`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify({ categorias: [cat] })
+        });
+        if (resp.ok) {
+          pendientes.delete(reservaId);
+          const card = document.getElementById(`notif-${reservaId}`);
+          if (card) card.remove();
+          renderPendientes();
+          mostrarBadge();
+        } else {
+          const j = await resp.json();
+          msg.innerHTML = `<div class="error-msg">Error: ${j.error}</div>`;
+        }
+      } catch (e) {
+        msg.innerHTML = `<div class="error-msg">Error de red: ${e.message}</div>`;
+      }
+    }
+
+    async function notificarSinCategoria(reservaId, clienteId) {
+      const msg = document.getElementById(`msg-${reservaId}`);
+      try {
+        const resp = await fetch(`/api/reservas/${reservaId}/notificar-sin-categoria`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify({ clienteId })
+        });
+        const j = await resp.json();
+        if (resp.ok) {
+          pendientes.delete(reservaId);
+          const card = document.getElementById(`notif-${reservaId}`);
+          if (card) card.remove();
+          renderPendientes();
+          mostrarBadge();
+        } else {
+          msg.innerHTML = `<div class="error-msg">Error: ${j.error}</div>`;
+        }
+      } catch (e) {
+        msg.innerHTML = `<div class="error-msg">Error: ${e.message}</div>`;
+      }
+    }
+
+    // ── R10: Comparación de los 3 métodos ─────────────────────────────────────
+    async function comparar() {
+      const desc = document.getElementById('descComparar').value.trim();
+      const div  = document.getElementById('resultadoComparacion');
+      if (!desc) { div.innerHTML = '<div class="error-msg">Ingresá una descripción</div>'; return; }
+      div.innerHTML = '<em>Clasificando...</em>';
+      try {
+        const resp = await fetch('/api/clasificacion/comparar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify({ descripcion: desc })
+        });
+        const json = await resp.json();
+        const cards = (json.resultados || []).map(r => {
+          const catHtml = r.categoria
+            ? `<div class="comp-cat">${r.categoria}</div><div>Confianza: ${(r.confianza * 100).toFixed(1)}%</div>`
+            : `<div class="comp-no">Sin resultado</div>`;
+          const errorHtml = r.error ? `<div style="color:#888;font-size:0.8em">${r.error}</div>` : '';
+          return `
+            <div class="comp-card">
+              <h5>${r.metodo}</h5>
+              ${catHtml}
+              ${errorHtml}
+              <div class="tiempo" style="margin-top:6px">⏱ ${r.tiempoMs} ms</div>
+            </div>`;
+        }).join('');
+        div.innerHTML = `<div class="comp-resultado">${cards}</div>`;
+      } catch (e) {
+        div.innerHTML = `<div class="error-msg">Error: ${e.message}</div>`;
+      }
+    }
+
+    async function cargarPendientesDesdeDB() {
+      const panel = document.getElementById('panelReservas');
+      try {
+        const resp = await fetch('/api/reservas/sin-clasificar', { headers: { Authorization: 'Bearer ' + token } });
+        if (!resp.ok) {
+          panel.innerHTML = `<div class="error-msg">Error al cargar desde DB: HTTP ${resp.status} — ${await resp.text()}</div>`;
+          return;
+        }
+        const json = await resp.json();
+        for (const row of (json.data || [])) {
+          if (!pendientes.has(String(row.reserva_id))) {
+            pendientes.set(String(row.reserva_id), {
+              reservaId: row.reserva_id,
+              clienteId: row.cliente,
+              descripcionesBienes: row.descripciones_bienes || [],
+              resultadosClasificacion: [],
+              timestamp: new Date().toISOString(),
+            });
+          }
+        }
+        renderPendientes();
+        if (pendientes.size > 0) mostrarBadge();
+      } catch (e) {
+        panel.innerHTML = `<div class="error-msg">Error de red al cargar pendientes: ${e.message}</div>`;
+      }
+    }
+
+    cargarPendientesDesdeDB();
+    conectarSSE();
+  </script>
+</body>
+</html>
