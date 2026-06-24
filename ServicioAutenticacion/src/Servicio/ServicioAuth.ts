@@ -1,50 +1,78 @@
-import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { RepositorioCredencial } from '../DataAccess/RepositorioCredencial';
 import { RepositorioSesion } from '../DataAccess/RepositorioSesion';
 
-const SALT_ROUNDS  = 10;
-const JWT_SECRET   = process.env.JWT_SECRET   || 'clave-secreta-jwt-dev';
-const JWT_EXPIRY   = process.env.JWT_EXPIRY   || '24h';
+const JWT_SECRET          = process.env.JWT_SECRET          || 'clave-secreta-jwt-dev';
+const JWT_EXPIRY          = process.env.JWT_EXPIRY          || '24h';
+const AUTH0_DOMAIN        = process.env.AUTH0_DOMAIN        || '';
+const AUTH0_CLIENT_ID     = process.env.AUTH0_CLIENT_ID     || '';
+const AUTH0_CLIENT_SECRET = process.env.AUTH0_CLIENT_SECRET || '';
 
-interface JwtPayload {
-  cedula: string;
-  rol:    string;
-  exp:    number;
-}
+interface JwtPayload { cedula: string; rol: string; exp: number; }
 
 export class ServicioAuth {
-  constructor(
-    private repoCredencial: RepositorioCredencial,
-    private repoSesion:     RepositorioSesion,
-  ) {}
+  constructor(private repoSesion: RepositorioSesion) {}
 
-  async registrar(cedula: string, password: string, rol: string): Promise<void> {
-    if (await this.repoCredencial.existe(cedula)) {
-      throw new Error(`Ya existe una credencial para la cédula ${cedula}`);
-    }
-    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    await this.repoCredencial.crear(cedula, passwordHash, rol);
-  }
-
-  async login(cedula: string, password: string): Promise<{ token: string; rol: string }> {
-    const credencial = await this.repoCredencial.buscarPorCedula(cedula);
-    if (!credencial || !credencial.activa) throw new Error('Credenciales inválidas');
-
-    const passwordValida = await bcrypt.compare(password, credencial.passwordHash);
-    if (!passwordValida) throw new Error('Credenciales inválidas');
-
-    // Firmar JWT con cedula y rol — sin base de datos
+  // Emite JWT propio tras autenticación exitosa con Auth0
+  emitirTokenOAuth(cedula: string, rol: string): { token: string; rol: string } {
     const token = jwt.sign(
-      { cedula, rol: credencial.rol },
+      { cedula, rol },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRY } as jwt.SignOptions
     );
-    return { token, rol: credencial.rol };
+    return { token, rol };
+  }
+
+  // Crea usuario en Auth0 via Management API
+  async crearUsuarioEnAuth0(email: string, password: string, cedula: string, rol: string): Promise<void> {
+    const mgmtToken = await this.obtenerTokenManagement();
+
+    const res = await fetch(`https://${AUTH0_DOMAIN}/api/v2/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${mgmtToken}`,
+      },
+      body: JSON.stringify({
+        connection: 'Username-Password-Authentication',
+        email,
+        password,
+        user_metadata: { cedula, rol },
+      }),
+    });
+
+    if (!res.ok) {
+      const err: any = await res.json();
+      throw new Error(err.message || `Error Auth0 al crear usuario (${res.status})`);
+    }
+  }
+
+  async existeUsuarioEnAuth0(email: string): Promise<boolean> {
+    const mgmtToken = await this.obtenerTokenManagement();
+    const res = await fetch(
+      `https://${AUTH0_DOMAIN}/api/v2/users-by-email?email=${encodeURIComponent(email)}`,
+      { headers: { 'Authorization': `Bearer ${mgmtToken}` } }
+    );
+    const users: any[] = await res.json();
+    return Array.isArray(users) && users.length > 0;
+  }
+
+  private async obtenerTokenManagement(): Promise<string> {
+    const res = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        grant_type:    'client_credentials',
+        client_id:     AUTH0_CLIENT_ID,
+        client_secret: AUTH0_CLIENT_SECRET,
+        audience:      `https://${AUTH0_DOMAIN}/api/v2/`,
+      }),
+    });
+    const data: any = await res.json();
+    if (!data.access_token) throw new Error('No se pudo obtener token de Auth0 Management API');
+    return data.access_token;
   }
 
   async logout(token: string): Promise<void> {
-    // Decodificar sin verificar para obtener la expiración del token
     const payload = jwt.decode(token) as JwtPayload | null;
     if (!payload) throw new Error('Token inválido');
     const expiraEn = new Date(payload.exp * 1000);
@@ -54,7 +82,6 @@ export class ServicioAuth {
   async verificar(token: string): Promise<{ cedula: string; rol: string } | null> {
     try {
       const payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
-      // Comprobar si el usuario hizo logout (token en lista negra)
       if (await this.repoSesion.estaRevocado(token)) return null;
       return { cedula: payload.cedula, rol: payload.rol };
     } catch {

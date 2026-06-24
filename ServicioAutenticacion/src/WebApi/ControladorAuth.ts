@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { ServicioAuth } from '../Servicio/ServicioAuth';
-import { RepositorioCredencial } from '../DataAccess/RepositorioCredencial';
 import { RepositorioSesion } from '../DataAccess/RepositorioSesion';
 import registrador from '../Shared/Logging/logger';
 
@@ -24,7 +23,7 @@ async function sincronizarConGestion(cedula: string, nombre: string, rol: string
     const res = await fetch(`${GESTION_URL}${endpoint}`, {
       method:  'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type':  'application/json',
         'Authorization': `Bearer ${INTERNAL_SERVICE_TOKEN}`,
       },
       body: JSON.stringify({ cedula, nombre }),
@@ -42,25 +41,32 @@ export class ControladorAuth {
   private servicio: ServicioAuth;
 
   constructor() {
-    this.servicio = new ServicioAuth(
-      new RepositorioCredencial(),
-      new RepositorioSesion(),
-    );
+    this.servicio = new ServicioAuth(new RepositorioSesion());
   }
+
+  // ── F1: Registro de clientes (crea en Auth0 + sincroniza con ServicioGestion) ──
 
   async registrar(req: Request, res: Response): Promise<void> {
     try {
-      const { cedula, password, rol, nombre } = req.body;
-      if (!cedula || !password || !rol || !nombre) {
-        res.status(400).json({ error: 'cedula, nombre, password y rol son requeridos' });
+      const { cedula, nombre, email, password, rol } = req.body;
+      if (!cedula || !nombre || !email || !password || !rol) {
+        res.status(400).json({ error: 'cedula, nombre, email, password y rol son requeridos' });
         return;
       }
       if (!ROLES_PUBLICOS.includes(rol)) {
         res.status(403).json({ error: `El registro de '${rol}' lo gestiona el administrador del sistema` });
         return;
       }
-      await this.servicio.registrar(cedula, password, rol);
-      registrador.info('credencial_registrada', { cedula, rol });
+
+      const existe = await this.servicio.existeUsuarioEnAuth0(email);
+      if (existe) {
+        res.status(400).json({ error: `Ya existe un usuario con el email ${email}` });
+        return;
+      }
+
+      await this.servicio.crearUsuarioEnAuth0(email, password, cedula, rol);
+      registrador.info('usuario_registrado_auth0', { cedula, rol, email });
+
       await sincronizarConGestion(cedula, nombre, rol);
       res.status(201).json({ mensaje: 'Usuario registrado correctamente' });
     } catch (error) {
@@ -70,7 +76,7 @@ export class ControladorAuth {
     }
   }
 
-  // Llamado internamente por ServicioGestion cuando el admin crea un conductor/operador/admin
+  // Llamado internamente por ServicioGestion cuando el admin crea conductores/operadores/admins
   async registrarInterno(req: Request, res: Response): Promise<void> {
     try {
       const { cedula, password, rol } = req.body;
@@ -78,29 +84,16 @@ export class ControladorAuth {
         res.status(400).json({ error: 'cedula, password y rol son requeridos' });
         return;
       }
-      await this.servicio.registrar(cedula, password, rol);
-      registrador.info('credencial_registrada_interna', { cedula, rol });
+      const email = `${cedula}@move.internal`;
+      const existe = await this.servicio.existeUsuarioEnAuth0(email);
+      if (!existe) {
+        await this.servicio.crearUsuarioEnAuth0(email, password, cedula, rol);
+      }
+      registrador.info('usuario_interno_registrado', { cedula, rol });
       res.status(201).json({ mensaje: 'Credencial creada' });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : String(error);
       res.status(400).json({ error: mensaje });
-    }
-  }
-
-  async login(req: Request, res: Response): Promise<void> {
-    try {
-      const { cedula, password } = req.body;
-      if (!cedula || !password) {
-        res.status(400).json({ error: 'cedula y password son requeridos' });
-        return;
-      }
-      const { token, rol } = await this.servicio.login(cedula, password);
-      registrador.info('login_exitoso', { cedula, ip: req.ip });
-      res.status(200).json({ token, rol });
-    } catch (error) {
-      const mensaje = error instanceof Error ? error.message : String(error);
-      registrador.warn('login_fallido', { cedula: req.body?.cedula, ip: req.ip, motivo: mensaje });
-      res.status(401).json({ error: 'Credenciales inválidas' });
     }
   }
 
@@ -124,25 +117,110 @@ export class ControladorAuth {
     try {
       const authHeader = req.headers.authorization;
       if (!authHeader?.startsWith('Bearer ')) {
-        registrador.warn('verificacion_fallida', { motivo: 'token_ausente', ip: req.ip });
         res.status(401).json({ error: 'Token requerido' });
         return;
       }
-
       const token = authHeader.substring(7);
       const usuario = await this.servicio.verificar(token);
-
       if (!usuario) {
-        registrador.warn('verificacion_fallida', { motivo: 'token_invalido_o_expirado', ip: req.ip });
         res.status(401).json({ error: 'Token inválido o expirado' });
         return;
       }
-
       res.status(200).json(usuario);
     } catch (error) {
-      const mensaje = error instanceof Error ? error.message : String(error);
-      registrador.error('error_verificacion', { mensaje });
       res.status(500).json({ error: 'Error al verificar el token' });
+    }
+  }
+
+  // ── OAuth 2.0 con Auth0 ──────────────────────────────────────────────────────
+
+  iniciarOAuth(_req: Request, res: Response): void {
+    const domain   = process.env.AUTH0_DOMAIN       || '';
+    const clientId = process.env.AUTH0_CLIENT_ID    || '';
+    const callback = process.env.AUTH0_CALLBACK_URL || 'http://localhost:3002/api/auth/callback';
+
+    if (!domain || !clientId) {
+      res.status(503).send('Auth0 no está configurado. Completá las variables AUTH0_* en el .env');
+      return;
+    }
+
+    const url = `https://${domain}/authorize?` + new URLSearchParams({
+      response_type: 'code',
+      client_id:     clientId,
+      redirect_uri:  callback,
+      scope:         'openid profile email',
+    }).toString();
+
+    res.redirect(url);
+  }
+
+  async callbackOAuth(req: Request, res: Response): Promise<void> {
+    const { code, error } = req.query as Record<string, string>;
+
+    if (error) {
+      res.status(401).send(`Auth0 rechazó el acceso: ${error}`);
+      return;
+    }
+    if (!code) {
+      res.status(400).send('Código de autorización faltante');
+      return;
+    }
+
+    const domain       = process.env.AUTH0_DOMAIN        || '';
+    const clientId     = process.env.AUTH0_CLIENT_ID     || '';
+    const clientSecret = process.env.AUTH0_CLIENT_SECRET || '';
+    const callback     = process.env.AUTH0_CALLBACK_URL  || 'http://localhost:3002/api/auth/callback';
+    const namespace    = process.env.AUTH0_NAMESPACE     || 'https://move.app';
+
+    try {
+      const tokenRes = await fetch(`https://${domain}/oauth/token`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          grant_type:    'authorization_code',
+          client_id:     clientId,
+          client_secret: clientSecret,
+          code,
+          redirect_uri:  callback,
+        }),
+      });
+
+      const tokens: any = await tokenRes.json();
+      if (!tokens.id_token) {
+        registrador.warn('auth0_callback_sin_token', { detalle: tokens.error_description });
+        res.status(401).send('Autenticación con Auth0 fallida. Intentá de nuevo.');
+        return;
+      }
+
+      const raw     = tokens.id_token.split('.')[1];
+      const padded  = raw + '='.repeat((4 - raw.length % 4) % 4);
+      const payload = JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
+
+      const cedula = payload[`${namespace}/cedula`] as string | undefined;
+      const rol    = payload[`${namespace}/rol`]    as string | undefined;
+
+      if (!cedula || !rol) {
+        registrador.warn('auth0_usuario_sin_cedula_rol', { sub: payload.sub });
+        res.status(401).send('El usuario de Auth0 no tiene cédula o rol asignados. Contactá al administrador.');
+        return;
+      }
+
+      const { token } = this.servicio.emitirTokenOAuth(cedula, rol);
+      registrador.info('login_oauth_exitoso', { cedula, rol, ip: req.ip });
+
+      const paginas: Record<string, string> = {
+        Administrador:   'http://localhost:3001/',
+        Operador:        'http://localhost:3001/',
+        Conductor:       'http://localhost:3001/',
+        ClientePersonal: 'http://localhost:3001/',
+        ClienteEmpresa:  'http://localhost:3001/',
+      };
+      const destino = paginas[rol] ?? 'http://localhost:3001/';
+      res.redirect(`${destino}?token=${encodeURIComponent(token)}&rol=${encodeURIComponent(rol)}`);
+
+    } catch (e) {
+      registrador.error('error_callback_oauth', { error: String(e) });
+      res.status(500).send('Error interno al procesar el callback de Auth0.');
     }
   }
 }
