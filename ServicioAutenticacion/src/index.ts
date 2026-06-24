@@ -12,11 +12,14 @@ const controlador = new ControladorAuth();
 app.use(express.json());
 
 // ─── Rutas de autenticación ───────────────────────────────────────────────────
-app.post('/api/auth/registrar',        controlador.registrar.bind(controlador));
+app.post('/api/auth/registrar',         controlador.registrar.bind(controlador));
 app.post('/api/auth/registrar-interno', controlador.registrarInterno.bind(controlador));
-app.post('/api/auth/login',     controlador.login.bind(controlador));
-app.post('/api/auth/logout',    controlador.logout.bind(controlador));
-app.get('/api/auth/verificar',  controlador.verificar.bind(controlador));
+app.post('/api/auth/logout',            controlador.logout.bind(controlador));
+app.get('/api/auth/verificar',          controlador.verificar.bind(controlador));
+
+// ─── OAuth 2.0 con Auth0 ─────────────────────────────────────────────────────
+app.get('/api/auth/oauth/iniciar', controlador.iniciarOAuth.bind(controlador));
+app.get('/api/auth/callback',      controlador.callbackOAuth.bind(controlador));
 
 // ─── Página de inicio ─────────────────────────────────────────────────────────
 app.get('/', (_req, res) => {
@@ -25,76 +28,79 @@ app.get('/', (_req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ServicioAutenticacion</title>
+  <title>MOVE – Autenticación</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
-    h1 { margin-top: 0; color: #333; }
-    .nav { display: flex; gap: 10px; margin: 20px 0; }
-    .nav button { padding: 10px 20px; border: 2px solid #0066cc; border-radius: 4px; background: white; color: #0066cc; cursor: pointer; font-size: 1em; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 40px 20px; background: #f5f5f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .card { background: white; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,.1); padding: 36px 32px; width: 100%; max-width: 420px; }
+    h1 { margin: 0 0 6px; font-size: 1.6em; color: #222; }
+    .subtitulo { color: #777; font-size: 0.9em; margin: 0 0 28px; }
+    .btn-oauth { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 13px; background: #eb5424; color: white; text-decoration: none; border-radius: 6px; font-size: 1em; font-weight: bold; transition: background .2s; }
+    .btn-oauth:hover { background: #c94010; }
+    .divisor { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: #aaa; font-size: 0.85em; }
+    .divisor::before, .divisor::after { content: ''; flex: 1; border-top: 1px solid #ddd; }
+    .nav { display: flex; gap: 8px; margin-bottom: 18px; }
+    .nav button { flex: 1; padding: 9px; border: 2px solid #0066cc; border-radius: 4px; background: white; color: #0066cc; cursor: pointer; font-size: 0.9em; transition: background .15s; }
     .nav button:hover { background: #e8f0ff; }
     .nav button.activo { background: #0066cc; color: white; }
-    .seccion { display: none; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 20px; max-width: 400px; }
+    .seccion { display: none; }
     .seccion.visible { display: block; }
-    h2 { margin-top: 0; color: #444; }
-    label { display: block; margin-top: 12px; font-weight: bold; }
-    input, select { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-    .btn-accion { padding: 9px 18px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 14px; font-size: 1em; }
+    label { display: block; margin-top: 12px; font-size: 0.85em; font-weight: bold; color: #444; }
+    input, select { width: 100%; padding: 9px 10px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95em; }
+    input:focus, select:focus { outline: none; border-color: #0066cc; }
+    .btn-accion { width: 100%; padding: 11px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 16px; font-size: 1em; font-weight: bold; }
     .btn-accion:hover { background: #0052a3; }
-    .resultado { padding: 10px; border-radius: 4px; margin-top: 14px; font-family: monospace; white-space: pre-wrap; font-size: 0.9em; display: none; }
-    .ok { background: #e8f4e8; border-left: 4px solid #1a7a1a; }
+    .resultado { padding: 10px 12px; border-radius: 4px; margin-top: 14px; font-family: monospace; white-space: pre-wrap; font-size: 0.85em; display: none; }
+    .ok  { background: #eafaea; border-left: 4px solid #1a8a1a; }
     .err { background: #fde8e8; border-left: 4px solid #cc0000; }
-    .token-guardado { background: #e8f4e8; border: 1px solid #aad4aa; border-radius: 4px; padding: 10px; margin-top: 12px; font-family: monospace; font-size: 0.85em; display: none; word-break: break-all; }
   </style>
 </head>
 <body>
-  <h1>ServicioAutenticacion</h1>
-  <p>Puerto <strong>3002</strong> &mdash; Servicio externo de autenticación</p>
+  <div class="card">
+    <h1>MOVE</h1>
+    <p class="subtitulo">Plataforma de movilidad empresarial</p>
 
-  <div class="nav">
-    <button onclick="mostrarSeccion('registrar')" id="btn-registrar">Registrar</button>
-    <button onclick="mostrarSeccion('login')" id="btn-login">Login</button>
-    <button onclick="mostrarSeccion('logout')" id="btn-logout">Logout</button>
-  </div>
+    <a href="/api/auth/oauth/iniciar" class="btn-oauth">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      Iniciar sesión con Auth0
+    </a>
 
-  <div id="sec-registrar" class="seccion">
-    <h2>Crear cuenta</h2>
-    <label>Cédula</label>
-    <input type="text" id="regCedula" placeholder="Ej: 12345678">
-    <label>Nombre completo</label>
-    <input type="text" id="regNombre" placeholder="Ej: Juan Pérez">
-    <label>Password</label>
-    <input type="password" id="regPassword" placeholder="Contraseña">
-    <label>Tipo de cuenta</label>
-    <select id="regRol">
-      <option value="ClientePersonal">Cliente Personal</option>
-      <option value="ClienteEmpresa">Cliente Empresa</option>
-    </select>
-    <button class="btn-accion" onclick="registrar()">Crear cuenta</button>
-    <div id="resRegistrar" class="resultado"></div>
-  </div>
+    <div class="divisor">¿Primera vez? Registrate</div>
 
-  <div id="sec-login" class="seccion">
-    <h2>Login</h2>
-    <label>Cédula</label>
-    <input type="text" id="loginCedula" placeholder="Ej: 12345678">
-    <label>Password</label>
-    <input type="password" id="loginPassword" placeholder="Contraseña">
-    <button class="btn-accion" onclick="login()">Iniciar sesión</button>
-    <div id="resLogin" class="resultado"></div>
-    <div id="tokenGuardado" class="token-guardado">Token: <span id="tokenValor"></span></div>
-  </div>
+    <div class="nav">
+      <button onclick="mostrar('registrar')" id="btn-registrar">Crear cuenta</button>
+      <button onclick="mostrar('logout')"    id="btn-logout">Cerrar sesión</button>
+    </div>
 
-  <div id="sec-logout" class="seccion">
-    <h2>Logout</h2>
-    <label>Token</label>
-    <input type="text" id="logoutToken" placeholder="UUID del token">
-    <button class="btn-accion" onclick="logout()">Cerrar sesión</button>
-    <div id="resLogout" class="resultado"></div>
+    <div id="sec-registrar" class="seccion">
+      <label>Cédula</label>
+      <input type="text" id="regCedula" placeholder="Ej: 12345678">
+      <label>Nombre completo</label>
+      <input type="text" id="regNombre" placeholder="Ej: Juan Pérez">
+      <label>Email</label>
+      <input type="email" id="regEmail" placeholder="Ej: juan@ejemplo.com">
+      <label>Contraseña</label>
+      <input type="password" id="regPassword" placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 número">
+      <label>Tipo de cuenta</label>
+      <select id="regRol">
+        <option value="ClientePersonal">Cliente Personal</option>
+        <option value="ClienteEmpresa">Cliente Empresa</option>
+      </select>
+      <button class="btn-accion" onclick="registrar()">Crear cuenta</button>
+      <div id="resRegistrar" class="resultado"></div>
+    </div>
+
+    <div id="sec-logout" class="seccion">
+      <label>Token de sesión</label>
+      <input type="text" id="logoutToken" placeholder="Pegá el token JWT aquí">
+      <button class="btn-accion" onclick="cerrarSesion()">Cerrar sesión</button>
+      <div id="resLogout" class="resultado"></div>
+    </div>
   </div>
 
   <script>
-    function mostrarSeccion(nombre) {
-      ['registrar','login','logout'].forEach(s => {
+    function mostrar(nombre) {
+      ['registrar','logout'].forEach(s => {
         document.getElementById('sec-' + s).classList.remove('visible');
         document.getElementById('btn-' + s).classList.remove('activo');
       });
@@ -102,71 +108,50 @@ app.get('/', (_req, res) => {
       document.getElementById('btn-' + nombre).classList.add('activo');
     }
 
-    function mostrar(id, datos, ok) {
+    function mostrarRes(id, datos, ok) {
       const el = document.getElementById(id);
-      el.textContent = JSON.stringify(datos, null, 2);
+      el.textContent = typeof datos === 'string' ? datos : JSON.stringify(datos, null, 2);
       el.className = 'resultado ' + (ok ? 'ok' : 'err');
       el.style.display = 'block';
     }
 
     async function registrar() {
-      const cedula   = document.getElementById('regCedula').value;
-      const nombre   = document.getElementById('regNombre').value;
+      const cedula   = document.getElementById('regCedula').value.trim();
+      const nombre   = document.getElementById('regNombre').value.trim();
+      const email    = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value;
       const rol      = document.getElementById('regRol').value;
-      if (!cedula || !nombre || !password) {
-        mostrar('resRegistrar', { error: 'Todos los campos son obligatorios' }, false);
+      if (!cedula || !nombre || !email || !password) {
+        mostrarRes('resRegistrar', { error: 'Todos los campos son obligatorios' }, false);
         return;
       }
       try {
         const res = await fetch('/api/auth/registrar', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cedula, nombre, password, rol })
-        });
-        mostrar('resRegistrar', await res.json(), res.ok);
-      } catch (e) { mostrar('resRegistrar', { error: e.message }, false); }
-    }
-
-    async function login() {
-      const cedula = document.getElementById('loginCedula').value;
-      const password = document.getElementById('loginPassword').value;
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cedula, password })
+          body: JSON.stringify({ cedula, nombre, email, password, rol })
         });
         const json = await res.json();
-        if (res.ok && json.token) {
-          const paginas = {
-            'Administrador':   'http://localhost:3001/',
-            'Operador':        'http://localhost:3001/operadores-ui',
-            'Conductor':       'http://localhost:3001/conductores-ui',
-            'ClientePersonal': 'http://localhost:3001/clientes-personales-ui',
-            'ClienteEmpresa':  'http://localhost:3001/clientes-empresariales-ui',
-          };
-          const destino = paginas[json.rol];
-          if (destino) {
-            window.location.href = destino + '?token=' + encodeURIComponent(json.token) + '&rol=' + encodeURIComponent(json.rol);
-          } else {
-            mostrar('resLogin', { error: 'Rol sin página asignada: ' + json.rol }, false);
-          }
-        } else {
-          mostrar('resLogin', json, false);
-        }
-      } catch (e) { mostrar('resLogin', { error: e.message }, false); }
+        mostrarRes('resRegistrar', json, res.ok);
+        if (res.ok) mostrarRes('resRegistrar', 'Cuenta creada. Ya podés iniciar sesión con Auth0 usando tu email: ' + email, true);
+      } catch (e) { mostrarRes('resRegistrar', { error: e.message }, false); }
     }
 
-    async function logout() {
-      const token = document.getElementById('logoutToken').value;
+    async function cerrarSesion() {
+      const token = document.getElementById('logoutToken').value.trim();
+      if (!token) { mostrarRes('resLogout', { error: 'Ingresá el token' }, false); return; }
       try {
         const res = await fetch('/api/auth/logout', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token })
         });
-        mostrar('resLogout', await res.json(), res.ok);
-      } catch (e) { mostrar('resLogout', { error: e.message }, false); }
+        mostrarRes('resLogout', await res.json(), res.ok);
+      } catch (e) { mostrarRes('resLogout', { error: e.message }, false); }
     }
+
+    // Auto-abrir registro si viene con ?modo=registrar
+    if (new URLSearchParams(location.search).get('modo') === 'registrar') mostrar('registrar');
   </script>
 </body>
 </html>`);
