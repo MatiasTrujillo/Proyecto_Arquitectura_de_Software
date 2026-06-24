@@ -62,7 +62,7 @@ export class ControladorPago {
   }
 
   private mapPago(pago: any) {
-    return { id: pago.id, fecha: pago.fecha, monto: pago.monto, estado: pago.estado, reservaId: pago.reservaId };
+    return { id: pago.id, fecha: pago.fecha, monto: pago.monto, estado: pago.estado, reservaId: pago.reservaId, proveedor: pago.proveedor };
   }
 
   private manejarError(res: Response, error: unknown): void {

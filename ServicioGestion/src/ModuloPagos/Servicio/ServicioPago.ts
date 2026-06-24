@@ -5,12 +5,13 @@ import { IServicioPago } from "../IServicio/IServicioPago";
 export class ServicioPago implements IServicioPago {
   constructor(private repositorio: IRepositorioPago) {}
 
-  async crearPago(fecha: string | Date, monto: number, estado: string, reservaId: string): Promise<PagoDTO> {
+  async crearPago(fecha: string | Date, monto: number, estado: string, reservaId: string, proveedor: string = 'stripe'): Promise<PagoDTO> {
     const pago = await this.repositorio.crearPago(
       this.validarFecha(fecha),
       this.validarMonto(monto),
       this.validarEstado(estado) as any,
-      reservaId ?? ''
+      reservaId ?? '',
+      proveedor
     );
     return PagoDTO.fromEntity(pago);
   }

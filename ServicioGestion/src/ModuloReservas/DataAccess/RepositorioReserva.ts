@@ -135,6 +135,10 @@ export class RepositorioReserva implements IRepositorioReserva {
     return res.rows.map((r: any) => this.mapRow(r));
   }
 
+  async actualizarCosto(id: string, costo: number): Promise<void> {
+    await pool.query('UPDATE reserva SET costo = $1 WHERE id = $2', [costo, id]);
+  }
+
   async existe(id: string): Promise<boolean> {
     const res = await pool.query('SELECT 1 FROM reserva WHERE id = $1', [id]);
     return res.rowCount! > 0;
