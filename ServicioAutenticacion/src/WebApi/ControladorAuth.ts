@@ -149,6 +149,7 @@ export class ControladorAuth {
       client_id:     clientId,
       redirect_uri:  callback,
       scope:         'openid profile email',
+      prompt:        'login',
     }).toString();
 
     res.redirect(url);
@@ -158,6 +159,11 @@ export class ControladorAuth {
     const { code, error } = req.query as Record<string, string>;
 
     if (error) {
+      // Si el usuario rechazó o canceló, volver al inicio para que pueda intentar con otro usuario
+      if (error === 'access_denied' || error === 'login_required') {
+        res.redirect('/');
+        return;
+      }
       res.status(401).send(`Auth0 rechazó el acceso: ${error}`);
       return;
     }

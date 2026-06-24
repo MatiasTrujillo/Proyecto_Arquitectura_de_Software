@@ -12,6 +12,9 @@ import { ServicioPreregistroProducto } from "../../Servicio/ServicioPreregistroP
 import { RepositorioPreregistroProducto } from "../../DataAccess/RepositorioPreregistroProducto";
 import { busEventos, EVENTO_RESERVA_CREADA } from "../../../Shared/Eventos/BusEventos";
 import { RepositorioProductoReserva } from "../../../ModuloReservas/DataAccess/RepositorioProductoReserva";
+import { PasarelaStripe } from "../../../ModuloPagos/Pasarela/PasarelaStripe";
+import { calcularCosto } from "../../../ModuloCotizacion/ServicioCotizacion";
+import { RepositorioClientesFrecuentes } from "../../DataAccess/RepositorioClientesFrecuentes";
 
 export class ControladorClienteEmpresa {
   private servicioClienteEmpresa: IServicioClienteEmpresa;
@@ -145,9 +148,13 @@ export class ControladorClienteEmpresa {
   async realizarReserva(req: Request, res: Response): Promise<void> {
     try {
       const clienteId = (req as any).usuario?.cedula ?? req.body.clienteId;
-      const { origen, destino, fecha, costo, vehiculo, bienes, conductor } = req.body;
+      const { origen, destino, fecha, vehiculo, bienes, conductor } = req.body;
 
       const productosIds = (bienes ?? []).map((b: any) => b.productoId).filter(Boolean).map(Number);
+
+      // F5: costo = distancia simulada (random 200-1000) + recargo por categoría (F8)
+      const todasLasCategorias: string[] = (bienes ?? []).flatMap((b: any) => b.categorias ?? []);
+      const costo = await calcularCosto(todasLasCategorias);
 
       const reserva = await this.servicioReserva.crearReserva(
         clienteId, origen, destino, fecha, costo, productosIds, [], vehiculo, conductor
@@ -174,6 +181,9 @@ export class ControladorClienteEmpresa {
         bienes: bienes ?? [],
         esEmpresa: true,
       });
+
+      // R1: recalcular top-20 frecuentes tras cada reserva empresa (async, no bloquea respuesta)
+      new RepositorioClientesFrecuentes().actualizarTop20().catch(() => {});
 
       res.status(201).json({ data: reserva });
     } catch (error) {
@@ -204,13 +214,32 @@ export class ControladorClienteEmpresa {
 
   async realizarPago(req: Request, res: Response): Promise<void> {
     try {
-      const { reservaId } = req.body;
-      if (!reservaId) throw new Error("reservaId es requerido");
+      const { reservaId, metodoPago } = req.body;
+      if (!reservaId)  throw new Error("reservaId es requerido");
+      if (!metodoPago) throw new Error("metodoPago es requerido (ej: pm_card_visa)");
+
       const reserva = await this.servicioReserva.obtenerReservaPorId(reservaId);
       if (reserva.estado === "Pagado") throw new Error("Esta reserva ya fue pagada");
-      const pago = await this.servicioPago.crearPago(new Date(), reserva.costo, "Completado", reservaId);
-      await this.servicioReserva.actualizarEstadoReserva(reservaId, "Pagado");
-      res.status(201).json({ data: pago });
+
+      // F6: pago via pasarela externa (Stripe)
+      const pasarela = new PasarelaStripe();
+      let resultado;
+      try {
+        resultado = await pasarela.procesarPago(reserva.costo, reservaId, metodoPago);
+      } catch (e: any) {
+        res.status(503).json({ error: e.message ?? 'Pasarela de pago fuera de servicio' });
+        return;
+      }
+
+      const pago = await this.servicioPago.crearPago(
+        new Date(), reserva.costo, resultado.estado, reservaId, 'stripe'
+      );
+
+      if (resultado.estado === 'aceptado') {
+        await this.servicioReserva.actualizarEstadoReserva(reservaId, 'Pagado');
+      }
+
+      res.status(201).json({ data: { pago, transaccionId: resultado.transaccionId, estadoPago: resultado.estado } });
     } catch (error) {
       this.manejarError(res, error);
     }

@@ -9,6 +9,7 @@ export interface IRepositorioReserva {
   asignarVehiculoConductor(id: string, vehiculo: string, conductor: string): Promise<Reserva | undefined>;
   asignarYCrearViajeAtomico(id: string, vehiculo: string, conductor: string): Promise<Reserva | undefined>;
   obtenerReservasSinViaje(): Promise<Reserva[]>;
+  actualizarCosto(id: string, costo: number): Promise<void>;
   existe(id: string): Promise<boolean>;
   obtenerTamanoTotalProductos(reservaId: string): Promise<number>;
   vehiculoEnViajeActivo(vehiculo: string): Promise<boolean>;
