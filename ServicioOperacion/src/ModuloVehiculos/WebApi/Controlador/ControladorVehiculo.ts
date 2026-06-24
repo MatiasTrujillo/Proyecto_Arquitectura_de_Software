@@ -12,8 +12,8 @@ export class ControladorVehiculo {
 
   async crearVehiculo(req: Request, res: Response): Promise<void> {
     try {
-      const { matricula, tipo, capacidad, dispositivoGps } = req.body;
-      const vehiculoDTO = await this.servicio.crearVehiculo(matricula, tipo, capacidad, dispositivoGps);
+      const { matricula, tipo, capacidad, dispositivoGps, caracteristicas } = req.body;
+      const vehiculoDTO = await this.servicio.crearVehiculo(matricula, tipo, Number(capacidad), dispositivoGps, caracteristicas ?? []);
       res.status(201).json({ data: vehiculoDTO });
     } catch (error) {
       this.manejarError(res, error);
@@ -42,8 +42,8 @@ export class ControladorVehiculo {
   async actualizarVehiculo(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const { matricula, tipo, capacidad, dispositivoGps } = req.body;
-      const vehiculoDTO = await this.servicio.actualizarVehiculo(Number(id), matricula, tipo, capacidad, dispositivoGps);
+      const { matricula, tipo, capacidad, dispositivoGps, caracteristicas } = req.body;
+      const vehiculoDTO = await this.servicio.actualizarVehiculo(Number(id), matricula, tipo, Number(capacidad), dispositivoGps, caracteristicas ?? []);
       res.status(200).json({ data: vehiculoDTO });
     } catch (error) {
       this.manejarError(res, error);

@@ -6,8 +6,8 @@ class RepositorioVehiculoFalso {
   private data: Vehiculo[] = [];
   private next = 1;
 
-  async crearVehiculo(matricula: string, tipo: string, capacidad: number, dispositivoGps: string) {
-    const v = new Vehiculo(this.next++, matricula, tipo, capacidad, dispositivoGps);
+  async crearVehiculo(matricula: string, tipo: string, capacidad: number, dispositivoGps: string, caracteristicas: string[] = []) {
+    const v = new Vehiculo(this.next++, matricula, tipo, capacidad, dispositivoGps, caracteristicas);
     this.data.push(v);
     return v;
   }
@@ -20,10 +20,10 @@ class RepositorioVehiculoFalso {
     return this.data.find(d => d.getId() === id);
   }
 
-  async actualizarVehiculo(id: number, matricula: string, tipo: string, capacidad: number, dispositivoGps: string) {
+  async actualizarVehiculo(id: number, matricula: string, tipo: string, capacidad: number, dispositivoGps: string, caracteristicas: string[] = []) {
     const idx = this.data.findIndex(d => d.getId() === id);
     if (idx === -1) return undefined;
-    const actualizado = new Vehiculo(id, matricula, tipo, capacidad, dispositivoGps);
+    const actualizado = new Vehiculo(id, matricula, tipo, capacidad, dispositivoGps, caracteristicas);
     this.data[idx] = actualizado;
     return actualizado;
   }
@@ -44,7 +44,7 @@ async function crearVehiculoPrueba() {
   const repositorio = new RepositorioVehiculoFalso();
   const servicio = new ServicioVehiculo(repositorio as any);
 
-  const v = await servicio.crearVehiculo("AAA111", "Auto", 4, "d1");
+  const v = await servicio.crearVehiculo("AAA111", "Auto", 4, "d1", ["Estandar"]);
   assert.strictEqual(v.id, 1);
 }
 
@@ -70,7 +70,7 @@ async function actualizarVehiculoPrueba() {
   const servicio = new ServicioVehiculo(repositorio as any);
   const v = await repositorio.crearVehiculo("OLD", "Auto", 2, "d1");
 
-  const actualizado = await servicio.actualizarVehiculo(v.getId(), "NEW", "Camion", 500, "d2");
+  const actualizado = await servicio.actualizarVehiculo(v.getId(), "NEW", "Camion", 500, "d2", ["Refrigerado"]);
   assert.ok(actualizado);
   assert.strictEqual(actualizado.id, v.getId());
 }

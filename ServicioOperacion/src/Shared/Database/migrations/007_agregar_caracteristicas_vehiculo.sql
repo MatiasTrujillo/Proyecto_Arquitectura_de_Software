@@ -1,0 +1,1 @@
+ALTER TABLE vehiculo ADD COLUMN IF NOT EXISTS caracteristicas TEXT[] NOT NULL DEFAULT '{}';

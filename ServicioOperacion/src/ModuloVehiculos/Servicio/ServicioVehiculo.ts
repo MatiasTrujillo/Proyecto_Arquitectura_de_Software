@@ -5,13 +5,14 @@ import { IServicioVehiculo } from "../IServicio/IServicioVehiculo";
 export class ServicioVehiculo implements IServicioVehiculo {
   constructor(private repositorio: IRepositorioVehiculo) {}
 
-  async crearVehiculo(matricula: string, tipo: string, capacidad: number, dispositivoGps: string): Promise<VehiculoDTO> {
-    const matriculaValida = this.validarMatricula(matricula);
-    const tipoValido = this.validarTipo(tipo);
-    const capacidadValida = this.validarCapacidad(capacidad);
+  async crearVehiculo(matricula: string, tipo: string, capacidad: number, dispositivoGps: string, caracteristicas: string[]): Promise<VehiculoDTO> {
+    const matriculaValida  = this.validarMatricula(matricula);
+    const tipoValido       = this.validarTipo(tipo);
+    const capacidadValida  = this.validarCapacidad(capacidad);
     const dispositivoValido = this.validarDispositivo(dispositivoGps);
+    const caracteristicasValidas = this.validarCaracteristicas(caracteristicas);
 
-    const v = await this.repositorio.crearVehiculo(matriculaValida, tipoValido, capacidadValida, dispositivoValido);
+    const v = await this.repositorio.crearVehiculo(matriculaValida, tipoValido, capacidadValida, dispositivoValido, caracteristicasValidas);
     return VehiculoDTO.fromEntity(v);
   }
 
@@ -27,18 +28,19 @@ export class ServicioVehiculo implements IServicioVehiculo {
     return VehiculoDTO.fromEntity(v);
   }
 
-  async actualizarVehiculo(id: number, matricula: string, tipo: string, capacidad: number, dispositivoGps: string): Promise<VehiculoDTO> {
-    const idValido = this.validarId(id);
-    const matriculaValida = this.validarMatricula(matricula);
-    const tipoValido = this.validarTipo(tipo);
-    const capacidadValida = this.validarCapacidad(capacidad);
+  async actualizarVehiculo(id: number, matricula: string, tipo: string, capacidad: number, dispositivoGps: string, caracteristicas: string[]): Promise<VehiculoDTO> {
+    const idValido          = this.validarId(id);
+    const matriculaValida   = this.validarMatricula(matricula);
+    const tipoValido        = this.validarTipo(tipo);
+    const capacidadValida   = this.validarCapacidad(capacidad);
     const dispositivoValido = this.validarDispositivo(dispositivoGps);
+    const caracteristicasValidas = this.validarCaracteristicas(caracteristicas);
 
     if (!await this.repositorio.existe(idValido)) {
       throw new Error(`No se encontró el vehículo con id ${idValido}`);
     }
 
-    const actualizado = await this.repositorio.actualizarVehiculo(idValido, matriculaValida, tipoValido, capacidadValida, dispositivoValido);
+    const actualizado = await this.repositorio.actualizarVehiculo(idValido, matriculaValida, tipoValido, capacidadValida, dispositivoValido, caracteristicasValidas);
     if (!actualizado) throw new Error(`No se pudo actualizar el vehículo con id ${idValido}`);
     return VehiculoDTO.fromEntity(actualizado);
   }
@@ -55,6 +57,13 @@ export class ServicioVehiculo implements IServicioVehiculo {
     if (!await this.repositorio.eliminarVehiculo(idValido)) {
       throw new Error(`No se encontró el vehículo con id ${idValido}`);
     }
+  }
+
+  private validarCaracteristicas(c: string[]): string[] {
+    if (!Array.isArray(c) || c.length === 0) throw new Error("Debe indicar al menos una característica del vehículo");
+    const limpias = c.map(s => String(s).trim()).filter(s => s.length > 0);
+    if (limpias.length === 0) throw new Error("Debe indicar al menos una característica del vehículo");
+    return limpias;
   }
 
   private validarId(id: number): number {

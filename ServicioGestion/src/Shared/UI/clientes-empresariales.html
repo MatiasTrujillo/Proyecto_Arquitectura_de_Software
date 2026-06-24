@@ -166,6 +166,10 @@
             <strong>Productos de la reserva <span id="panelReservaId"></span></strong>
             <div id="panelProductosLista" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
         </div>
+        <div id="panelEstadoReserva" style="display:none;margin-top:12px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:4px;padding:12px">
+            <strong>Viaje de la reserva <span id="panelEstadoId"></span></strong>
+            <div id="panelEstadoContenido" style="margin-top:10px;display:grid;grid-template-columns:140px 1fr;gap:6px 12px;font-size:0.92em"></div>
+        </div>
     </div>
 
     <div class="accion">
@@ -432,6 +436,7 @@
         }
 
         async function verProductosReserva(reservaId) {
+            document.getElementById('panelEstadoReserva').style.display = 'none';
             const panel = document.getElementById('panelProductosReserva');
             document.getElementById('panelReservaId').textContent = '#' + reservaId;
             const lista = document.getElementById('panelProductosLista');
@@ -460,6 +465,24 @@
             } catch (e) {
                 lista.innerHTML = '<span style="color:red;font-size:0.9em">Error al cargar productos</span>';
             }
+        }
+
+        function verEstadoReserva(reservaId) {
+            const r = misReservas.find(x => String(x.id) === String(reservaId));
+            if (!r) return;
+            document.getElementById('panelEstadoId').textContent = '#' + reservaId;
+            document.getElementById('panelProductosReserva').style.display = 'none';
+            const panel = document.getElementById('panelEstadoReserva');
+            panel.style.display = 'block';
+            document.getElementById('panelEstadoContenido').innerHTML = `
+                <span style="color:#555;font-weight:bold">Estado</span>
+                <span>${r.estado ?? '-'}</span>
+                <span style="color:#555;font-weight:bold">Vehículo asignado</span>
+                <span>${r.vehiculo ? r.vehiculo : '<em style="color:#999">Sin asignar</em>'}</span>
+                <span style="color:#555;font-weight:bold">Conductor asignado</span>
+                <span>${r.conductor ? r.conductor : '<em style="color:#999">Sin asignar</em>'}</span>
+            `;
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         async function realizarReserva() {
@@ -549,6 +572,7 @@
                                 : `<button onclick="pagarReserva('${r.id}', ${r.costo})">Pagar</button>`
                             }
                             <button onclick="verProductosReserva(${r.id})" style="background:#6c757d">Ver productos</button>
+                            <button onclick="verEstadoReserva(${r.id})" style="background:#2d8a6e">Consultar viaje</button>
                         </td>
                     </tr>
                 `).join('');

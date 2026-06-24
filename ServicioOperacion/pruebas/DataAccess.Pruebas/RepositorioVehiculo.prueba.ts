@@ -9,13 +9,13 @@ async function limpiarBD() {
 
 async function crearVehiculoTest() {
   const repo = new RepositorioVehiculo();
-  const v = await repo.crearVehiculo("ABC123", "Camion", 1000, "d1");
+  const v = await repo.crearVehiculo("ABC123", "Camion", 1000, "d1", ["Carga pesada"]);
   assert.strictEqual(v.getId(), 1);
 }
 
 async function obtenerVehiculoPorIdTest() {
   const repo = new RepositorioVehiculo();
-  const v = await repo.crearVehiculo("ABC123", "Auto", 4, "d1");
+  const v = await repo.crearVehiculo("ABC123", "Auto", 4, "d1", ["Estandar"]);
 
   const encontrado = await repo.obtenerVehiculoPorId(v.getId());
   assert.ok(encontrado);
@@ -24,8 +24,8 @@ async function obtenerVehiculoPorIdTest() {
 
 async function obtenerTodosLosVehiculosTest() {
   const repo = new RepositorioVehiculo();
-  await repo.crearVehiculo("A1", "Auto", 4, "d1");
-  await repo.crearVehiculo("B2", "Camion", 1000, "d2");
+  await repo.crearVehiculo("A1", "Auto", 4, "d1", ["Estandar"]);
+  await repo.crearVehiculo("B2", "Camion", 1000, "d2", ["Carga pesada"]);
 
   const list = await repo.obtenerVehiculos();
   assert.strictEqual(list.length, 2);
@@ -33,7 +33,7 @@ async function obtenerTodosLosVehiculosTest() {
 
 async function existeVehiculoTest() {
   const repo = new RepositorioVehiculo();
-  const v = await repo.crearVehiculo("X1", "Auto", 2, "d1");
+  const v = await repo.crearVehiculo("X1", "Auto", 2, "d1", ["Estandar"]);
 
   assert.strictEqual(await repo.existe(v.getId()), true);
   assert.strictEqual(await repo.existe(999), false);
@@ -41,16 +41,16 @@ async function existeVehiculoTest() {
 
 async function actualizarVehiculoTest() {
   const repo = new RepositorioVehiculo();
-  const v = await repo.crearVehiculo("OLD", "Auto", 2, "d1");
+  const v = await repo.crearVehiculo("OLD", "Auto", 2, "d1", ["Estandar"]);
 
-  const actualizado = await repo.actualizarVehiculo(v.getId(), "NEW", "Camion", 500, "d2");
+  const actualizado = await repo.actualizarVehiculo(v.getId(), "NEW", "Camion", 500, "d2", ["Refrigerado"]);
   assert.ok(actualizado);
   assert.strictEqual(actualizado?.getId(), v.getId());
 }
 
 async function eliminarVehiculoTest() {
   const repo = new RepositorioVehiculo();
-  const v = await repo.crearVehiculo("DEL", "Auto", 2, "d1");
+  const v = await repo.crearVehiculo("DEL", "Auto", 2, "d1", ["Estandar"]);
 
   assert.strictEqual(await repo.eliminarVehiculo(v.getId()), true);
   assert.strictEqual(await repo.existe(v.getId()), false);

@@ -49,6 +49,13 @@
         .error { color: red; margin-top: 10px; }
         .exito { color: green; margin-top: 10px; }
         .oculto { display: none; }
+        .tags-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; min-height: 10px; }
+        .tag { background: #e8f0ff; border: 1px solid #b0ccee; border-radius: 12px; padding: 3px 10px; font-size: 0.85em; display: inline-flex; align-items: center; gap: 6px; }
+        .tag button { background: none; border: none; color: #cc0000; cursor: pointer; padding: 0; margin: 0; font-size: 1.1em; line-height: 1; }
+        .tag-input-row { display: flex; gap: 8px; margin-top: 6px; }
+        .tag-input-row input { flex: 1; margin-top: 0; }
+        .btn-add-tag { padding: 8px 14px; margin-top: 0; background: #28a745; }
+        .btn-add-tag:hover { background: #1e7e34; }
     </style>
 </head>
 <body>
@@ -68,6 +75,12 @@
         <select id="dispositivoGps">
             <option value="">Cargando dispositivos...</option>
         </select>
+        <label>Características <span style="font-weight:normal;color:#666;font-size:0.85em">(mínimo una)</span></label>
+        <div class="tag-input-row">
+            <input type="text" id="nuevaCaracteristica" placeholder="Ej: Refrigerado, Rampa, Carga pesada..." onkeydown="if(event.key==='Enter'){event.preventDefault();agregarCaracteristica()}">
+            <button class="btn-add-tag" onclick="agregarCaracteristica()">+ Agregar</button>
+        </div>
+        <div class="tags-container" id="tagsCaracteristicas"></div>
         <br>
         <button onclick="crearVehiculo()">Crear</button>
         <div id="mensajeCrear"></div>
@@ -88,6 +101,12 @@
         <select id="editarDispositivoGps">
             <option value="">Cargando dispositivos...</option>
         </select>
+        <label>Características <span style="font-weight:normal;color:#666;font-size:0.85em">(mínimo una)</span></label>
+        <div class="tag-input-row">
+            <input type="text" id="editarNuevaCaracteristica" placeholder="Ej: Refrigerado..." onkeydown="if(event.key==='Enter'){event.preventDefault();agregarCaracteristicaEditar()}">
+            <button class="btn-add-tag" onclick="agregarCaracteristicaEditar()">+ Agregar</button>
+        </div>
+        <div class="tags-container" id="editarTagsCaracteristicas"></div>
         <br>
         <button onclick="guardarEdicion()">Guardar cambios</button>
         <button class="btn-cancelar" onclick="cancelarEdicion()">Cancelar</button>
@@ -102,18 +121,71 @@
                 <th>Matrícula</th>
                 <th>Tipo</th>
                 <th>Capacidad</th>
+                <th>Características</th>
                 <th>Dispositivo GPS</th>
                 <th>Acción</th>
             </tr>
         </thead>
         <tbody>
-            <tr><td colspan="6">Cargando...</td></tr>
+            <tr><td colspan="7">Cargando...</td></tr>
         </tbody>
     </table>
 
     <script>
         function volverAlHome() {
             window.location.href = 'http://localhost:3001/';
+        }
+
+        // ── Características (tags) ──────────────────────────────────────────────
+        let caracteristicas = [];
+        let caracteristicasEditar = [];
+
+        function agregarCaracteristica() {
+            const input = document.getElementById('nuevaCaracteristica');
+            const val = input.value.trim();
+            if (!val) return;
+            if (caracteristicas.includes(val)) { input.value = ''; return; }
+            caracteristicas.push(val);
+            input.value = '';
+            renderTags('tagsCaracteristicas', caracteristicas, (i) => { caracteristicas.splice(i, 1); renderTags('tagsCaracteristicas', caracteristicas, arguments.callee); });
+        }
+
+        function agregarCaracteristicaEditar() {
+            const input = document.getElementById('editarNuevaCaracteristica');
+            const val = input.value.trim();
+            if (!val) return;
+            if (caracteristicasEditar.includes(val)) { input.value = ''; return; }
+            caracteristicasEditar.push(val);
+            input.value = '';
+            renderTagsEditar();
+        }
+
+        function renderTags(containerId, arr, onRemove) {
+            document.getElementById(containerId).innerHTML = arr.map((t, i) =>
+                `<span class="tag">${t}<button type="button" onclick="(${onRemove.toString()})(${i})">×</button></span>`
+            ).join('');
+        }
+
+        function renderTagsEditar() {
+            document.getElementById('editarTagsCaracteristicas').innerHTML = caracteristicasEditar.map((t, i) =>
+                `<span class="tag">${t}<button type="button" onclick="caracteristicasEditar.splice(${i},1);renderTagsEditar()">×</button></span>`
+            ).join('');
+        }
+
+        function renderTagsCrear() {
+            document.getElementById('tagsCaracteristicas').innerHTML = caracteristicas.map((t, i) =>
+                `<span class="tag">${t}<button type="button" onclick="caracteristicas.splice(${i},1);renderTagsCrear()">×</button></span>`
+            ).join('');
+        }
+
+        // override agregarCaracteristica to use renderTagsCrear
+        function agregarCaracteristica() {
+            const input = document.getElementById('nuevaCaracteristica');
+            const val = input.value.trim();
+            if (!val) return;
+            if (!caracteristicas.includes(val)) caracteristicas.push(val);
+            input.value = '';
+            renderTagsCrear();
         }
 
         async function cargarDispositivosEnSelect(selectId, dispositivoActual = null, excluirMatricula = null) {
@@ -160,19 +232,24 @@
                     return;
                 }
 
-                tbody.innerHTML = vehiculos.map(v => `
-                    <tr>
+                tbody.innerHTML = vehiculos.map(v => {
+                    const tags = (v.caracteristicas || []).map(c =>
+                        `<span style="background:#e8f0ff;border:1px solid #b0ccee;border-radius:10px;padding:2px 8px;font-size:0.8em;white-space:nowrap">${c}</span>`
+                    ).join(' ');
+                    const caraJson = JSON.stringify(v.caracteristicas || []).replace(/'/g, "\\'");
+                    return `<tr>
                         <td>${v.id}</td>
                         <td>${v.matricula}</td>
                         <td>${v.tipo}</td>
                         <td>${v.capacidad}</td>
+                        <td style="max-width:200px">${tags || '—'}</td>
                         <td>GPS #${v.dispositivoGps || '—'}</td>
                         <td>
-                            <button class="btn-editar" onclick="abrirEdicion(${v.id}, '${v.matricula}', '${v.tipo}', ${v.capacidad}, '${v.dispositivoGps || ''}')">Editar</button>
+                            <button class="btn-editar" onclick="abrirEdicion(${v.id}, '${v.matricula}', '${v.tipo}', ${v.capacidad}, '${v.dispositivoGps || ''}', ${caraJson})">Editar</button>
                             <button class="btn-eliminar" onclick="eliminarVehiculo(${v.id})">Eliminar</button>
                         </td>
-                    </tr>
-                `).join('');
+                    </tr>`;
+                }).join('');
             } catch (err) {
                 document.querySelector('#tablaVehiculos tbody').innerHTML =
                     `<tr><td colspan="6" class="error">Error: ${err.message}</td></tr>`;
@@ -189,6 +266,10 @@
                 document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos, incluyendo el dispositivo GPS</div>';
                 return;
             }
+            if (caracteristicas.length === 0) {
+                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Agregá al menos una característica</div>';
+                return;
+            }
 
             try {
                 const respuesta = await fetch('/api/vehiculos', {
@@ -198,7 +279,8 @@
                         matricula,
                         tipo,
                         capacidad: Number(capacidad),
-                        dispositivoGps: Number(dispositivoGps)
+                        dispositivoGps: Number(dispositivoGps),
+                        caracteristicas
                     })
                 });
 
@@ -207,8 +289,10 @@
                     document.getElementById('matricula').value = '';
                     document.getElementById('tipo').value = '';
                     document.getElementById('capacidad').value = '';
+                    caracteristicas = [];
+                    renderTagsCrear();
                     cargarVehiculos();
-                    cargarDispositivosEnSelect('dispositivoGps'); // refrescar disponibles
+                    cargarDispositivosEnSelect('dispositivoGps');
                 } else {
                     const err = await respuesta.json();
                     document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
@@ -218,7 +302,7 @@
             }
         }
 
-        async function abrirEdicion(id, matricula, tipo, capacidad, dispositivoGps) {
+        async function abrirEdicion(id, matricula, tipo, capacidad, dispositivoGps, caras = []) {
             document.getElementById('formularioEditar').classList.remove('oculto');
             document.getElementById('formularioCrear').classList.add('oculto');
             document.getElementById('tituloIdEditar').textContent = `#${id}`;
@@ -228,7 +312,8 @@
             document.getElementById('editarTipo').value = tipo;
             document.getElementById('editarCapacidad').value = capacidad;
             document.getElementById('mensajeEditar').innerHTML = '';
-            // Cargar dispositivos disponibles + el actual pre-seleccionado
+            caracteristicasEditar = Array.isArray(caras) ? [...caras] : [];
+            renderTagsEditar();
             await cargarDispositivosEnSelect('editarDispositivoGps', dispositivoGps, matricula);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -249,6 +334,10 @@
                 document.getElementById('mensajeEditar').innerHTML = '<div class="error">Completá todos los campos, incluyendo el dispositivo GPS</div>';
                 return;
             }
+            if (caracteristicasEditar.length === 0) {
+                document.getElementById('mensajeEditar').innerHTML = '<div class="error">Agregá al menos una característica</div>';
+                return;
+            }
 
             try {
                 const respuesta = await fetch(`/api/vehiculos/${id}`, {
@@ -258,7 +347,8 @@
                         matricula,
                         tipo,
                         capacidad: Number(capacidad),
-                        dispositivoGps: Number(dispositivoGps)
+                        dispositivoGps: Number(dispositivoGps),
+                        caracteristicas: caracteristicasEditar
                     })
                 });
 
