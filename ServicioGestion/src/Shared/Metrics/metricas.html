@@ -94,6 +94,24 @@
             'GET /metricas':  'Devuelve las métricas en formato JSON.',
             'GET /metricas-ui': 'Sirve la interfaz web de métricas.',
 
+            // UI pages
+            'GET /administradores-ui':         'Sirve la UI de gestión de administradores.',
+            'GET /operadores-ui':               'Sirve la UI de gestión de operadores.',
+            'GET /conductores-ui':              'Sirve la UI de gestión de conductores.',
+            'GET /clientes-personales-ui':      'Sirve la UI de gestión de clientes personales.',
+            'GET /clientes-empresariales-ui':   'Sirve la UI de gestión de clientes empresariales.',
+            'GET /productos-ui':                'Sirve la UI de gestión de productos.',
+            'GET /zonas-geograficas-ui':        'Sirve la UI de gestión de zonas geográficas.',
+            'GET /categorias-ui':               'Sirve la UI de categorías y reglas.',
+            'GET /correos-ui':                  'Sirve la UI de correos del cliente.',
+            'GET /reservas-no-reconocidas-ui':  'Sirve la UI de reservas no reconocidas.',
+            'GET /preregistro-empresa-ui':      'Sirve la UI de preregistro de bienes.',
+            'GET /pagos-ui':                    'Sirve la UI de gestión de pagos.',
+            'GET /reservas-ui':                 'Sirve la UI de gestión de reservas.',
+            'GET /viajes-ui':                   'Sirve la UI de gestión de viajes.',
+            'GET /mis-viajes-ui':               'Sirve la UI de viajes del conductor.',
+            'GET /incidentes-ui':               'Sirve la UI de gestión de incidentes.',
+
             // Administradores
             'GET /api/administradores':        'Consulta: lista todos los administradores.',
             'POST /api/administradores':       'Alta: crea un nuevo administrador.',
@@ -112,11 +130,12 @@
             'POST /api/operadores/:reservaId/reserva-no-reconocida':'Marca una reserva como no reconocida.',
 
             // Conductores
-            'GET /api/conductores':        'Consulta: lista todos los conductores.',
-            'POST /api/conductores':       'Alta: crea un nuevo conductor.',
-            'GET /api/conductores/:id':    'Consulta: obtiene un conductor por ID.',
-            'PUT /api/conductores/:id':    'Modificación: actualiza un conductor existente.',
-            'DELETE /api/conductores/:id': 'Baja: elimina un conductor por ID.',
+            'GET /api/conductores':              'Consulta: lista todos los conductores.',
+            'POST /api/conductores':             'Alta: crea un nuevo conductor.',
+            'GET /api/conductores/disponibles':  'Consulta: lista conductores sin viaje activo.',
+            'GET /api/conductores/:id':          'Consulta: obtiene un conductor por ID.',
+            'PUT /api/conductores/:id':          'Modificación: actualiza un conductor existente.',
+            'DELETE /api/conductores/:id':       'Baja: elimina un conductor por ID.',
 
             // Clientes personales
             'GET /api/clientes-personales':        'Consulta: lista todos los clientes personales.',
@@ -124,9 +143,11 @@
             'GET /api/clientes-personales/:id':    'Consulta: obtiene un cliente personal por ID.',
             'PUT /api/clientes-personales/:id':    'Modificación: actualiza un cliente personal existente.',
             'DELETE /api/clientes-personales/:id': 'Baja: elimina un cliente personal por ID.',
-            'POST /api/clientes-personales/calcular-traslado': 'Calcula el costo y tiempo de un traslado.',
-            'POST /api/clientes-personales/realizar-reserva':  'Realiza una reserva para el cliente personal.',
-            'GET /api/clientes-personales/:clienteId/reservas':'Consulta las reservas de un cliente personal.',
+            'POST /api/clientes-personales/realizar-reserva':           'Realiza una reserva para el cliente personal.',
+            'POST /api/clientes-personales/realizar-pago':              'Procesa el pago de una reserva del cliente personal.',
+            'GET /api/clientes-personales/:clienteId/reservas':         'Consulta las reservas de un cliente personal.',
+            'GET /api/clientes-personales/reservas/:reservaId/estado':  'Consulta el estado de una reserva personal.',
+            'GET /api/clientes-personales/reservas/:id/productos':      'Obtiene los productos de una reserva personal.',
 
             // Clientes empresariales
             'GET /api/clientes-empresariales':        'Consulta: lista todos los clientes empresariales.',
@@ -134,12 +155,19 @@
             'GET /api/clientes-empresariales/:id':    'Consulta: obtiene un cliente empresarial por ID.',
             'PUT /api/clientes-empresariales/:id':    'Modificación: actualiza un cliente empresarial existente.',
             'DELETE /api/clientes-empresariales/:id': 'Baja: elimina un cliente empresarial por ID.',
-            'POST /api/clientes-empresariales/calcular-traslado':          'Calcula el costo y tiempo de un traslado empresarial.',
-            'POST /api/clientes-empresariales/realizar-reserva':           'Realiza una reserva para el cliente empresarial.',
-            'GET /api/clientes-empresariales/:clienteId/reservas':         'Consulta las reservas de un cliente empresarial.',
-            'POST /api/clientes-empresariales/asociar-producto':           'Asocia un producto al cliente empresarial.',
-            'POST /api/clientes-empresariales/registrar-origen-frecuente': 'Registra un origen frecuente del cliente empresarial.',
-            'POST /api/clientes-empresariales/registrar-destino-frecuente':'Registra un destino frecuente del cliente empresarial.',
+            'POST /api/clientes-empresariales/realizar-reserva':                    'Realiza una reserva para el cliente empresarial.',
+            'POST /api/clientes-empresariales/realizar-pago':                       'Procesa el pago de una reserva del cliente empresarial.',
+            'GET /api/clientes-empresariales/:clienteId/reservas':                  'Consulta las reservas de un cliente empresarial.',
+            'GET /api/clientes-empresariales/me/reservas':                          'Lista las reservas del cliente empresarial autenticado.',
+            'GET /api/clientes-empresariales/reservas/:reservaId/estado':           'Consulta el estado de una reserva empresarial.',
+            'GET /api/clientes-empresariales/reservas/:id/productos':               'Obtiene los productos de una reserva empresarial.',
+            'POST /api/clientes-empresariales/me/preregistros':                     'Crea un preregistro de bien para el cliente empresarial.',
+            'GET /api/clientes-empresariales/me/preregistros':                      'Lista los preregistros del cliente empresarial autenticado.',
+            'GET /api/clientes-empresariales/me/preregistros/producto/:productoId': 'Obtiene el preregistro de un producto específico.',
+            'DELETE /api/clientes-empresariales/me/preregistros/:id':               'Elimina un preregistro de bien.',
+            'GET /api/clientes-empresariales/frecuentes':                           'Obtiene orígenes y destinos frecuentes del cliente.',
+            'POST /api/clientes-empresariales/registrar-origen-frecuente':          'Registra un origen frecuente del cliente empresarial.',
+            'POST /api/clientes-empresariales/registrar-destino-frecuente':         'Registra un destino frecuente del cliente empresarial.',
 
             // Productos
             'GET /api/productos':        'Consulta: lista todos los productos.',
@@ -148,12 +176,13 @@
             'PUT /api/productos/:id':    'Modificación: actualiza un producto existente.',
             'DELETE /api/productos/:id': 'Baja: elimina un producto por ID.',
 
-            // Vehículos
-            'GET /api/vehiculos':        'Consulta: lista todos los vehículos.',
-            'POST /api/vehiculos':       'Alta: registra un nuevo vehículo.',
-            'GET /api/vehiculos/:id':    'Consulta: obtiene un vehículo por ID.',
-            'PUT /api/vehiculos/:id':    'Modificación: actualiza un vehículo existente.',
-            'DELETE /api/vehiculos/:id': 'Baja: elimina un vehículo por ID.',
+            // Categorías y reglas
+            'GET /api/categorias':      'Consulta: lista todas las categorías de traslado.',
+            'POST /api/categorias':     'Alta: crea una nueva categoría.',
+            'GET /api/reglas':          'Consulta: lista todas las reglas de cotización.',
+            'POST /api/reglas':         'Alta: crea una nueva regla de cotización.',
+            'PUT /api/reglas/:id':      'Modificación: actualiza una regla existente.',
+            'DELETE /api/reglas/:id':   'Baja: elimina una regla de cotización.',
 
             // Zonas Geográficas
             'GET /api/zonas-geograficas':        'Consulta: lista todas las zonas geográficas.',
@@ -170,17 +199,27 @@
             'DELETE /api/pagos/:id': 'Baja: elimina un pago por ID.',
 
             // Reservas
-            'GET /api/reservas':               'Consulta: lista todas las reservas.',
-            'POST /api/reservas':              'Alta: crea una nueva reserva.',
-            'GET /api/reservas/:id':           'Consulta: obtiene una reserva por ID.',
-            'PATCH /api/reservas/:id/estado':  'Modificación: actualiza el estado de una reserva.',
+            'GET /api/reservas':                            'Consulta: lista todas las reservas.',
+            'POST /api/reservas':                           'Alta: crea una nueva reserva.',
+            'GET /api/reservas/sin-viaje':                  'Consulta: lista reservas sin viaje asignado.',
+            'GET /api/reservas/sin-clasificar':             'Consulta: lista reservas sin categoría asignada.',
+            'GET /api/reservas/:id':                        'Consulta: obtiene una reserva por ID.',
+            'PATCH /api/reservas/:id/estado':               'Modificación: actualiza el estado de una reserva.',
+            'PATCH /api/reservas/:id/asignar':              'Asigna conductor y vehículo a una reserva.',
+            'PATCH /api/reservas/:id/categorias':           'Asigna categorías a una reserva clasificada.',
+            'POST /api/reservas/:id/notificar-sin-categoria':'Notifica al cliente que su reserva no tiene categoría.',
 
             // Viajes
-            'GET /api/viajes':        'Consulta: lista todos los viajes.',
-            'POST /api/viajes':       'Alta: registra un nuevo viaje.',
-            'GET /api/viajes/:id':    'Consulta: obtiene un viaje por ID.',
-            'PUT /api/viajes/:id':    'Modificación: actualiza un viaje existente.',
-            'DELETE /api/viajes/:id': 'Baja: elimina un viaje por ID.',
+            'GET /api/viajes':                    'Consulta: lista todos los viajes.',
+            'POST /api/viajes':                   'Alta: registra un nuevo viaje.',
+            'GET /api/viajes/en-curso':            'Consulta: lista los viajes actualmente en curso.',
+            'GET /api/viajes/mis-viajes':          'Consulta: lista los viajes del conductor autenticado.',
+            'GET /api/viajes/vehiculos-ocupados':  'Consulta: lista matrículas de vehículos actualmente en viaje.',
+            'GET /api/viajes/:id':                 'Consulta: obtiene un viaje por ID.',
+            'PUT /api/viajes/:id':                 'Modificación: actualiza un viaje existente.',
+            'DELETE /api/viajes/:id':              'Baja: elimina un viaje por ID.',
+            'POST /api/viajes/:id/iniciar':        'Inicia un viaje (cambia estado a En curso).',
+            'POST /api/viajes/:id/finalizar':      'Finaliza un viaje (cambia estado a Finalizado).',
 
             // Incidentes
             'GET /api/incidentes':        'Consulta: lista todos los incidentes.',
@@ -188,12 +227,48 @@
             'GET /api/incidentes/:id':    'Consulta: obtiene un incidente por ID.',
             'PUT /api/incidentes/:id':    'Modificación: actualiza un incidente existente.',
             'DELETE /api/incidentes/:id': 'Baja: elimina un incidente por ID.',
+
+            // Notificaciones SSE
+            'GET /api/notificaciones/stream': 'Stream SSE de notificaciones en tiempo real para el cliente.',
+
+            // Clasificación
+            'POST /api/clasificacion/comparar': 'Compara bienes de una reserva para sugerir categorías.',
+
+            // Correos
+            'GET /api/correos':        'Consulta: lista los correos del cliente autenticado.',
+            'DELETE /api/correos/:id': 'Baja: elimina un correo por ID.',
+
+            // Clientes frecuentes y cola
+            'POST /api/clientes-frecuentes/actualizar': 'Actualiza el ranking de los 20 clientes más frecuentes.',
+            'GET /api/cola/estado':                     'Consulta el estado de la cola de procesamiento.',
+
+            // Endpoints internos (sin autenticación, uso entre servicios)
+            'GET /internal/zonas-geograficas':                  'Interno: lista zonas geográficas sin autenticación.',
+            'GET /internal/viajes/en-curso':                    'Interno: lista viajes en curso sin autenticación.',
+            'PATCH /internal/viajes/vehiculo/:matricula/alertas':'Interno: registra una alerta GPS en el viaje activo de un vehículo.',
         };
 
         const metodosPorRuta = {
             '/':          'GET',
             '/metricas':  'GET',
             '/metricas-ui': 'GET',
+
+            '/administradores-ui':        'GET',
+            '/operadores-ui':             'GET',
+            '/conductores-ui':            'GET',
+            '/clientes-personales-ui':    'GET',
+            '/clientes-empresariales-ui': 'GET',
+            '/productos-ui':              'GET',
+            '/zonas-geograficas-ui':      'GET',
+            '/categorias-ui':             'GET',
+            '/correos-ui':                'GET',
+            '/reservas-no-reconocidas-ui':'GET',
+            '/preregistro-empresa-ui':    'GET',
+            '/pagos-ui':                  'GET',
+            '/reservas-ui':               'GET',
+            '/viajes-ui':                 'GET',
+            '/mis-viajes-ui':             'GET',
+            '/incidentes-ui':             'GET',
 
             '/api/administradores':    'GET, POST',
             '/api/administradores/:id':'GET, PUT, DELETE',
@@ -204,29 +279,39 @@
             '/api/operadores/:trasladoId/consultar-traslado':  'GET',
             '/api/operadores/:reservaId/reserva-no-reconocida':'POST',
 
-            '/api/conductores':    'GET, POST',
-            '/api/conductores/:id':'GET, PUT, DELETE',
+            '/api/conductores':             'GET, POST',
+            '/api/conductores/disponibles': 'GET',
+            '/api/conductores/:id':         'GET, PUT, DELETE',
 
             '/api/clientes-personales':    'GET, POST',
             '/api/clientes-personales/:id':'GET, PUT, DELETE',
-            '/api/clientes-personales/calcular-traslado': 'POST',
-            '/api/clientes-personales/realizar-reserva':  'POST',
-            '/api/clientes-personales/:clienteId/reservas':'GET',
+            '/api/clientes-personales/realizar-reserva':          'POST',
+            '/api/clientes-personales/realizar-pago':             'POST',
+            '/api/clientes-personales/:clienteId/reservas':       'GET',
+            '/api/clientes-personales/reservas/:reservaId/estado':'GET',
+            '/api/clientes-personales/reservas/:id/productos':    'GET',
 
             '/api/clientes-empresariales':    'GET, POST',
             '/api/clientes-empresariales/:id':'GET, PUT, DELETE',
-            '/api/clientes-empresariales/calcular-traslado':          'POST',
-            '/api/clientes-empresariales/realizar-reserva':           'POST',
-            '/api/clientes-empresariales/:clienteId/reservas':        'GET',
-            '/api/clientes-empresariales/asociar-producto':           'POST',
-            '/api/clientes-empresariales/registrar-origen-frecuente': 'POST',
-            '/api/clientes-empresariales/registrar-destino-frecuente':'POST',
+            '/api/clientes-empresariales/realizar-reserva':                    'POST',
+            '/api/clientes-empresariales/realizar-pago':                       'POST',
+            '/api/clientes-empresariales/:clienteId/reservas':                 'GET',
+            '/api/clientes-empresariales/me/reservas':                         'GET',
+            '/api/clientes-empresariales/reservas/:reservaId/estado':          'GET',
+            '/api/clientes-empresariales/reservas/:id/productos':              'GET',
+            '/api/clientes-empresariales/me/preregistros':                     'GET, POST',
+            '/api/clientes-empresariales/me/preregistros/producto/:productoId':'GET',
+            '/api/clientes-empresariales/me/preregistros/:id':                 'DELETE',
+            '/api/clientes-empresariales/frecuentes':                          'GET',
+            '/api/clientes-empresariales/registrar-origen-frecuente':          'POST',
+            '/api/clientes-empresariales/registrar-destino-frecuente':         'POST',
 
             '/api/productos':    'GET, POST',
             '/api/productos/:id':'GET, PUT, DELETE',
 
-            '/api/vehiculos':    'GET, POST',
-            '/api/vehiculos/:id':'GET, PUT, DELETE',
+            '/api/categorias':   'GET, POST',
+            '/api/reglas':       'GET, POST',
+            '/api/reglas/:id':   'PUT, DELETE',
 
             '/api/zonas-geograficas':    'GET, POST',
             '/api/zonas-geograficas/:id':'GET, PUT, DELETE',
@@ -234,15 +319,36 @@
             '/api/pagos':    'GET, POST',
             '/api/pagos/:id':'GET, PUT, DELETE',
 
-            '/api/reservas':             'GET, POST',
-            '/api/reservas/:id':         'GET',
-            '/api/reservas/:id/estado':  'PATCH',
+            '/api/reservas':                             'GET, POST',
+            '/api/reservas/sin-viaje':                   'GET',
+            '/api/reservas/sin-clasificar':              'GET',
+            '/api/reservas/:id':                         'GET',
+            '/api/reservas/:id/estado':                  'PATCH',
+            '/api/reservas/:id/asignar':                 'PATCH',
+            '/api/reservas/:id/categorias':              'PATCH',
+            '/api/reservas/:id/notificar-sin-categoria': 'POST',
 
-            '/api/viajes':    'GET, POST',
-            '/api/viajes/:id':'GET, PUT, DELETE',
+            '/api/viajes':                   'GET, POST',
+            '/api/viajes/en-curso':          'GET',
+            '/api/viajes/mis-viajes':        'GET',
+            '/api/viajes/vehiculos-ocupados':'GET',
+            '/api/viajes/:id':               'GET, PUT, DELETE',
+            '/api/viajes/:id/iniciar':       'POST',
+            '/api/viajes/:id/finalizar':     'POST',
 
             '/api/incidentes':    'GET, POST',
             '/api/incidentes/:id':'GET, PUT, DELETE',
+
+            '/api/notificaciones/stream':   'GET',
+            '/api/clasificacion/comparar':  'POST',
+            '/api/correos':                 'GET',
+            '/api/correos/:id':             'DELETE',
+            '/api/clientes-frecuentes/actualizar':      'POST',
+            '/api/cola/estado':                         'GET',
+
+            '/internal/zonas-geograficas':                   'GET',
+            '/internal/viajes/en-curso':                     'GET',
+            '/internal/viajes/vehiculo/:matricula/alertas':  'PATCH',
         };
 
         const descripcionGeneralPorRuta = {
@@ -259,29 +365,39 @@
             '/api/operadores/:trasladoId/consultar-traslado':  'Consulta el estado de un traslado.',
             '/api/operadores/:reservaId/reserva-no-reconocida':'Marca una reserva como no reconocida.',
 
-            '/api/conductores':    'Alta (POST) y consulta (GET) de conductores.',
-            '/api/conductores/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un conductor.',
+            '/api/conductores':             'Alta (POST) y consulta (GET) de conductores.',
+            '/api/conductores/disponibles': 'Conductores sin viaje activo.',
+            '/api/conductores/:id':         'Consulta (GET), modificación (PUT) y baja (DELETE) de un conductor.',
 
             '/api/clientes-personales':    'Alta (POST) y consulta (GET) de clientes personales.',
             '/api/clientes-personales/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un cliente personal.',
-            '/api/clientes-personales/calcular-traslado': 'Calcula el costo y tiempo de un traslado.',
-            '/api/clientes-personales/realizar-reserva':  'Realiza una reserva de traslado.',
-            '/api/clientes-personales/:clienteId/reservas':'Consulta las reservas del cliente personal.',
+            '/api/clientes-personales/realizar-reserva':          'Realiza una reserva de traslado.',
+            '/api/clientes-personales/realizar-pago':             'Procesa el pago de una reserva.',
+            '/api/clientes-personales/:clienteId/reservas':       'Consulta las reservas del cliente personal.',
+            '/api/clientes-personales/reservas/:reservaId/estado':'Estado de una reserva personal.',
+            '/api/clientes-personales/reservas/:id/productos':    'Productos de una reserva personal.',
 
             '/api/clientes-empresariales':    'Alta (POST) y consulta (GET) de clientes empresariales.',
             '/api/clientes-empresariales/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un cliente empresarial.',
-            '/api/clientes-empresariales/calcular-traslado':          'Calcula el costo y tiempo de un traslado empresarial.',
-            '/api/clientes-empresariales/realizar-reserva':           'Realiza una reserva de traslado empresarial.',
-            '/api/clientes-empresariales/:clienteId/reservas':        'Consulta las reservas del cliente empresarial.',
-            '/api/clientes-empresariales/asociar-producto':           'Asocia un producto al cliente empresarial.',
-            '/api/clientes-empresariales/registrar-origen-frecuente': 'Registra un origen de viaje frecuente.',
-            '/api/clientes-empresariales/registrar-destino-frecuente':'Registra un destino de viaje frecuente.',
+            '/api/clientes-empresariales/realizar-reserva':                    'Realiza una reserva de traslado empresarial.',
+            '/api/clientes-empresariales/realizar-pago':                       'Procesa el pago de una reserva empresarial.',
+            '/api/clientes-empresariales/:clienteId/reservas':                 'Consulta las reservas del cliente empresarial.',
+            '/api/clientes-empresariales/me/reservas':                         'Reservas del cliente empresarial autenticado.',
+            '/api/clientes-empresariales/reservas/:reservaId/estado':          'Estado de una reserva empresarial.',
+            '/api/clientes-empresariales/reservas/:id/productos':              'Productos de una reserva empresarial.',
+            '/api/clientes-empresariales/me/preregistros':                     'Alta (POST) y consulta (GET) de preregistros de bienes.',
+            '/api/clientes-empresariales/me/preregistros/producto/:productoId':'Preregistro de un producto específico.',
+            '/api/clientes-empresariales/me/preregistros/:id':                 'Baja (DELETE) de un preregistro.',
+            '/api/clientes-empresariales/frecuentes':                          'Orígenes y destinos frecuentes del cliente.',
+            '/api/clientes-empresariales/registrar-origen-frecuente':          'Registra un origen frecuente.',
+            '/api/clientes-empresariales/registrar-destino-frecuente':         'Registra un destino frecuente.',
 
             '/api/productos':    'Alta (POST) y consulta (GET) de productos.',
             '/api/productos/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un producto.',
 
-            '/api/vehiculos':    'Alta (POST) y consulta (GET) de vehículos.',
-            '/api/vehiculos/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un vehículo.',
+            '/api/categorias':  'Alta (POST) y consulta (GET) de categorías.',
+            '/api/reglas':      'Alta (POST) y consulta (GET) de reglas de cotización.',
+            '/api/reglas/:id':  'Modificación (PUT) y baja (DELETE) de una regla.',
 
             '/api/zonas-geograficas':    'Alta (POST) y consulta (GET) de zonas geográficas.',
             '/api/zonas-geograficas/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de una zona.',
@@ -289,15 +405,36 @@
             '/api/pagos':    'Alta (POST) y consulta (GET) de pagos.',
             '/api/pagos/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un pago.',
 
-            '/api/reservas':            'Alta (POST) y consulta (GET) de reservas.',
-            '/api/reservas/:id':        'Consulta (GET) de una reserva por ID.',
-            '/api/reservas/:id/estado': 'Actualización del estado de una reserva (PATCH).',
+            '/api/reservas':                             'Alta (POST) y consulta (GET) de reservas.',
+            '/api/reservas/sin-viaje':                   'Reservas pendientes sin viaje asignado.',
+            '/api/reservas/sin-clasificar':              'Reservas sin categoría asignada.',
+            '/api/reservas/:id':                         'Consulta (GET) de una reserva por ID.',
+            '/api/reservas/:id/estado':                  'Actualización del estado de una reserva.',
+            '/api/reservas/:id/asignar':                 'Asigna conductor y vehículo a una reserva.',
+            '/api/reservas/:id/categorias':              'Asigna categorías a una reserva.',
+            '/api/reservas/:id/notificar-sin-categoria': 'Notifica al cliente sobre reserva sin categoría.',
 
-            '/api/viajes':    'Alta (POST) y consulta (GET) de viajes.',
-            '/api/viajes/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un viaje.',
+            '/api/viajes':                   'Alta (POST) y consulta (GET) de viajes.',
+            '/api/viajes/en-curso':          'Viajes actualmente en curso.',
+            '/api/viajes/mis-viajes':        'Viajes del conductor autenticado.',
+            '/api/viajes/vehiculos-ocupados':'Matrículas de vehículos en viaje activo.',
+            '/api/viajes/:id':               'Consulta (GET), modificación (PUT) y baja (DELETE) de un viaje.',
+            '/api/viajes/:id/iniciar':       'Inicia un viaje.',
+            '/api/viajes/:id/finalizar':     'Finaliza un viaje.',
 
             '/api/incidentes':    'Alta (POST) y consulta (GET) de incidentes.',
             '/api/incidentes/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un incidente.',
+
+            '/api/notificaciones/stream':  'Stream SSE de notificaciones en tiempo real.',
+            '/api/clasificacion/comparar': 'Compara bienes para sugerir categorías.',
+            '/api/correos':                'Lista los correos del cliente autenticado.',
+            '/api/correos/:id':            'Elimina un correo por ID.',
+            '/api/clientes-frecuentes/actualizar':     'Actualiza el ranking de clientes frecuentes.',
+            '/api/cola/estado':                        'Estado actual de la cola de procesamiento.',
+
+            '/internal/zonas-geograficas':                  'Interno: zonas geográficas sin autenticación.',
+            '/internal/viajes/en-curso':                    'Interno: viajes en curso sin autenticación.',
+            '/internal/viajes/vehiculo/:matricula/alertas': 'Interno: alerta GPS en viaje activo de un vehículo.',
         };
 
         const descripcionesSistema = {
@@ -315,12 +452,19 @@
             'clientes-personales':   'Solicitudes al módulo de clientes personales (/api/clientes-personales).',
             'clientes-empresariales':'Solicitudes al módulo de clientes empresariales (/api/clientes-empresariales).',
             'productos':             'Solicitudes al módulo de productos (/api/productos).',
-            'vehiculos':             'Solicitudes al módulo de vehículos (/api/vehiculos).',
+            'categorias':            'Solicitudes al módulo de categorías y reglas (/api/categorias, /api/reglas).',
+            'reglas':                'Solicitudes al módulo de reglas de cotización (/api/reglas).',
             'zonas-geograficas':     'Solicitudes al módulo de zonas geográficas (/api/zonas-geograficas).',
             'pagos':                 'Solicitudes al módulo de pagos (/api/pagos).',
             'reservas':              'Solicitudes al módulo de reservas (/api/reservas).',
             'viajes':                'Solicitudes al módulo de viajes (/api/viajes).',
             'incidentes':            'Solicitudes al módulo de incidentes (/api/incidentes).',
+            'notificaciones':        'Solicitudes al stream SSE de notificaciones (/api/notificaciones).',
+            'clasificacion':         'Solicitudes al módulo de clasificación de bienes (/api/clasificacion).',
+            'correos':               'Solicitudes al módulo de correos (/api/correos).',
+            'clientes-frecuentes':   'Solicitudes al módulo de clientes frecuentes.',
+            'cola':                  'Solicitudes a la cola de procesamiento (/api/cola).',
+            'internal':              'Llamadas internas entre servicios (/internal/...).',
         };
 
         const descripcionesOtros = {
