@@ -26,9 +26,6 @@
     .error { color: red; margin-top: 8px; font-size: 13px; }
     .exito { color: green; margin-top: 8px; font-size: 13px; }
 
-    .info-reglas { background: #eaf2ff; border: 1px solid #b3d1f7; border-radius: 6px; padding: 10px 14px; margin-bottom: 18px; font-size: 13px; }
-    .info-reglas strong { color: #0055aa; }
-
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #eee; }
     th { background: #f0f0f0; font-weight: bold; }
@@ -49,11 +46,6 @@
 <body>
   <div class="nav"><a class="btn-nav" href="javascript:history.back()">← Volver</a></div>
   <h1>Categorías y Reglas de Traslado</h1>
-
-  <div class="info-reglas" id="infoReglas">
-    Reglas definidas: <strong id="contadorReglas">0 / 5</strong>
-    <span id="alertaMax" class="oculto" style="color:#cc0000;margin-left:10px;">⚠ Límite máximo alcanzado</span>
-  </div>
 
   <!-- Crear regla -->
   <div class="formulario oculto" id="formRegla">
@@ -133,7 +125,6 @@
         categorias = rc.data || [];
         reglas     = rr.data || [];
         renderTabla();
-        actualizarContador();
       } catch (e) {
         document.querySelector('#tablaCategoriasReglas tbody').innerHTML =
           `<tr><td colspan="6" class="error">Error al cargar: ${e.message}</td></tr>`;
@@ -142,13 +133,6 @@
 
     function reglaDeCategoria(categoriaId) {
       return reglas.find(r => r.categoriaId === categoriaId);
-    }
-
-    function actualizarContador() {
-      const n = reglas.length;
-      document.getElementById('contadorReglas').textContent = `${n} / 5`;
-      document.getElementById('alertaMax').classList.toggle('oculto', n < 5);
-      document.getElementById('btnNuevaRegla').disabled = n >= 5;
     }
 
     function renderTabla() {
@@ -172,12 +156,11 @@
             </td>
           </tr>`;
         } else {
-          const max = reglas.length >= 5;
           return `<tr>
             <td><strong>${c.nombreEs}</strong><br><small style="color:#888">${c.nombre}</small></td>
             <td>${c.descripcion || '—'}</td>
             <td colspan="3"><span class="sin-regla">Sin regla</span></td>
-            <td><button class="btn-sm btn-crear-regla" onclick="abrirFormRegla(${c.id})" ${max ? 'disabled title="Límite de 5 reglas alcanzado"' : ''}>+ Regla</button></td>
+            <td><button class="btn-sm btn-crear-regla" onclick="abrirFormRegla(${c.id})">+ Regla</button></td>
           </tr>`;
         }
       }).join('');
