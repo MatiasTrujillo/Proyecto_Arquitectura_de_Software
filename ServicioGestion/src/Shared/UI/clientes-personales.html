@@ -147,6 +147,7 @@
             <tbody></tbody>
         </table>
         <div id="sinReservas" class="resultado oculto">No tenés reservas registradas.</div>
+        <div id="desgloseInfo" style="display:none;margin-top:8px;background:#f0f6ff;border:1px solid #b0d0f0;border-radius:4px;padding:10px 14px;font-size:0.9em"></div>
         <div id="panelProductosReserva" style="display:none;margin-top:12px;background:#f0f6ff;border:1px solid #b0ccee;border-radius:4px;padding:12px">
             <strong>Productos de la reserva <span id="panelReservaId"></span></strong>
             <div id="panelProductosLista" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
@@ -438,7 +439,23 @@
                 });
                 const json = await res.json();
                 if (res.ok) {
-                    mostrar('resultadoReserva', { mensaje: 'Reserva creada', id: json.data?.id, costo: json.data?.costo });
+                    const d = json.data?.desgloseCosto;
+                    let desgloseHtml = '';
+                    if (d) {
+                        if (d.recargo > 0) {
+                            desgloseHtml = `<div style="margin-top:6px;font-size:0.9em;color:#555">
+                                Desglose: $${d.base} base + $${d.recargo} (${d.porcentaje}% por ${d.categoriaAplicada})
+                                = <strong>$${d.total}</strong>
+                            </div>`;
+                        } else {
+                            desgloseHtml = `<div style="margin-top:6px;font-size:0.9em;color:#555">
+                                Desglose: $${d.base} base (sin regla de recargo — categoría no identificada)
+                            </div>`;
+                        }
+                    }
+                    const el = document.getElementById('resultadoReserva');
+                    el.classList.remove('oculto');
+                    el.innerHTML = `<div class="exito">✓ Reserva #${json.data?.id} creada · Costo: $${json.data?.costo}</div>${desgloseHtml}`;
                     bienesAgregados = [];
                     renderBienes();
                     document.getElementById('resOrigen').value  = '';
@@ -497,7 +514,10 @@
                         <td>${r.destino ?? '-'}</td>
                         <td>${r.fecha ? r.fecha.substring(0,10) : '-'}</td>
                         <td>${r.estado ?? '-'}</td>
-                        <td>$${r.costo ?? 0}</td>
+                        <td>
+                            $${r.costo ?? 0}
+                            <button onclick="verDesgloseCosto(${i})" style="padding:2px 7px;font-size:0.78em;background:#555;margin-left:6px;vertical-align:middle">Ver cálculo</button>
+                        </td>
                         <td style="display:flex;gap:6px;flex-wrap:wrap">
                             ${r.estado === 'Pagado'
                                 ? '<span style="background:#28a745;color:white;padding:5px 10px;border-radius:4px;font-size:0.9em">Pagado</span>'
@@ -510,6 +530,28 @@
                 `).join('');
             } catch (err) {
                 document.getElementById('mensajePago').innerHTML = `<div class="error">Error al cargar reservas: ${err.message}</div>`;
+            }
+        }
+
+        async function verDesgloseCosto(idx) {
+            const r = misReservas[idx];
+            const infoEl = document.getElementById('desgloseInfo');
+            infoEl.style.display = 'block';
+            infoEl.innerHTML = '<span style="color:#555">Calculando...</span>';
+            try {
+                const cats = (r.categorias ?? []).join(',');
+                const params = new URLSearchParams({ costo: r.costo });
+                if (cats) params.append('categorias', cats);
+                const res = await apiFetch(`/api/cotizacion/desglose?${params}`);
+                const json = await res.json();
+                const d = json.data;
+                if (d.recargo > 0) {
+                    infoEl.innerHTML = `<strong>Reserva #${r.id}</strong> — $${d.base} base + $${d.recargo} (${d.porcentaje}% por ${d.categoriaAplicada}) = <strong>Total $${d.total}</strong>`;
+                } else {
+                    infoEl.innerHTML = `<strong>Reserva #${r.id}</strong> — $${d.total} (sin regla de recargo — categoría no identificada)`;
+                }
+            } catch (err) {
+                infoEl.innerHTML = `<span style="color:red">Error: ${err.message}</span>`;
             }
         }
 

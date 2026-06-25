@@ -62,6 +62,17 @@ export class ControladorAuth {
         return;
       }
 
+      try {
+        const cedulaRes = await fetch(`${GESTION_URL}/internal/existe-cedula/${encodeURIComponent(cedula)}`);
+        if (cedulaRes.ok) {
+          const cedulaJson = await cedulaRes.json() as { existe: boolean };
+          if (cedulaJson.existe) {
+            res.status(400).json({ error: `Ya existe un usuario con la cédula ${cedula}` });
+            return;
+          }
+        }
+      } catch { /* ServicioGestion no disponible: se permite continuar */ }
+
       await this.servicio.crearUsuarioEnAuth0(email, password, cedula, rol);
       registrador.info('usuario_registrado_auth0', { cedula, rol, email });
 

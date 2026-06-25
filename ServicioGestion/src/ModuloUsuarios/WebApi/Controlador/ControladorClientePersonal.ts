@@ -11,7 +11,8 @@ import { RepositorioPago } from "../../../ModuloPagos/DataAccess/RepositorioPago
 import { busEventos, EVENTO_RESERVA_CREADA } from "../../../Shared/Eventos/BusEventos";
 import { RepositorioProductoReserva } from "../../../ModuloReservas/DataAccess/RepositorioProductoReserva";
 import { PasarelaStripe } from "../../../ModuloPagos/Pasarela/PasarelaStripe";
-import { calcularCosto } from "../../../ModuloCotizacion/ServicioCotizacion";
+import { calcularCostoConDesglose } from "../../../ModuloCotizacion/ServicioCotizacion";
+import { clasificarConKeyword } from "../../../ModuloCatalogo/Servicio/ServicioClasificacion";
 import { SolicitudAuth } from "../../../Shared/Auth/SolicitudAuth";
 
 const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
@@ -25,7 +26,7 @@ async function registrarEnAuth0(cedula: string, nombre: string, email: string, p
   if (res.ok) return;
   const err = await res.json().catch(() => ({}));
   const mensaje = (err as any).error || '';
-  if (/ya existe/i.test(mensaje)) return;
+  if (/ya existe.*email/i.test(mensaje) || /already exists/i.test(mensaje)) return;
   throw new Error(mensaje || 'Error al registrar credenciales en ServicioAutenticacion');
 }
 
@@ -105,10 +106,18 @@ export class ControladorClientePersonal {
       const { origen, destino, fecha, vehiculo, bienes, conductor } = req.body;
       const productosIds = (bienes ?? []).map((b: any) => b.productoId).filter(Boolean).map(Number);
 
-      const costo = await calcularCosto([]);
+      const categoriasDetectadas = new Set<string>();
+      for (const b of (bienes ?? [])) {
+        const desc = (b.descripcion ?? '').trim();
+        if (!desc) continue;
+        const kwResult = await clasificarConKeyword(desc);
+        if (kwResult.categoria) categoriasDetectadas.add(kwResult.categoria);
+      }
+      const categorias = Array.from(categoriasDetectadas);
+      const desglose = await calcularCostoConDesglose(categorias);
 
       const reserva = await this.servicioReserva.crearReserva(
-        clienteId, origen, destino, fecha, costo, productosIds, [], vehiculo, conductor
+        clienteId, origen, destino, fecha, desglose.total, productosIds, categorias, vehiculo, conductor
       );
 
       const repoProductos = new RepositorioProductoReserva();
@@ -132,7 +141,7 @@ export class ControladorClientePersonal {
         esEmpresa: false,
       });
 
-      res.status(201).json({ data: reserva });
+      res.status(201).json({ data: { ...reserva, desgloseCosto: desglose } });
     } catch (error) {
       this.manejarError(res, error);
     }
