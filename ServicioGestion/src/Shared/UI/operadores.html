@@ -287,6 +287,7 @@
                     if (resOcup.ok) ocupados = new Set((await resOcup.json()).data || []);
                 } catch (_) {}
 
+                const seleccionActual = sel.value;
                 sel.innerHTML = '<option value="">— Seleccioná un conductor —</option>';
                 if (conductores.length === 0) {
                     sel.innerHTML += '<option disabled>No hay conductores disponibles</option>';
@@ -301,6 +302,7 @@
                     if (enUso) opt.style.color = '#aaa';
                     sel.appendChild(opt);
                 });
+                if (seleccionActual) sel.value = seleccionActual;
             } catch (e) {
                 sel.innerHTML = `<option value="">[Error de red: ${e.message}]</option>`;
             }
@@ -321,6 +323,7 @@
                     if (resOcup.ok) ocupados = new Set((await resOcup.json()).data || []);
                 } catch (_) {}
 
+                const seleccionActual = sel.value;
                 sel.innerHTML = '<option value="">— Seleccioná un vehículo —</option>';
                 if (vehiculos.length === 0) {
                     sel.innerHTML += '<option disabled>No hay vehículos registrados</option>';
@@ -335,6 +338,7 @@
                     if (enUso) opt.style.color = '#aaa';
                     sel.appendChild(opt);
                 });
+                if (seleccionActual) sel.value = seleccionActual;
             } catch (e) {
                 sel.innerHTML = '<option value="">[No se pudo cargar vehículos de ServicioOperacion]</option>';
                 console.error('Error cargando vehículos:', e);
