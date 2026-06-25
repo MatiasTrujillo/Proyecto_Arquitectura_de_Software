@@ -178,6 +178,7 @@ export class ControladorClientePersonal {
 
       const reserva = await this.servicioReserva.obtenerReservaPorId(reservaId);
       if (reserva.estado === "Pagado") throw new Error("Esta reserva ya fue pagada");
+      if (!reserva.categorias || reserva.categorias.length === 0) throw new Error("La reserva no puede pagarse hasta que el operador determine su categoría");
 
       const pasarela = new PasarelaStripe();
       let resultado;
