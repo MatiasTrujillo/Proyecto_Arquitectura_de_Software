@@ -1,5 +1,5 @@
 import { Reserva } from "../Dominio/Reserva";
-import { Prioridad } from "../WebApi/Cola/ColaPrioridad";
+import { Prioridad } from "../Servicio/ColaPrioridad";
 
 export class ReservaDTO {
   id: string;

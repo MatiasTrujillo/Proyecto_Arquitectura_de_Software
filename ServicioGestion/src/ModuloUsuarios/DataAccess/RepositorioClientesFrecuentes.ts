@@ -1,5 +1,5 @@
 import pool from '../../Shared/Database/DatabaseConnection';
-import { Prioridad } from '../../ModuloReservas/WebApi/Cola/ColaPrioridad';
+import { Prioridad } from '../../ModuloReservas/Servicio/ColaPrioridad';
 
 export class RepositorioClientesFrecuentes {
   async actualizarTop20(): Promise<number> {
