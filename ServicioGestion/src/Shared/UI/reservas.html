@@ -96,6 +96,7 @@
         </thead>
         <tbody><tr><td colspan="10">Cargando...</td></tr></tbody>
     </table>
+    <div id="desgloseInfo" style="display:none;margin-top:8px;background:#f0f6ff;border:1px solid #b0d0f0;border-radius:4px;padding:10px 14px;font-size:0.9em"></div>
 
     <script>
         const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
@@ -292,7 +293,10 @@
                         <td>${item.destino}</td>
                         <td>${new Date(item.fecha).toLocaleString('es-AR')}</td>
                         <td><span class="badge badge-${item.estado.replace(/\s/g,'')}">${item.estado}</span></td>
-                        <td>$${Number(item.costo).toFixed(2)}</td>
+                        <td>
+                            $${Number(item.costo).toFixed(2)}
+                            <button onclick="verDesgloseCosto(${i})" style="padding:2px 7px;font-size:0.75em;background:#555;margin-left:6px;vertical-align:middle">Ver cálculo</button>
+                        </td>
                         <td class="id-cell">${item.conductor || '—'}</td>
                         <td class="id-cell">${item.vehiculo  || '—'}</td>
                         <td>
@@ -304,6 +308,28 @@
             } catch (err) {
                 document.querySelector('#tablaReservas tbody').innerHTML =
                     `<tr><td colspan="10" class="error">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function verDesgloseCosto(idx) {
+            const item = items[idx];
+            const infoEl = document.getElementById('desgloseInfo');
+            infoEl.style.display = 'block';
+            infoEl.innerHTML = '<span style="color:#555">Calculando...</span>';
+            try {
+                const cats = (item.categorias ?? []).join(',');
+                const params = new URLSearchParams({ costo: Math.round(item.costo) });
+                if (cats) params.append('categorias', cats);
+                const res = await apiFetch(`/api/cotizacion/desglose?${params}`);
+                const json = await res.json();
+                const d = json.data;
+                if (d.recargo > 0) {
+                    infoEl.innerHTML = `<strong>Reserva #${item.id}</strong> — $${d.base} base + $${d.recargo} (${d.porcentaje}% por ${d.categoriaAplicada}) = <strong>Total $${d.total}</strong>`;
+                } else {
+                    infoEl.innerHTML = `<strong>Reserva #${item.id}</strong> — $${d.total} (sin regla de recargo — categoría no identificada)`;
+                }
+            } catch (err) {
+                infoEl.innerHTML = `<span style="color:red">Error: ${err.message}</span>`;
             }
         }
 

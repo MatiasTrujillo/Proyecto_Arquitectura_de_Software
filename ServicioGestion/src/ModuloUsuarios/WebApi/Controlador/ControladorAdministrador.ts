@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { ServicioAdministrador } from "../../Servicio/ServicioAdministrador";
 import { RepositorioAdministrador } from "../../DataAccess/RepositorioAdministrador";
 import { IServicioAdministrador } from "../../IServicio/IServicioAdministrador";
+import pool from "../../../Shared/Database/DatabaseConnection";
 
 const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
 
@@ -14,7 +15,7 @@ async function registrarCredencial(cedula: string, email: string, password: stri
   if (res.ok) return;
   const err = await res.json().catch(() => ({}));
   const mensaje = (err as any).error || '';
-  if (/ya existe/i.test(mensaje)) return;
+  if (/ya existe.*email/i.test(mensaje) || /already exists/i.test(mensaje)) return;
   throw new Error(mensaje || 'Error al crear credencial en ServicioAutenticacion');
 }
 
@@ -32,6 +33,14 @@ export class ControladorAdministrador {
       if (!email || !password) {
         res.status(400).json({ error: 'El email y la contraseña son requeridos para crear un administrador' });
         return;
+      }
+      const tablasCed = ['administrador', 'conductor', 'operador', 'cliente_personal', 'cliente_empresa'];
+      for (const tabla of tablasCed) {
+        const r = await pool.query(`SELECT 1 FROM ${tabla} WHERE cedula = $1`, [cedula]);
+        if ((r.rowCount ?? 0) > 0) {
+          res.status(400).json({ error: `Ya existe un usuario con la cédula ${cedula}` });
+          return;
+        }
       }
       await registrarCredencial(cedula, email, password, 'Administrador');
       const administradorCreado = await this.servicioAdministrador.crearAdministrador(cedula, nombre, email);

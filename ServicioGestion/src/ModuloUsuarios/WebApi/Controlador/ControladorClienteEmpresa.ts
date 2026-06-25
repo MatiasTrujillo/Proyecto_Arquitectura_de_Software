@@ -28,7 +28,7 @@ async function registrarEnAuth0(cedula: string, nombre: string, email: string, p
   if (res.ok) return;
   const err = await res.json().catch(() => ({}));
   const mensaje = (err as any).error || '';
-  if (/ya existe/i.test(mensaje)) return;
+  if (/ya existe.*email/i.test(mensaje) || /already exists/i.test(mensaje)) return;
   throw new Error(mensaje || 'Error al registrar credenciales en ServicioAutenticacion');
 }
 

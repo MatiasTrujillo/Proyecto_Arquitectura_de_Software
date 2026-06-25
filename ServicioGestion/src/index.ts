@@ -170,6 +170,31 @@ app.get('/api/cola/estado', (_req, res) => {
 });
 
 // â”€â”€â”€ Reservas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+app.get('/api/cotizacion/desglose', verificarAutorizacion, async (req, res) => {
+  try {
+    const costo = Number(req.query.costo);
+    const categorias = req.query.categorias ? String(req.query.categorias).split(',').filter(Boolean) : [];
+    if (!costo || categorias.length === 0) {
+      res.json({ data: { total: costo || 0, base: costo || 0, recargo: 0, porcentaje: 0, categoriaAplicada: null } });
+      return;
+    }
+    const result = await pool.query(
+      `SELECT rc.recargo_porcentaje, c.nombre_es AS categoria
+       FROM regla_categoria rc
+       JOIN categoria c ON c.id = rc.categoria_id
+       WHERE c.nombre = ANY($1) OR c.nombre_es = ANY($1)
+       ORDER BY rc.recargo_porcentaje DESC LIMIT 1`,
+      [categorias]
+    );
+    const porcentaje = Number(result.rows[0]?.recargo_porcentaje ?? 0);
+    const categoriaAplicada = result.rows[0]?.categoria ?? null;
+    const base = porcentaje > 0 ? Math.round(costo / (1 + porcentaje / 100)) : costo;
+    const recargo = costo - base;
+    res.json({ data: { total: costo, base, recargo, porcentaje, categoriaAplicada } });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
 app.post('/api/reservas',         reservaController.crearReserva);
 app.get('/api/reservas',          reservaController.obtenerReservas);
 app.get('/api/reservas/sin-viaje', reservaController.obtenerReservasSinViaje);
@@ -239,7 +264,20 @@ app.get('/api/incidentes/:id', incidenteController.obtenerIncidentePorId);
 app.put('/api/incidentes/:id', incidenteController.actualizarIncidente);
 app.delete('/api/incidentes/:id', incidenteController.eliminarIncidente);
 
-// â”€â”€â”€ Endpoints internos (sin autenticaciÃ³n, para comunicaciÃ³n entre servicios) â”€â”€
+// ─── Endpoints internos (sin autenticación, para comunicación entre servicios) ──
+app.get('/internal/existe-cedula/:cedula', async (req, res) => {
+  const { cedula } = req.params;
+  try {
+    const tablas = ['administrador', 'conductor', 'operador', 'cliente_personal', 'cliente_empresa'];
+    for (const tabla of tablas) {
+      const r = await pool.query(`SELECT 1 FROM ${tabla} WHERE cedula = $1`, [cedula]);
+      if ((r.rowCount ?? 0) > 0) { res.json({ existe: true }); return; }
+    }
+    res.json({ existe: false });
+  } catch {
+    res.json({ existe: false });
+  }
+});
 app.get('/internal/zonas-geograficas', async (_req, res) => {
   try {
     const result = await pool.query(
