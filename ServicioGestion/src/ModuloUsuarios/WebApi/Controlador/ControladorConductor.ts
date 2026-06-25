@@ -89,8 +89,6 @@ export class ControladorConductor {
     }
   }
 
-  //TODO: Crear endpoints para IniciarTraslado y FinalizarTraslado
-
   private manejarError = (res: Response, error: unknown): void => {
     const mensaje = error instanceof Error ? error.message : String(error);
 
