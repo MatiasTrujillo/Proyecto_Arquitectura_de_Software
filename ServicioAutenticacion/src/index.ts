@@ -16,6 +16,7 @@ app.post('/api/auth/registrar',         controlador.registrar.bind(controlador))
 app.post('/api/auth/registrar-interno', controlador.registrarInterno.bind(controlador));
 app.post('/api/auth/logout',            controlador.logout.bind(controlador));
 app.get('/api/auth/verificar',          controlador.verificar.bind(controlador));
+app.post('/api/auth/token-test',        controlador.generarTokenTest.bind(controlador));
 
 // ─── OAuth 2.0 con Auth0 ─────────────────────────────────────────────────────
 app.get('/api/auth/oauth/iniciar', controlador.iniciarOAuth.bind(controlador));

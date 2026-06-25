@@ -56,14 +56,15 @@ export class RepositorioReserva implements IRepositorioReserva {
     return this.mapRow(res.rows[0]);
   }
 
-  async obtenerReservasPorCliente(clienteId: string, fechaDesde?: string, fechaHasta?: string, estado?: string): Promise<Reserva[]> {
+  async obtenerReservasPorCliente(clienteId: string, fechaDesde?: string, fechaHasta?: string, estado?: string, limit?: number, offset?: number): Promise<Reserva[]> {
     const conds: string[] = ['cliente = $1'];
     const vals: any[] = [clienteId];
     if (fechaDesde) { vals.push(fechaDesde); conds.push(`fecha >= $${vals.length}`); }
     if (fechaHasta) { vals.push(fechaHasta + 'T23:59:59'); conds.push(`fecha <= $${vals.length}`); }
     if (estado)     { vals.push(estado);     conds.push(`estado = $${vals.length}`); }
+    const paginacion = limit ? ` LIMIT ${limit} OFFSET ${offset ?? 0}` : '';
     const res = await pool.query(
-      `SELECT id, cliente, origen, destino, fecha, estado, costo, vehiculo, productos, conductor, categorias FROM reserva WHERE ${conds.join(' AND ')} ORDER BY fecha DESC`,
+      `SELECT id, cliente, origen, destino, fecha, estado, costo, vehiculo, productos, conductor, categorias FROM reserva WHERE ${conds.join(' AND ')} ORDER BY fecha DESC${paginacion}`,
       vals
     );
     return res.rows.map((r: any) => this.mapRow(r));
