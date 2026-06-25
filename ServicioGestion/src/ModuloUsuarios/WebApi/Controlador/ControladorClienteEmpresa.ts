@@ -13,7 +13,7 @@ import { RepositorioPreregistroProducto } from "../../DataAccess/RepositorioPrer
 import { busEventos, EVENTO_RESERVA_CREADA } from "../../../Shared/Eventos/BusEventos";
 import { RepositorioProductoReserva } from "../../../ModuloReservas/DataAccess/RepositorioProductoReserva";
 import { PasarelaStripe } from "../../../ModuloPagos/Pasarela/PasarelaStripe";
-import { calcularCosto } from "../../../ModuloCotizacion/ServicioCotizacion";
+import { calcularCosto } from "../../../ModuloPagos/Servicio/ServicioCotizacion";
 import { RepositorioClientesFrecuentes } from "../../DataAccess/RepositorioClientesFrecuentes";
 import { SolicitudAuth } from "../../../Shared/Auth/SolicitudAuth";
 
