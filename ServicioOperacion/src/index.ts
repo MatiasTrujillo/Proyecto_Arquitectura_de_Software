@@ -6,6 +6,7 @@ import { ControladorDispositivoGPS } from './ModuloVehiculos/WebApi/Controlador/
 import { registradorSolicitudes, manejadorErrores } from './Shared/Logging/requestLogger';
 import { manejadorMetricas } from './Shared/Metrics/metrics';
 import ejecutarMigraciones from './Shared/Database/MigracionesRunner';
+import { ejecutarSeed } from './Shared/Database/SeedRunner';
 import { RepositorioAlerta } from './ModuloVehiculos/DataAccess/RepositorioAlerta';
 import { RepositorioUbicacionGPS } from './ModuloVehiculos/DataAccess/RepositorioUbicacionGPS';
 import { RepositorioVehiculo } from './ModuloVehiculos/DataAccess/RepositorioVehiculo';
@@ -240,6 +241,7 @@ app.get('/metricas-ui',       (_req, res) => res.sendFile(path.join(__dirname, '
 app.use(manejadorErrores);
 
 ejecutarMigraciones()
+  .then(async () => { await ejecutarSeed(); })
   .then(() => { app.listen(port); })
   .catch(() => process.exit(1));
 
