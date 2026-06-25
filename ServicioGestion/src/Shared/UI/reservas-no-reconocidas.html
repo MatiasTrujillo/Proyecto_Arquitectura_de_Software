@@ -28,12 +28,6 @@
     .btn-email:hover { background: #5a6268; }
     .sin-pendientes { color: #666; font-style: italic; text-align: center; padding: 30px; }
     .tiempo { font-size: 0.8em; color: #888; }
-    .comparacion-panel { background: white; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); padding: 16px; margin-bottom: 20px; }
-    .comp-resultado { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-    .comp-card { border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; min-width: 180px; flex: 1; }
-    .comp-card h5 { margin: 0 0 6px; font-size: 0.9em; }
-    .comp-cat { font-weight: bold; font-size: 1.1em; color: #0066cc; }
-    .comp-no { color: #dc3545; font-style: italic; }
     .exito { color: #155724; background: #d4edda; border: 1px solid #c3e6cb; padding: 8px 12px; border-radius: 4px; }
     .error-msg { color: #721c24; background: #f8d7da; border: 1px solid #f5c6cb; padding: 8px 12px; border-radius: 4px; }
   </style>
@@ -45,17 +39,7 @@
     <span class="badge-nuevo" id="badgeNuevo">● NUEVO</span>
   </div>
 
-  <div class="comparacion-panel">
-    <h2 style="margin:0 0 10px">Comparador de métodos</h2>
-    <p style="margin:0 0 10px;color:#555;font-size:0.9em">Ingresá una descripción para ver cómo clasifican los 3 métodos y comparar tiempos de respuesta.</p>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <input type="text" id="descComparar" placeholder="ej: quiero trasladar un sillón y un monitor" style="flex:1;min-width:250px">
-      <button class="btn-asignar" onclick="comparar()">Comparar los 3 métodos</button>
-    </div>
-    <div id="resultadoComparacion"></div>
-  </div>
-
-  <h2>Reservas pendientes de clasificación <span class="badge-nuevo" id="badgePendientes" style="display:none">0</span></h2>
+<h2>Reservas pendientes de clasificación <span class="badge-nuevo" id="badgePendientes" style="display:none">0</span></h2>
   <div class="notif-panel" id="panelReservas">
     <div class="sin-pendientes" id="sinPendientes">No hay reservas pendientes.</div>
   </div>
@@ -205,39 +189,7 @@
       }
     }
 
-    // ── R10: Comparación de los 3 métodos ─────────────────────────────────────
-    async function comparar() {
-      const desc = document.getElementById('descComparar').value.trim();
-      const div  = document.getElementById('resultadoComparacion');
-      if (!desc) { div.innerHTML = '<div class="error-msg">Ingresá una descripción</div>'; return; }
-      div.innerHTML = '<em>Clasificando...</em>';
-      try {
-        const resp = await fetch('/api/clasificacion/comparar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-          body: JSON.stringify({ descripcion: desc })
-        });
-        const json = await resp.json();
-        const cards = (json.resultados || []).map(r => {
-          const catHtml = r.categoria
-            ? `<div class="comp-cat">${r.categoria}</div><div>Confianza: ${(r.confianza * 100).toFixed(1)}%</div>`
-            : `<div class="comp-no">Sin resultado</div>`;
-          const errorHtml = r.error ? `<div style="color:#888;font-size:0.8em">${r.error}</div>` : '';
-          return `
-            <div class="comp-card">
-              <h5>${r.metodo}</h5>
-              ${catHtml}
-              ${errorHtml}
-              <div class="tiempo" style="margin-top:6px">⏱ ${r.tiempoMs} ms</div>
-            </div>`;
-        }).join('');
-        div.innerHTML = `<div class="comp-resultado">${cards}</div>`;
-      } catch (e) {
-        div.innerHTML = `<div class="error-msg">Error: ${e.message}</div>`;
-      }
-    }
-
-    async function cargarPendientesDesdeDB() {
+async function cargarPendientesDesdeDB() {
       const panel = document.getElementById('panelReservas');
       try {
         const resp = await fetch('/api/reservas/sin-clasificar', { headers: { Authorization: 'Bearer ' + token } });

@@ -167,6 +167,7 @@
                 } catch (e) { console.error('Error cargando ocupados:', e); }
 
                 const sel = document.getElementById('selVehiculo');
+                const seleccionActual = sel.value;
                 sel.innerHTML = '<option value="">— Seleccioná un vehículo —</option>';
                 vehiculos.forEach(v => {
                     const enUso = ocupados.has(v.matricula);
@@ -177,6 +178,7 @@
                     if (enUso) opt.style.color = '#aaa';
                     sel.appendChild(opt);
                 });
+                if (seleccionActual) sel.value = seleccionActual;
             } catch (e) { console.error('Error cargando vehículos:', e); }
         }
 
