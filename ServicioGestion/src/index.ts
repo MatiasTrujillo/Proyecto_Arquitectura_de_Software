@@ -22,6 +22,7 @@ import { manejadorMetricas } from './Shared/Metrics/metrics';
 import { verificarAutorizacion } from './Shared/Auth/middlewareAuth';
 import ejecutarMigraciones from './Shared/Database/MigracionesRunner';
 import { seedCategorias } from './Shared/Database/SeedCategorias';
+import { ejecutarSeed } from './Shared/Database/SeedRunner';
 import { RepositorioClientesFrecuentes } from './ModuloUsuarios/DataAccess/RepositorioClientesFrecuentes';
 import { colaReservas } from './ModuloReservas/WebApi/Cola/ColaPrioridad';
 import pool from './Shared/Database/DatabaseConnection';
@@ -464,6 +465,7 @@ app.use(manejadorErrores);
 ejecutarMigraciones()
   .then(async () => {
     await seedCategorias();
+    await ejecutarSeed();
     try { await new RepositorioClientesFrecuentes().actualizarTop20(); } catch { /* error al inicializar top 20 — se reintenta en el siguiente ciclo semanal */ }
     // Recalcular top 20 semanalmente
     setInterval(async () => {
