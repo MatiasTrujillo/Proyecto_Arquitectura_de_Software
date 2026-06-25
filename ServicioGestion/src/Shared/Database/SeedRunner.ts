@@ -1,5 +1,17 @@
 import pool from './DatabaseConnection';
 
+const PRODUCTOS = [
+  'Bebidas',
+  'Antigüedades',
+  'Documentos',
+  'Electrónicos',
+  'Instrumentos musicales',
+  'Joyas',
+  'Muebles',
+  'Ropa',
+  'Otros',
+];
+
 const CONDUCTORES = [
   { cedula: 'conductor1', nombre: 'Carlos Méndez',   email: 'conductor1@move.internal' },
   { cedula: 'conductor2', nombre: 'Ana Rodríguez',   email: 'conductor2@move.internal' },
@@ -32,6 +44,13 @@ export async function ejecutarSeed(): Promise<void> {
         `INSERT INTO operador (cedula, nombre, email) VALUES ($1, $2, $3) ON CONFLICT (cedula) DO NOTHING`,
         [o.cedula, o.nombre, o.email]
       );
+    }
+
+    for (const nombre of PRODUCTOS) {
+      const existe = await pool.query('SELECT id FROM producto WHERE nombre = $1', [nombre]);
+      if (existe.rows.length === 0) {
+        await pool.query('INSERT INTO producto (nombre) VALUES ($1)', [nombre]);
+      }
     }
   } catch {
     // seed no bloquea el arranque

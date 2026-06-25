@@ -80,7 +80,7 @@
 
     <h2 style="margin-top:30px">Acciones</h2>
     <div class="accion solo-empresa" style="background:#fff3cd;border-color:#ffc107">
-        <strong>Pre-registro de Bienes (F3)</strong>
+        <strong>Pre-registro de Bienes</strong>
         <p style="margin:6px 0 0;font-size:0.9em;color:#555">Asociá tus productos habituales con descripción, valor, tamaño y categoría MOVE. Al crear una reserva los datos se rellenan automáticamente.</p>
         <a href="/preregistro-empresa-ui" target="_blank" style="display:inline-block;margin-top:8px;padding:7px 14px;background:#0066cc;color:white;border-radius:4px;text-decoration:none">Ir a Pre-registro →</a>
     </div>
@@ -578,10 +578,14 @@
                 });
                 const json = await res.json();
                 if (res.ok) {
-                    const estado = json.data?.estadoPago;
-                    const colores = { aceptado: 'exito', rechazado: 'error', pendiente: 'error' };
-                    msgEl.innerHTML = `<div class="${colores[estado] || 'exito'}">Pago ${estado} · Transacción: ${json.data?.transaccionId}</div>`;
-                    verMisReservas();
+                    const estado = json.data?.pago?.estado;
+                    const mensajes = {
+                        aceptado: `<div class="exito">✓ Pago aceptado · Transacción: ${json.data?.transaccionId}</div>`,
+                        rechazado: `<div class="error">✗ Pago rechazado. Tu tarjeta no fue aceptada, intentá con otro método de pago.</div>`,
+                        pendiente: `<div style="color:#b06000">⏳ Pago pendiente. Tu banco requiere autenticación adicional. Revisá tu aplicación bancaria.</div>`,
+                    };
+                    await verMisReservas();
+                    msgEl.innerHTML = mensajes[estado] ?? `<div class="exito">Pago ${estado}</div>`;
                 } else if (res.status === 503) {
                     msgEl.innerHTML = `<div class="error">Pasarela de pago fuera de servicio</div>`;
                 } else {

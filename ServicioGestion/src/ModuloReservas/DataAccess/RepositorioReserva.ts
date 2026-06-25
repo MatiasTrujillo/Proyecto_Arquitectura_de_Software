@@ -130,7 +130,8 @@ export class RepositorioReserva implements IRepositorioReserva {
       `SELECT r.id, r.cliente, r.origen, r.destino, r.fecha, r.estado, r.costo,
               r.vehiculo, r.productos, r.conductor, r.categorias
        FROM reserva r
-       WHERE NOT EXISTS (SELECT 1 FROM viaje v WHERE v.reserva_id = r.id::text)
+       WHERE r.estado = 'Pagado'
+         AND NOT EXISTS (SELECT 1 FROM viaje v WHERE v.reserva_id = r.id::text)
        ORDER BY r.fecha ASC`
     );
     return res.rows.map((r: any) => this.mapRow(r));
@@ -171,10 +172,9 @@ export class RepositorioReserva implements IRepositorioReserva {
 
   async obtenerTamanoTotalProductos(reservaId: string): Promise<number> {
     const res = await pool.query(
-      `SELECT COALESCE(SUM(p.tamano), 0) AS total
-       FROM reserva r
-       JOIN producto p ON p.id = ANY(r.productos::int[])
-       WHERE r.id = $1`,
+      `SELECT COALESCE(SUM(br.tamano), 0) AS total
+       FROM bien_reserva br
+       WHERE br.reserva_id = $1`,
       [reservaId]
     );
     return Number(res.rows[0]?.total ?? 0);
