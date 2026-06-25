@@ -60,14 +60,14 @@ export class ServicioReserva implements IServicioReserva {
     return ReservaDTO.fromEntity(reserva);
   }
 
-  async obtenerReservasPorCliente(clienteId: string, fechaDesde?: string, fechaHasta?: string, estado?: string): Promise<ReservaDTO[]> {
+  async obtenerReservasPorCliente(clienteId: string, fechaDesde?: string, fechaHasta?: string, estado?: string, limit?: number, offset?: number): Promise<ReservaDTO[]> {
     this.validarCampo(clienteId, "clienteId");
     const ESTADOS_VALIDOS = ['Pendiente', 'Pagado', 'Cancelado', 'En curso'];
     if (estado && !ESTADOS_VALIDOS.includes(estado)) throw new Error(`Estado inválido. Valores permitidos: ${ESTADOS_VALIDOS.join(', ')}`);
     if (fechaDesde && isNaN(Date.parse(fechaDesde))) throw new Error('Fecha desde inválida');
     if (fechaHasta && isNaN(Date.parse(fechaHasta))) throw new Error('Fecha hasta inválida');
     if (fechaDesde && fechaHasta && new Date(fechaDesde) > new Date(fechaHasta)) throw new Error('Fecha desde no puede ser mayor a fecha hasta');
-    return (await this.repositorio.obtenerReservasPorCliente(clienteId, fechaDesde, fechaHasta, estado)).map(r => ReservaDTO.fromEntity(r));
+    return (await this.repositorio.obtenerReservasPorCliente(clienteId, fechaDesde, fechaHasta, estado, limit, offset)).map(r => ReservaDTO.fromEntity(r));
   }
 
   async asignarVehiculoConductor(reservaId: string, vehiculo: string, conductor: string): Promise<ReservaDTO> {

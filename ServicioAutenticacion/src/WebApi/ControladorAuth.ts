@@ -132,6 +132,18 @@ export class ControladorAuth {
     }
   }
 
+  // ── Token de prueba para carga (solo TEST_MODE=true) ─────────────────────────
+
+  generarTokenTest(req: Request, res: Response): void {
+    const { cedula, rol } = req.body;
+    if (!cedula || !rol) {
+      res.status(400).json({ error: 'cedula y rol son requeridos' });
+      return;
+    }
+    const resultado = this.servicio.emitirTokenOAuth(String(cedula), String(rol));
+    res.status(200).json(resultado);
+  }
+
   // ── OAuth 2.0 con Auth0 ──────────────────────────────────────────────────────
 
   iniciarOAuth(_req: Request, res: Response): void {

@@ -194,8 +194,10 @@ export class ControladorClienteEmpresa {
   async obtenerReservas(req: Request, res: Response): Promise<void> {
     try {
       const clienteId = (req as any).usuario?.cedula ?? req.params.clienteId;
-      const { fechaDesde, fechaHasta, estado } = req.query as Record<string, string>;
-      const reservas = await this.servicioReserva.obtenerReservasPorCliente(clienteId as string, fechaDesde, fechaHasta, estado);
+      const { fechaDesde, fechaHasta, estado, limit, page } = req.query as Record<string, string>;
+      const limitNum  = limit ? Math.min(Number(limit), 100) : undefined;
+      const offsetNum = page && limitNum ? (Number(page) - 1) * limitNum : undefined;
+      const reservas = await this.servicioReserva.obtenerReservasPorCliente(clienteId as string, fechaDesde, fechaHasta, estado, limitNum, offsetNum);
       res.status(200).json({ data: reservas });
     } catch (error) {
       this.manejarError(res, error);

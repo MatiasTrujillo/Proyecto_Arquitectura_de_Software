@@ -1,0 +1,138 @@
+====================================================
+  PRUEBAS DE CARGA CON K6 - PLATAFORMA MOVE
+====================================================
+
+REQUISITO PREVIO: Tener todos los servicios de MOVE corriendo
+(ServicioAutenticacion en :3002, ServicioGestion en :3001, ServicioOperacion en :3000)
+
+
+----------------------------------------------------
+PASO 1 - INSTALAR K6
+----------------------------------------------------
+
+Abrir PowerShell (no hace falta como administrador) y ejecutar:
+
+    winget install k6
+
+Cerrar la terminal y volver a abrirla para que reconozca el comando k6.
+
+Verificar instalación:
+
+    k6 version
+
+Debería mostrar algo como: k6.exe v2.0.0 (...)
+
+Si winget no está disponible, descargar el instalador .msi desde:
+    https://github.com/grafana/k6/releases/latest
+    → Bajar el archivo: k6-vX.X.X-windows-amd64.msi
+    → Ejecutarlo e instalar normalmente
+
+
+----------------------------------------------------
+PASO 2 - UBICARSE EN LA RAÍZ DEL PROYECTO
+----------------------------------------------------
+
+    cd C:\ruta\al\proyecto
+
+(La carpeta que contiene ServicioGestion, ServicioOperacion, pruebas-carga, etc.)
+
+
+----------------------------------------------------
+PASO 3 - CORRER LAS PRUEBAS
+----------------------------------------------------
+
+Las pruebas se ejecutan de a una desde la raíz del proyecto.
+
+
+── PRUEBA 1: R1 - Crear reservas empresa ──────────
+
+    k6 run pruebas-carga/01-r1-reservas-empresa.js
+
+Qué mide:
+  - 20 VUs simulando clientes frecuentes → debe responder en p95 < 600ms
+  - 80 VUs simulando clientes no frecuentes → debe responder en p95 < 1000ms
+  - Carga total: ~100 reservas/min (requisito R1 de la letra)
+
+Duración: ~2 minutos
+
+
+── PRUEBA 2: R2 - Consultas y listados ────────────
+
+    k6 run pruebas-carga/02-r2-consultas.js
+
+Qué mide:
+  - Consultas individuales (mis reservas, categorías) → p95 < 300ms
+  - Listados (vehículos, todas las reservas) → p95 < 500ms
+  - 50 VUs simultáneos
+
+Duración: ~1 minuto
+
+
+── PRUEBA 3: F14 - GPS 50 conductores ─────────────
+
+    k6 run pruebas-carga/03-f14-gps-conductores.js
+
+Qué mide:
+  - 50 VUs enviando ubicación GPS cada 10 segundos en simultáneo
+  - Simula el requisito F14: recibir GPS de 50 conductores a la vez
+
+NOTA: Los dispositivos GPS-CARGA-001 a GPS-CARGA-050 deben estar
+registrados en la base de datos de ServicioOperacion para que
+las ubicaciones sean aceptadas. Si no están, el endpoint las
+rechazará con 400 (dispositivo no registrado).
+
+Para probar con un dispositivo existente en la BD:
+
+    k6 run --env DISPOSITIVO_ID=<id-real> pruebas-carga/03-f14-gps-conductores.js
+
+Duración: ~2 minutos
+
+
+── PRUEBA 4: R8 - Alta demanda (50x carga) ────────
+
+    k6 run pruebas-carga/04-r8-alta-demanda.js
+
+Qué mide:
+  - Rampa creciente de carga: 1x → 5x → 10x → 25x → 50x la carga base
+  - Determina hasta dónde aguanta el sistema antes de degradarse
+  - Mezcla creación de reservas, consultas y listados
+
+Duración: ~5 minutos
+
+
+----------------------------------------------------
+PASO 4 - INTERPRETAR LOS RESULTADOS
+----------------------------------------------------
+
+Al finalizar cada prueba K6 muestra:
+
+  THRESHOLDS → ✓ pasó / ✗ falló cada umbral de tiempo definido
+
+  http_req_duration → tiempos de respuesta:
+    avg = promedio
+    p(90) = el 90% de requests respondió en menos de este tiempo
+    p(95) = el 95% de requests respondió en menos de este tiempo  ← el más importante
+
+  http_req_failed → porcentaje de requests con error (debe ser ~0%)
+
+  checks_succeeded → porcentaje de validaciones correctas (debe ser ~100%)
+
+Ejemplo de resultado exitoso:
+  ✓ 'p(95)<600' p(95)=36.84ms   → pasó con mucho margen
+  ✓ 'rate<0.01' rate=0.00%      → sin errores
+
+
+----------------------------------------------------
+VARIABLES DE ENTORNO OPCIONALES
+----------------------------------------------------
+
+Todas las pruebas admiten configuración via --env:
+
+  --env BASE_AUTH=http://localhost:3002      (URL ServicioAutenticacion)
+  --env BASE_GESTION=http://localhost:3001   (URL ServicioGestion)
+  --env BASE_OPERACION=http://localhost:3000 (URL ServicioOperacion)
+  --env CEDULA_EMPRESA=12345678              (cédula de cliente empresa existente)
+  --env DISPOSITIVO_ID=GPS-001              (ID de dispositivo GPS registrado)
+
+Ejemplo:
+  k6 run --env CEDULA_EMPRESA=99999999 pruebas-carga/01-r1-reservas-empresa.js
