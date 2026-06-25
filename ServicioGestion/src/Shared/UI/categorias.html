@@ -117,7 +117,7 @@
     const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
     if (token) sessionStorage.setItem('auth_token', token);
     if (rol)   sessionStorage.setItem('auth_rol',   rol);
-    if (!token) window.location.href = 'http://localhost:3002/';
+    if (!token) window.location.href = 'http://localhost:3002/?redirect=http://localhost:3001';
 
     const H = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
 

@@ -17,6 +17,21 @@ import { calcularCosto } from "../../../ModuloCotizacion/ServicioCotizacion";
 import { RepositorioClientesFrecuentes } from "../../DataAccess/RepositorioClientesFrecuentes";
 import { SolicitudAuth } from "../../../Shared/Auth/SolicitudAuth";
 
+const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
+
+async function registrarEnAuth0(cedula: string, nombre: string, email: string, password: string, rol: string): Promise<void> {
+  const res = await fetch(`${AUTH_URL}/api/auth/registrar`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ cedula, nombre, email, password, rol }),
+  });
+  if (res.ok) return;
+  const err = await res.json().catch(() => ({}));
+  const mensaje = (err as any).error || '';
+  if (/ya existe/i.test(mensaje)) return;
+  throw new Error(mensaje || 'Error al registrar credenciales en ServicioAutenticacion');
+}
+
 export class ControladorClienteEmpresa {
   private servicioClienteEmpresa: IServicioClienteEmpresa;
   private servicioReserva: IServicioReserva;
@@ -36,8 +51,13 @@ export class ControladorClienteEmpresa {
 
   crearClienteEmpresa = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { cedula, nombre } = req.body;
-      const clienteCreado = await this.servicioClienteEmpresa.crearClienteEmpresa(cedula, nombre);
+      const { cedula, nombre, email, password } = req.body;
+      if (!email || !password) {
+        res.status(400).json({ error: 'El email y la contraseña son requeridos' });
+        return;
+      }
+      await registrarEnAuth0(cedula, nombre, email, password, 'ClienteEmpresa');
+      const clienteCreado = await this.servicioClienteEmpresa.crearClienteEmpresa(cedula, nombre, email);
       res.status(201).json({ data: clienteCreado });
     } catch (error) {
       this.manejarError(res, error);
@@ -84,9 +104,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  crearPreregistro = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  crearPreregistro = async (req: Request, res: Response): Promise<void> => {
     try {
-      const clienteEmpresaId = req.usuario?.cedula;
+      const clienteEmpresaId = (req as SolicitudAuth).usuario?.cedula;
       const { productoId, productoNombre, descripcion, valor, tamano } = req.body;
       if (!productoId) { res.status(400).json({ error: 'productoId es requerido' }); return; }
       const preregistro = await this.servicioPreregistro.crearPreregistro(
@@ -103,9 +123,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  obtenerPreregistros = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  obtenerPreregistros = async (req: Request, res: Response): Promise<void> => {
     try {
-      const clienteEmpresaId = req.usuario?.cedula;
+      const clienteEmpresaId = (req as SolicitudAuth).usuario?.cedula;
       const preregistros = await this.servicioPreregistro.obtenerPreregistros(clienteEmpresaId);
       res.status(200).json({ data: preregistros });
     } catch (error) {
@@ -113,9 +133,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  obtenerPreregistroPorProducto = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  obtenerPreregistroPorProducto = async (req: Request, res: Response): Promise<void> => {
     try {
-      const clienteEmpresaId = req.usuario?.cedula;
+      const clienteEmpresaId = (req as SolicitudAuth).usuario?.cedula;
       const productoId = Number(req.params.productoId);
       const preregistro = await this.servicioPreregistro.obtenerPreregistroPorProducto(clienteEmpresaId, productoId);
       res.status(200).json({ data: preregistro ?? null });
@@ -124,9 +144,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  eliminarPreregistro = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  eliminarPreregistro = async (req: Request, res: Response): Promise<void> => {
     try {
-      const clienteEmpresaId = req.usuario?.cedula;
+      const clienteEmpresaId = (req as SolicitudAuth).usuario?.cedula;
       await this.servicioPreregistro.eliminarPreregistro(Number(req.params.id), clienteEmpresaId);
       res.status(204).send();
     } catch (error) {
@@ -134,9 +154,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  realizarReserva = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  realizarReserva = async (req: Request, res: Response): Promise<void> => {
     try {
-      const clienteId = req.usuario?.cedula ?? req.body.clienteId;
+      const clienteId = (req as SolicitudAuth).usuario?.cedula ?? req.body.clienteId;
       const { origen, destino, fecha, vehiculo, bienes, conductor } = req.body;
 
       const productosIds = (bienes ?? []).map((b: any) => b.productoId).filter(Boolean).map(Number);
@@ -176,9 +196,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  obtenerReservas = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  obtenerReservas = async (req: Request, res: Response): Promise<void> => {
     try {
-      const clienteId = req.usuario?.cedula ?? req.params.clienteId;
+      const clienteId = (req as SolicitudAuth).usuario?.cedula ?? req.params.clienteId;
       const { fechaDesde, fechaHasta, estado, limit, page } = req.query as Record<string, string>;
       const limitNum  = limit ? Math.min(Number(limit), 100) : undefined;
       const offsetNum = page && limitNum ? (Number(page) - 1) * limitNum : undefined;
@@ -231,9 +251,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  registrarOrigenFrecuente = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  registrarOrigenFrecuente = async (req: Request, res: Response): Promise<void> => {
     try {
-      const cedula = req.usuario?.cedula;
+      const cedula = (req as SolicitudAuth).usuario?.cedula;
       const { origen } = req.body;
       if (!origen) { res.status(400).json({ error: 'Origen requerido' }); return; }
       const repo = new RepositorioClienteEmpresa();
@@ -244,9 +264,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  registrarDestinoFrecuente = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  registrarDestinoFrecuente = async (req: Request, res: Response): Promise<void> => {
     try {
-      const cedula = req.usuario?.cedula;
+      const cedula = (req as SolicitudAuth).usuario?.cedula;
       const { destino } = req.body;
       if (!destino) { res.status(400).json({ error: 'Destino requerido' }); return; }
       const repo = new RepositorioClienteEmpresa();
@@ -257,9 +277,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  obtenerFrecuentes = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  obtenerFrecuentes = async (req: Request, res: Response): Promise<void> => {
     try {
-      const cedula = req.usuario?.cedula;
+      const cedula = (req as SolicitudAuth).usuario?.cedula;
       const repo = new RepositorioClienteEmpresa();
       const datos = await repo.obtenerFrecuentes(cedula);
       res.status(200).json({ data: datos });

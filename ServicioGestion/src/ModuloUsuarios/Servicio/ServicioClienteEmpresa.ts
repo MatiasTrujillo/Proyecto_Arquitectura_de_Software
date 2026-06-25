@@ -5,11 +5,11 @@ import { IServicioClienteEmpresa } from "../IServicio/IServicioClienteEmpresa";
 export class ServicioClienteEmpresa implements IServicioClienteEmpresa {
   constructor(private repositorio: IRepositorioClienteEmpresa) {}
 
-  async crearClienteEmpresa(cedula: string, nombre: string): Promise<ClienteEmpresaDTO> {
+  async crearClienteEmpresa(cedula: string, nombre: string, email?: string): Promise<ClienteEmpresaDTO> {
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    const cliente = await this.repositorio.crearClienteEmpresa(cedula, nombre);
+    const cliente = await this.repositorio.crearClienteEmpresa(cedula, nombre, email);
     return ClienteEmpresaDTO.fromEntity(cliente);
   }
 

@@ -3,6 +3,21 @@ import { ServicioAdministrador } from "../../Servicio/ServicioAdministrador";
 import { RepositorioAdministrador } from "../../DataAccess/RepositorioAdministrador";
 import { IServicioAdministrador } from "../../IServicio/IServicioAdministrador";
 
+const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
+
+async function registrarCredencial(cedula: string, email: string, password: string, rol: string): Promise<void> {
+  const res = await fetch(`${AUTH_URL}/api/auth/registrar-interno`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ cedula, email, password, rol }),
+  });
+  if (res.ok) return;
+  const err = await res.json().catch(() => ({}));
+  const mensaje = (err as any).error || '';
+  if (/ya existe/i.test(mensaje)) return;
+  throw new Error(mensaje || 'Error al crear credencial en ServicioAutenticacion');
+}
+
 export class ControladorAdministrador {
   private servicioAdministrador: IServicioAdministrador;
 
@@ -13,8 +28,13 @@ export class ControladorAdministrador {
   // CRUD ADMINISTRADORES
   crearAdministrador = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { cedula, nombre } = req.body;
-      const administradorCreado = await this.servicioAdministrador.crearAdministrador(cedula, nombre);
+      const { cedula, nombre, email, password } = req.body;
+      if (!email || !password) {
+        res.status(400).json({ error: 'El email y la contraseña son requeridos para crear un administrador' });
+        return;
+      }
+      await registrarCredencial(cedula, email, password, 'Administrador');
+      const administradorCreado = await this.servicioAdministrador.crearAdministrador(cedula, nombre, email);
       res.status(201).json({ data: administradorCreado });
     } catch (error) {
       this.manejarError(res, error);

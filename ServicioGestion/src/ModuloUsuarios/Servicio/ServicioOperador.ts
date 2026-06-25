@@ -5,11 +5,11 @@ import { IServicioOperador } from "../IServicio/IServicioOperador";
 export class ServicioOperador implements IServicioOperador {
   constructor(private repositorio: IRepositorioOperador) {}
 
-  async crearOperador(cedula: string, nombre: string): Promise<OperadorDTO> {
+  async crearOperador(cedula: string, nombre: string, email?: string): Promise<OperadorDTO> {
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    const operador = await this.repositorio.crearOperador(cedula, nombre);
+    const operador = await this.repositorio.crearOperador(cedula, nombre, email);
     return OperadorDTO.fromEntity(operador);
   }
 

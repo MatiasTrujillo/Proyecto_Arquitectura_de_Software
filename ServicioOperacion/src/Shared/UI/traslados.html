@@ -91,11 +91,23 @@
     /* Mapa */
     #mapa { flex: 1; }
   </style>
+  <script>
+    (function() {
+        const p = new URLSearchParams(window.location.search);
+        const token = p.get('token') || sessionStorage.getItem('auth_token');
+        const rol   = p.get('rol')   || sessionStorage.getItem('auth_rol');
+        if (token) sessionStorage.setItem('auth_token', token);
+        if (rol)   sessionStorage.setItem('auth_rol',   rol);
+        if (!rol || !['Administrador', 'Operador'].includes(rol)) {
+            window.location.href = '/';
+        }
+    })();
+  </script>
 </head>
 <body>
 
 <div class="topbar">
-  <a href="http://localhost:3001/">← Volver</a>
+  <a href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{location.href='http://localhost:3000/';}">← Volver</a>
   <h1>Monitoreo de Traslados en Curso</h1>
   <span class="badge-total" id="totalViajes">0 viajes</span>
   <span class="badge-alerta-total" id="totalAlertas" style="display:none">0 alertas</span>
@@ -150,7 +162,7 @@
   const rolesPermitidos = ['Operador', 'operador', 'Administrador', 'administrador'];
 
   if (!token) {
-    window.location.href = 'http://localhost:3002/';
+    window.location.href = 'http://localhost:3002/?redirect=http://localhost:3000';
   } else if (!rolesPermitidos.includes(rol)) {
     document.body.innerHTML = '<div style="padding:40px;font-family:Arial"><h2>Acceso denegado</h2><p>Esta página es solo para Operadores y Administradores.</p><a href="javascript:history.back()" style="color:#0066cc">← Volver</a></div>';
   }

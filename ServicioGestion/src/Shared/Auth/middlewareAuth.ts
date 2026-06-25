@@ -1,4 +1,4 @@
-import { Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import registrador from '../Logging/logger';
 import { SolicitudAuth } from './SolicitudAuth';
@@ -32,7 +32,8 @@ const SOLO_ADMIN_EXACTO: Array<{ metodo: string; ruta: string }> = [
 
 const OPERADOR_SOLO_LECTURA_PREFIJOS = ['/conductores'];
 
-export async function verificarAutorizacion(req: SolicitudAuth, res: Response, next: NextFunction): Promise<void> {
+export async function verificarAutorizacion(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const solicitud = req as SolicitudAuth;
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith('Bearer ')) {
@@ -45,7 +46,7 @@ export async function verificarAutorizacion(req: SolicitudAuth, res: Response, n
 
   // Token de servicio interno: acceso total sin verificación JWT
   if (INTERNAL_SERVICE_TOKEN && token === INTERNAL_SERVICE_TOKEN) {
-    req.usuario = { cedula: 'sistema', rol: 'Administrador' };
+    solicitud.usuario = { cedula: 'sistema', rol: 'Administrador' };
     next();
     return;
   }
@@ -61,7 +62,7 @@ export async function verificarAutorizacion(req: SolicitudAuth, res: Response, n
     }
 
     const usuario = { cedula: payload.cedula, rol: payload.rol };
-    req.usuario = usuario;
+    solicitud.usuario = usuario;
 
     const esSoloLectura = OPERADOR_SOLO_LECTURA_PREFIJOS.some(p => req.path.startsWith(p));
     if (esSoloLectura && usuario.rol === 'Operador' && req.method !== 'GET') {

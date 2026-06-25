@@ -1,6 +1,6 @@
 import { PreregistroProducto } from '../Dominio/PreregistroProducto';
 import { IRepositorioPreregistroProducto } from '../IDataAccess/IRepositorioPreregistroProducto';
-import { clasificarRapido } from '../../ModuloCatalogo/Servicio/ServicioClasificacion';
+import { clasificarConKeyword } from '../../ModuloCatalogo/Servicio/ServicioClasificacion';
 
 export class ServicioPreregistroProducto {
   constructor(private repositorio: IRepositorioPreregistroProducto) {}
@@ -17,8 +17,8 @@ export class ServicioPreregistroProducto {
       throw new Error('La descripción es obligatoria');
     }
 
-    const resultados = await clasificarRapido(descripcion.trim());
-    const categoriaEncontrada = resultados.find(r => r.categoria !== null)?.categoria ?? null;
+    const resultado = await clasificarConKeyword(descripcion.trim());
+    const categoriaEncontrada = resultado.categoria ?? null;
 
     return this.repositorio.crear(
       clienteEmpresaId, productoId, productoNombre,

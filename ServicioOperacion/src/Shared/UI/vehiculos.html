@@ -57,6 +57,18 @@
         .btn-add-tag { padding: 8px 14px; margin-top: 0; background: #28a745; }
         .btn-add-tag:hover { background: #1e7e34; }
     </style>
+    <script>
+        (function() {
+            const p = new URLSearchParams(window.location.search);
+            const token = p.get('token') || sessionStorage.getItem('auth_token');
+            const rol   = p.get('rol')   || sessionStorage.getItem('auth_rol');
+            if (token) sessionStorage.setItem('auth_token', token);
+            if (rol)   sessionStorage.setItem('auth_rol',   rol);
+            if (!rol || !['Administrador', 'Operador'].includes(rol)) {
+                window.location.href = '/';
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="nav"><a href="javascript:void(0)" onclick="volverAlHome()">← Volver</a></div>
@@ -133,7 +145,7 @@
 
     <script>
         function volverAlHome() {
-            window.location.href = 'http://localhost:3001/';
+            if (history.length > 1) { history.back(); } else { window.location.href = 'http://localhost:3000/'; }
         }
 
         // ── Características (tags) ──────────────────────────────────────────────
