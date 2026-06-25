@@ -42,6 +42,8 @@
         <input type="text" id="crearCedula" placeholder="Ej: 12345678">
         <label>Nombre completo</label>
         <input type="text" id="crearNombre" placeholder="Ej: Juan Pérez">
+        <label>Email</label>
+        <input type="email" id="crearEmail" placeholder="Ej: juan@ejemplo.com">
         <label>Contraseña (para el acceso al sistema)</label>
         <input type="password" id="crearPassword" placeholder="Contraseña de acceso">
         <br>
@@ -65,9 +67,9 @@
     <h2>Listado</h2>
     <table id="tablaConductores">
         <thead>
-            <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Rol</th><th>Acción</th></tr>
+            <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Email de acceso</th><th>Rol</th><th>Acción</th></tr>
         </thead>
-        <tbody><tr><td colspan="5">Cargando...</td></tr></tbody>
+        <tbody><tr><td colspan="6">Cargando...</td></tr></tbody>
     </table>
 
     <div class="formulario" id="formularioIncidente" style="margin-top: 30px;">
@@ -100,7 +102,7 @@
         const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
         if (token) sessionStorage.setItem('auth_token', token);
         if (rol)   sessionStorage.setItem('auth_rol',   rol);
-        if (!token) window.location.href = 'http://localhost:3002/';
+        if (!token) window.location.href = 'http://localhost:3002/?redirect=http://localhost:3001';
 
         if (rol !== 'Administrador') {
             document.getElementById('formularioCrear').style.display = 'none';
@@ -122,22 +124,24 @@
         async function crearConductor() {
             const cedula   = document.getElementById('crearCedula').value.trim();
             const nombre   = document.getElementById('crearNombre').value.trim();
+            const email    = document.getElementById('crearEmail').value.trim();
             const password = document.getElementById('crearPassword').value;
             const msg      = document.getElementById('mensajeCrear');
-            if (!cedula || !nombre || !password) {
-                msg.innerHTML = '<div class="error">Completá cédula, nombre y contraseña</div>';
+            if (!cedula || !nombre || !email || !password) {
+                msg.innerHTML = '<div class="error">Completá todos los campos</div>';
                 return;
             }
             try {
                 const res = await apiFetch('/api/conductores', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cedula, nombre, password })
+                    body: JSON.stringify({ cedula, nombre, email, password })
                 });
                 if (res.ok) {
                     msg.innerHTML = '<div class="exito">Conductor creado y acceso al sistema habilitado</div>';
                     document.getElementById('crearCedula').value   = '';
                     document.getElementById('crearNombre').value   = '';
+                    document.getElementById('crearEmail').value    = '';
                     document.getElementById('crearPassword').value = '';
                     cargarConductores();
                 } else {
@@ -156,7 +160,7 @@
                 items = json.data || [];
                 const tbody = document.querySelector('#tablaConductores tbody');
                 if (items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5">No hay conductores</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6">No hay conductores</td></tr>';
                     return;
                 }
                 tbody.innerHTML = items.map((item, i) => `
@@ -164,6 +168,7 @@
                         <td class="id-cell">${item.id}</td>
                         <td>${item.cedula}</td>
                         <td>${item.nombre}</td>
+                        <td style="font-size:0.9em">${item.email ?? '<span style="color:#aaa">—</span>'}</td>
                         <td>${item.rol}</td>
                         <td>
                             ${rol === 'Administrador' ? `
@@ -175,7 +180,7 @@
                 `).join('');
             } catch (err) {
                 document.querySelector('#tablaConductores tbody').innerHTML =
-                    `<tr><td colspan="5" class="error">Error: ${err.message}</td></tr>`;
+                    `<tr><td colspan="6" class="error">Error: ${err.message}</td></tr>`;
             }
         }
 

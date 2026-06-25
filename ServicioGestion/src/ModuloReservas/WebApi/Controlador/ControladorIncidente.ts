@@ -11,11 +11,11 @@ export class ControladorIncidente {
     this.servicioIncidente = servicioIncidente ?? new ServicioIncidente(new RepositorioIncidente());
   }
 
-  crearIncidente = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  crearIncidente = async (req: Request, res: Response): Promise<void> => {
     try {
       const { descripcion, fecha, reservaId, estado, severidad } = req.body;
       // Si no viene conductorId en el body, se toma del token (caso conductor reportando)
-      const conductorId = req.body.conductorId || req.usuario?.cedula || '';
+      const conductorId = req.body.conductorId || (req as SolicitudAuth).usuario?.cedula || '';
       const incidenteCreado = await this.servicioIncidente.crearIncidente(descripcion, fecha, reservaId, estado, severidad, conductorId);
       res.status(201).json({ data: incidenteCreado });
     } catch (error) {

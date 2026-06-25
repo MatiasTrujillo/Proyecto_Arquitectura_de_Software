@@ -1,7 +1,7 @@
 import { ConductorDTO } from "../DTOs/ConductorDTO";
 
 export interface IServicioConductor {
-  crearConductor(cedula: string, nombre: string): Promise<ConductorDTO>;
+  crearConductor(cedula: string, nombre: string, email?: string): Promise<ConductorDTO>;
   obtenerConductores(): Promise<ConductorDTO[]>;
   obtenerConductoresDisponibles(): Promise<ConductorDTO[]>;
   obtenerConductorPorId(id: string): Promise<ConductorDTO>;

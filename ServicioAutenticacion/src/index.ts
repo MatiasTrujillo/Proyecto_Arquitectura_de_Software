@@ -37,12 +37,6 @@ app.get('/', (_req, res) => {
     .btn-oauth:hover { background: #c94010; }
     .divisor { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: #aaa; font-size: 0.85em; }
     .divisor::before, .divisor::after { content: ''; flex: 1; border-top: 1px solid #ddd; }
-    .nav { display: flex; gap: 8px; margin-bottom: 18px; }
-    .nav button { flex: 1; padding: 9px; border: 2px solid #0066cc; border-radius: 4px; background: white; color: #0066cc; cursor: pointer; font-size: 0.9em; transition: background .15s; }
-    .nav button:hover { background: #e8f0ff; }
-    .nav button.activo { background: #0066cc; color: white; }
-    .seccion { display: none; }
-    .seccion.visible { display: block; }
     label { display: block; margin-top: 12px; font-size: 0.85em; font-weight: bold; color: #444; }
     input, select { width: 100%; padding: 9px 10px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95em; }
     input:focus, select:focus { outline: none; border-color: #0066cc; }
@@ -58,19 +52,22 @@ app.get('/', (_req, res) => {
     <h1>MOVE</h1>
     <p class="subtitulo">Plataforma de movilidad empresarial</p>
 
-    <a href="/api/auth/oauth/iniciar" class="btn-oauth">
+    <div id="panel-logueado" style="display:none;margin-bottom:18px;">
+      <p style="color:#1a8a1a;font-weight:bold;margin:0 0 12px;">Sesión iniciada correctamente.</p>
+      <p style="color:#444;font-size:0.9em;margin:0 0 10px;">Accedé al servicio que necesitás:</p>
+      <div id="botones-servicios"></div>
+      <p id="msg-caido" style="display:none;color:#cc0000;font-size:0.85em;margin-top:10px;">Ese servicio no está corriendo.</p>
+    </div>
+
+    <div id="panel-login">
+    <a id="btn-login-oauth" href="/api/auth/oauth/iniciar" class="btn-oauth">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
       Iniciar sesión con Auth0
     </a>
 
     <div class="divisor">¿Primera vez? Registrate</div>
 
-    <div class="nav">
-      <button onclick="mostrar('registrar')" id="btn-registrar">Crear cuenta</button>
-      <button onclick="mostrar('logout')"    id="btn-logout">Cerrar sesión</button>
-    </div>
-
-    <div id="sec-registrar" class="seccion">
+    <div id="sec-registrar">
       <label>Cédula</label>
       <input type="text" id="regCedula" placeholder="Ej: 12345678">
       <label>Nombre completo</label>
@@ -87,25 +84,10 @@ app.get('/', (_req, res) => {
       <button class="btn-accion" onclick="registrar()">Crear cuenta</button>
       <div id="resRegistrar" class="resultado"></div>
     </div>
-
-    <div id="sec-logout" class="seccion">
-      <label>Token de sesión</label>
-      <input type="text" id="logoutToken" placeholder="Pegá el token JWT aquí">
-      <button class="btn-accion" onclick="cerrarSesion()">Cerrar sesión</button>
-      <div id="resLogout" class="resultado"></div>
     </div>
   </div>
 
   <script>
-    function mostrar(nombre) {
-      ['registrar','logout'].forEach(s => {
-        document.getElementById('sec-' + s).classList.remove('visible');
-        document.getElementById('btn-' + s).classList.remove('activo');
-      });
-      document.getElementById('sec-' + nombre).classList.add('visible');
-      document.getElementById('btn-' + nombre).classList.add('activo');
-    }
-
     function mostrarRes(id, datos, ok) {
       const el = document.getElementById(id);
       el.textContent = typeof datos === 'string' ? datos : JSON.stringify(datos, null, 2);
@@ -135,20 +117,57 @@ app.get('/', (_req, res) => {
       } catch (e) { mostrarRes('resRegistrar', { error: e.message }, false); }
     }
 
-    async function cerrarSesion() {
-      const token = document.getElementById('logoutToken').value.trim();
-      if (!token) { mostrarRes('resLogout', { error: 'Ingresá el token' }, false); return; }
-      try {
-        const res = await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token })
-        });
-        mostrarRes('resLogout', await res.json(), res.ok);
-      } catch (e) { mostrarRes('resLogout', { error: e.message }, false); }
+    let _qs = '';
+
+    function irA(base) {
+      document.getElementById('msg-caido').style.display = 'none';
+      fetch(base, { mode: 'no-cors', signal: AbortSignal.timeout(1500) })
+        .then(() => { window.location.href = base + '/' + _qs; })
+        .catch(() => { document.getElementById('msg-caido').style.display = 'block'; });
     }
 
-    if (new URLSearchParams(location.search).get('modo') === 'registrar') mostrar('registrar');
+    const params  = new URLSearchParams(location.search);
+    const redirect = params.get('redirect');
+    const token    = params.get('token');
+    const rol      = params.get('rol') || '';
+    const destino  = params.get('destino');
+
+    if (token) {
+      _qs = '?token=' + encodeURIComponent(token) + '&rol=' + encodeURIComponent(rol);
+
+      // Botones según rol
+      const verGestion   = ['Administrador','Operador','Conductor','ClientePersonal','ClienteEmpresa'].includes(rol);
+      const verOperacion = ['Administrador','Operador'].includes(rol);
+      const contenedor = document.getElementById('botones-servicios');
+      if (verGestion) {
+        const b = document.createElement('button');
+        b.textContent = 'Ir a Gestión (localhost:3001)';
+        b.setAttribute('style','display:block;width:100%;padding:10px;margin-bottom:8px;background:#0066cc;color:white;border:none;border-radius:4px;text-align:center;font-weight:bold;cursor:pointer;');
+        b.onclick = () => irA('http://localhost:3001');
+        contenedor.appendChild(b);
+      }
+      if (verOperacion) {
+        const b = document.createElement('button');
+        b.textContent = 'Ir a Operación (localhost:3000)';
+        b.setAttribute('style','display:block;width:100%;padding:10px;background:#0066cc;color:white;border:none;border-radius:4px;text-align:center;font-weight:bold;cursor:pointer;');
+        b.onclick = () => irA('http://localhost:3000');
+        contenedor.appendChild(b);
+      }
+
+      if (destino) {
+        fetch(destino, { signal: AbortSignal.timeout(1500) })
+          .then(() => { window.location.href = destino + '/' + _qs; })
+          .catch(() => {
+            document.getElementById('panel-login').style.display = 'none';
+            document.getElementById('panel-logueado').style.display = 'block';
+          });
+      } else {
+        document.getElementById('panel-login').style.display = 'none';
+        document.getElementById('panel-logueado').style.display = 'block';
+      }
+    } else if (redirect) {
+      document.getElementById('btn-login-oauth').href = '/api/auth/oauth/iniciar?redirect=' + encodeURIComponent(redirect);
+    }
   </script>
 </body>
 </html>`);

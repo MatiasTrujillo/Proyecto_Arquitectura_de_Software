@@ -34,7 +34,7 @@
         if (rol)   sessionStorage.setItem('auth_rol',   rol);
 
         if (!token || !rol) {
-            window.location.href = 'http://localhost:3002/';
+            window.location.href = 'http://localhost:3002/?redirect=http://localhost:3001';
         }
 
         document.getElementById('infoRol').textContent = 'Sesión: ' + rol;
@@ -100,12 +100,27 @@
             ],
         };
 
-        const secciones = PAGINAS[rol] || [];
         const contenido = document.getElementById('contenido');
 
-        if (secciones.length === 0) {
-            contenido.innerHTML = '<p>No hay páginas disponibles para el rol <strong>' + rol + '</strong>.</p>';
-        } else {
+        async function construirMenu() {
+            let operacionActiva = false;
+            try {
+                await fetch('http://localhost:3000/', { mode: 'no-cors', signal: AbortSignal.timeout(1500) });
+                operacionActiva = true;
+            } catch (_) {}
+
+            const secciones = (PAGINAS[rol] || [])
+                .map(s => ({
+                    ...s,
+                    links: s.links.filter(l => operacionActiva || !l.href.startsWith('http://localhost:3000'))
+                }))
+                .filter(s => s.links.length > 0);
+
+            if (secciones.length === 0) {
+                contenido.innerHTML = '<p>No hay páginas disponibles para el rol <strong>' + rol + '</strong>.</p>';
+                return;
+            }
+
             contenido.innerHTML = secciones.map(s => `
                 <h2>${s.seccion}</h2>
                 <div class="nav">
@@ -119,6 +134,8 @@
             `).join('');
         }
 
+        construirMenu();
+
         async function logout() {
             try {
                 await fetch('http://localhost:3002/api/auth/logout', {
@@ -129,7 +146,7 @@
             } catch (_) {}
             sessionStorage.removeItem('auth_token');
             sessionStorage.removeItem('auth_rol');
-            window.location.href = 'http://localhost:3002/';
+            window.location.href = 'http://localhost:3002/?redirect=http://localhost:3001';
         }
     </script>
 </body>

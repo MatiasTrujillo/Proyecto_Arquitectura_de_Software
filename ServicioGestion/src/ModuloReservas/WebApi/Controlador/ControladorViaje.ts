@@ -21,9 +21,9 @@ export class ControladorViaje {
     }
   }
 
-  obtenerMisViajes = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  obtenerMisViajes = async (req: Request, res: Response): Promise<void> => {
     try {
-      const conductorId = req.usuario?.cedula;
+      const conductorId = (req as SolicitudAuth).usuario?.cedula;
       if (!conductorId) { res.status(401).json({ error: "No autenticado" }); return; }
       const viajes = await this.servicioViaje.obtenerViajesPorConductor(conductorId);
       res.status(200).json({ data: viajes });
@@ -67,9 +67,9 @@ export class ControladorViaje {
   }
 
   // conductor inicia el traslado
-  iniciarTraslado = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  iniciarTraslado = async (req: Request, res: Response): Promise<void> => {
     try {
-      const conductorId = req.usuario?.cedula;
+      const conductorId = (req as SolicitudAuth).usuario?.cedula;
       if (!conductorId) { res.status(401).json({ error: "No se pudo identificar el conductor" }); return; }
       const viaje = await this.servicioViaje.iniciarTraslado(req.params.id as string, conductorId);
       res.status(200).json({ data: viaje });
@@ -79,9 +79,9 @@ export class ControladorViaje {
   }
 
   // conductor finaliza el traslado
-  finalizarTraslado = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  finalizarTraslado = async (req: Request, res: Response): Promise<void> => {
     try {
-      const conductorId = req.usuario?.cedula;
+      const conductorId = (req as SolicitudAuth).usuario?.cedula;
       if (!conductorId) { res.status(401).json({ error: "No se pudo identificar el conductor" }); return; }
       const viaje = await this.servicioViaje.finalizarTraslado(req.params.id as string, conductorId);
       res.status(200).json({ data: viaje });

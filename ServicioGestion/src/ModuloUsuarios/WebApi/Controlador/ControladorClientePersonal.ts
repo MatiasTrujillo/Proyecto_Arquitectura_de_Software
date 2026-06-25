@@ -14,6 +14,21 @@ import { PasarelaStripe } from "../../../ModuloPagos/Pasarela/PasarelaStripe";
 import { calcularCosto } from "../../../ModuloCotizacion/ServicioCotizacion";
 import { SolicitudAuth } from "../../../Shared/Auth/SolicitudAuth";
 
+const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
+
+async function registrarEnAuth0(cedula: string, nombre: string, email: string, password: string, rol: string): Promise<void> {
+  const res = await fetch(`${AUTH_URL}/api/auth/registrar`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ cedula, nombre, email, password, rol }),
+  });
+  if (res.ok) return;
+  const err = await res.json().catch(() => ({}));
+  const mensaje = (err as any).error || '';
+  if (/ya existe/i.test(mensaje)) return;
+  throw new Error(mensaje || 'Error al registrar credenciales en ServicioAutenticacion');
+}
+
 export class ControladorClientePersonal {
   private servicioClientePersonal: IServicioClientePersonal;
   private servicioReserva: IServicioReserva;
@@ -31,8 +46,13 @@ export class ControladorClientePersonal {
 
   crearClientePersonal = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { cedula, nombre } = req.body;
-      const clienteCreado = await this.servicioClientePersonal.crearClientePersonal(cedula, nombre);
+      const { cedula, nombre, email, password } = req.body;
+      if (!email || !password) {
+        res.status(400).json({ error: 'El email y la contraseña son requeridos' });
+        return;
+      }
+      await registrarEnAuth0(cedula, nombre, email, password, 'ClientePersonal');
+      const clienteCreado = await this.servicioClientePersonal.crearClientePersonal(cedula, nombre, email);
       res.status(201).json({ data: clienteCreado });
     } catch (error) {
       this.manejarError(res, error);
@@ -79,9 +99,9 @@ export class ControladorClientePersonal {
     }
   }
 
-  realizarReserva = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  realizarReserva = async (req: Request, res: Response): Promise<void> => {
     try {
-      const clienteId = req.usuario?.cedula ?? req.body.clienteId;
+      const clienteId = (req as SolicitudAuth).usuario?.cedula ?? req.body.clienteId;
       const { origen, destino, fecha, vehiculo, bienes, conductor } = req.body;
       const productosIds = (bienes ?? []).map((b: any) => b.productoId).filter(Boolean).map(Number);
 
@@ -118,9 +138,9 @@ export class ControladorClientePersonal {
     }
   }
 
-  obtenerReservas = async (req: SolicitudAuth, res: Response): Promise<void> => {
+  obtenerReservas = async (req: Request, res: Response): Promise<void> => {
     try {
-      const clienteId = req.usuario?.cedula ?? req.params.clienteId;
+      const clienteId = (req as SolicitudAuth).usuario?.cedula ?? req.params.clienteId;
       const { fechaDesde, fechaHasta, estado, limit, page } = req.query as Record<string, string>;
       const limitNum  = limit ? Math.min(Number(limit), 100) : undefined;
       const offsetNum = page && limitNum ? (Number(page) - 1) * limitNum : undefined;

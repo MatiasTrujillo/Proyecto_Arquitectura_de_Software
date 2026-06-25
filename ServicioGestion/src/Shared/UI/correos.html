@@ -41,7 +41,7 @@
 
   <script>
     const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
-    if (!token) window.location.href = 'http://localhost:3002/';
+    if (!token) window.location.href = 'http://localhost:3002/?redirect=http://localhost:3001';
 
     function getCedula() {
       try { return JSON.parse(atob(token.split('.')[1])).cedula || null; }

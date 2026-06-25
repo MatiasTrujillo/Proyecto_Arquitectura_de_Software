@@ -44,6 +44,10 @@
         <input type="text" id="cedula" placeholder="Ej: 12345678">
         <label>Nombre</label>
         <input type="text" id="nombre" placeholder="Ej: Ana Rodríguez">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="Ej: ana@ejemplo.com">
+        <label>Contraseña (para el acceso al sistema)</label>
+        <input type="password" id="password" placeholder="Mínimo 8 caracteres, 1 mayúscula, 1 número">
         <br>
         <button onclick="crearCliente()">Crear</button>
         <div id="mensajeCrear"></div>
@@ -67,9 +71,9 @@
         <h2>Listado</h2>
         <table id="tablaClientes">
             <thead>
-                <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Rol</th><th>Acción</th></tr>
+                <tr><th>ID</th><th>Cédula</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Acción</th></tr>
             </thead>
-            <tbody><tr><td colspan="5">Cargando...</td></tr></tbody>
+            <tbody><tr><td colspan="6">Cargando...</td></tr></tbody>
         </table>
     </div>
 
@@ -161,7 +165,7 @@
         const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
         if (token) sessionStorage.setItem('auth_token', token);
         if (rol)   sessionStorage.setItem('auth_rol',   rol);
-        if (!token) window.location.href = 'http://localhost:3002/';
+        if (!token) window.location.href = 'http://localhost:3002/?redirect=http://localhost:3001';
 
         // Ocultar secciones de administrador si el usuario no es admin
         if (rol !== 'Administrador') {
@@ -183,7 +187,7 @@
                 items = json.data || [];
                 const tbody = document.querySelector('#tablaClientes tbody');
                 if (items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5">No hay clientes personales</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6">No hay clientes personales</td></tr>';
                     return;
                 }
                 tbody.innerHTML = items.map((item, i) => `
@@ -191,6 +195,7 @@
                         <td class="id-cell">${item.id}</td>
                         <td>${item.cedula}</td>
                         <td>${item.nombre}</td>
+                        <td style="font-size:0.9em">${item.email ?? '<span style="color:#aaa">—</span>'}</td>
                         <td>${item.rol ?? 'ClientePersonal'}</td>
                         <td>
                             <button class="btn-editar" onclick="abrirEdicion(${i})">Editar</button>
@@ -200,14 +205,16 @@
                 `).join('');
             } catch (err) {
                 document.querySelector('#tablaClientes tbody').innerHTML =
-                    `<tr><td colspan="5" class="error">Error: ${err.message}</td></tr>`;
+                    `<tr><td colspan="6" class="error">Error: ${err.message}</td></tr>`;
             }
         }
 
         async function crearCliente() {
-            const cedula = document.getElementById('cedula').value;
-            const nombre = document.getElementById('nombre').value;
-            if (!cedula || !nombre) {
+            const cedula   = document.getElementById('cedula').value;
+            const nombre   = document.getElementById('nombre').value;
+            const email    = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            if (!cedula || !nombre || !email || !password) {
                 document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos</div>';
                 return;
             }
@@ -215,12 +222,14 @@
                 const res = await apiFetch('/api/clientes-personales', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cedula, nombre })
+                    body: JSON.stringify({ cedula, nombre, email, password })
                 });
                 if (res.ok) {
                     document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Cliente creado</div>';
                     document.getElementById('cedula').value = '';
                     document.getElementById('nombre').value = '';
+                    document.getElementById('email').value = '';
+                    document.getElementById('password').value = '';
                     cargarClientes();
                 } else {
                     const err = await res.json();

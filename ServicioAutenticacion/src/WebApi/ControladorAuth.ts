@@ -77,17 +77,18 @@ export class ControladorAuth {
   // Llamado por ServicioGestion cuando el admin crea conductores/operadores/admins internos
   async registrarInterno(req: Request, res: Response): Promise<void> {
     try {
-      const { cedula, password, rol } = req.body;
-      if (!cedula || !password || !rol) {
-        res.status(400).json({ error: 'cedula, password y rol son requeridos' });
+      const { cedula, email, password, rol } = req.body;
+      if (!cedula || !email || !password || !rol) {
+        res.status(400).json({ error: 'cedula, email, password y rol son requeridos' });
         return;
       }
-      const email = `${cedula}@move.internal`;
-      const existe = await this.servicio.existeUsuarioEnAuth0(email);
-      if (!existe) {
+      const userId = await this.servicio.obtenerIdUsuarioEnAuth0(email);
+      if (userId) {
+        await this.servicio.actualizarPasswordEnAuth0(userId, password);
+      } else {
         await this.servicio.crearUsuarioEnAuth0(email, password, cedula, rol);
       }
-      registrador.info('usuario_interno_registrado', { cedula, rol });
+      registrador.info('usuario_interno_registrado', { cedula, rol, email });
       res.status(201).json({ mensaje: 'Credencial creada' });
     } catch (error) {
       const mensaje = error instanceof Error ? error.message : String(error);
@@ -140,7 +141,7 @@ export class ControladorAuth {
     res.status(200).json(resultado);
   }
 
-  iniciarOAuth(_req: Request, res: Response): void {
+  iniciarOAuth(req: Request, res: Response): void {
     const domain   = process.env.AUTH0_DOMAIN       || '';
     const clientId = process.env.AUTH0_CLIENT_ID    || '';
     const callback = process.env.AUTH0_CALLBACK_URL || 'http://localhost:3002/api/auth/callback';
@@ -150,12 +151,17 @@ export class ControladorAuth {
       return;
     }
 
+    const DESTINOS_PERMITIDOS = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'];
+    const redirect = req.query.redirect as string | undefined;
+    const state = redirect && DESTINOS_PERMITIDOS.includes(redirect) ? redirect : 'http://localhost:3002';
+
     const url = `https://${domain}/authorize?` + new URLSearchParams({
       response_type: 'code',
       client_id:     clientId,
       redirect_uri:  callback,
       scope:         'openid profile email',
       prompt:        'login',
+      state,
     }).toString();
 
     res.redirect(url);
@@ -219,8 +225,13 @@ export class ControladorAuth {
       const { token } = this.servicio.emitirTokenOAuth(cedula, rol);
       registrador.info('login_oauth_exitoso', { cedula, rol, ip: req.ip });
 
-      const destino = 'http://localhost:3001/';
-      res.redirect(`${destino}?token=${encodeURIComponent(token)}&rol=${encodeURIComponent(rol)}`);
+      const DESTINOS_PERMITIDOS = ['http://localhost:3000', 'http://localhost:3001'];
+      const state = req.query.state as string | undefined;
+      const destino = state && DESTINOS_PERMITIDOS.includes(state) ? state : '';
+
+      const params = new URLSearchParams({ token, rol });
+      if (destino) params.set('destino', destino);
+      res.redirect(`http://localhost:3002/?${params.toString()}`);
 
     } catch (e) {
       registrador.error('error_callback_oauth', { error: String(e) });

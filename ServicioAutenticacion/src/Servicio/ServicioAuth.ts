@@ -56,6 +56,30 @@ export class ServicioAuth {
     return Array.isArray(users) && users.length > 0;
   }
 
+  async obtenerIdUsuarioEnAuth0(email: string): Promise<string | null> {
+    const mgmtToken = await this.obtenerTokenManagement();
+    const res = await fetch(
+      `https://${AUTH0_DOMAIN}/api/v2/users-by-email?email=${encodeURIComponent(email)}`,
+      { headers: { 'Authorization': `Bearer ${mgmtToken}` } }
+    );
+    const users: any[] = await res.json();
+    if (!Array.isArray(users) || users.length === 0) return null;
+    return users[0].user_id as string;
+  }
+
+  async actualizarPasswordEnAuth0(userId: string, password: string): Promise<void> {
+    const mgmtToken = await this.obtenerTokenManagement();
+    const res = await fetch(`https://${AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(userId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${mgmtToken}` },
+      body: JSON.stringify({ password, connection: 'Username-Password-Authentication' }),
+    });
+    if (!res.ok) {
+      const err: any = await res.json();
+      throw new Error(err.message || `Error Auth0 al actualizar contraseña (${res.status})`);
+    }
+  }
+
   private async obtenerTokenManagement(): Promise<string> {
     const res = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
       method: 'POST',

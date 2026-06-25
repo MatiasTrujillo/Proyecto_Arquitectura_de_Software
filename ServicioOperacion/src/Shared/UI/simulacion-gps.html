@@ -59,7 +59,7 @@
 </head>
 <body>
   <div class="nav">
-    <a class="btn-nav" href="http://localhost:3001/">← Volver</a>
+    <a class="btn-nav" href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{location.href='http://localhost:3000/';}">← Volver</a>
   </div>
 
   <h1>Simulación GPS</h1>
@@ -116,7 +116,7 @@
     const rol = token ? (rolDesdeJwt(token) || rolParam) : rolParam;
 
     if (!token) {
-      window.location.href = 'http://localhost:3002/';
+      window.location.href = 'http://localhost:3002/?redirect=http://localhost:3000';
     } else if (rol !== 'administrador' && rol !== 'Administrador') {
       document.body.innerHTML = '<div style="padding:40px;font-family:Arial"><h2>Acceso denegado</h2><p>Esta página es solo para administradores.</p><a href="javascript:history.back()">← Volver</a></div>';
     }

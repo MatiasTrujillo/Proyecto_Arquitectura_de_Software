@@ -5,11 +5,11 @@ import { IServicioConductor } from "../../IServicio/IServicioConductor";
 
 const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
 
-async function registrarCredencial(cedula: string, password: string, rol: string): Promise<void> {
+async function registrarCredencial(cedula: string, email: string, password: string, rol: string): Promise<void> {
   const res = await fetch(`${AUTH_URL}/api/auth/registrar-interno`, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ cedula, password, rol }),
+    body:    JSON.stringify({ cedula, email, password, rol }),
   });
   if (res.ok) return;
   const err = await res.json().catch(() => ({}));
@@ -27,13 +27,13 @@ export class ControladorConductor {
 
   crearConductor = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { cedula, nombre, password } = req.body;
-      if (!password) {
-        res.status(400).json({ error: 'La contraseña es requerida para crear un conductor' });
+      const { cedula, nombre, email, password } = req.body;
+      if (!email || !password) {
+        res.status(400).json({ error: 'El email y la contraseña son requeridos para crear un conductor' });
         return;
       }
-      const conductorCreado = await this.servicioConductor.crearConductor(cedula, nombre);
-      await registrarCredencial(cedula, password, 'Conductor');
+      await registrarCredencial(cedula, email, password, 'Conductor');
+      const conductorCreado = await this.servicioConductor.crearConductor(cedula, nombre, email);
       res.status(201).json({ data: conductorCreado });
     } catch (error) {
       this.manejarError(res, error);

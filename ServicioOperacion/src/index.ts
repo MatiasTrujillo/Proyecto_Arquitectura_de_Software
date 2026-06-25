@@ -235,7 +235,7 @@ app.get('/dispositivos-ui',   (_req, res) => res.sendFile(path.join(__dirname, '
 app.get('/simulacion-gps-ui', (_req, res) => res.sendFile(path.join(__dirname, 'Shared', 'UI', 'simulacion-gps.html')));
 app.get('/traslados-ui',      (_req, res) => res.sendFile(path.join(__dirname, 'Shared', 'UI', 'traslados.html')));
 app.get('/metricas',          manejadorMetricas);
-app.get('/metricas-ui',       (_req, res) => res.sendFile(path.join(__dirname, 'Shared', 'UI', 'metricas.html')));
+app.get('/metricas-ui',       (_req, res) => res.sendFile(path.join(__dirname, 'Shared', 'Metrics', 'metricas.html')));
 
 app.use(manejadorErrores);
 

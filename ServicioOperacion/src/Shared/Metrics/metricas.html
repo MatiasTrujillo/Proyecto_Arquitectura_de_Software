@@ -1,64 +1,292 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Métricas - ServicioOperacion</title>
     <style>
-      body { font-family: Arial, Helvetica, sans-serif; margin: 20px; background:#f7f9fc; color:#222 }
-      header { display:flex; align-items:center; gap:12px }
-      h1 { font-size:1.2rem; margin:0 }
-      .card { background:#fff; padding:16px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.06); margin-top:12px }
-      pre { white-space:pre-wrap; word-break:break-word; font-size:0.9rem }
-      .row { display:flex; gap:12px; flex-wrap:wrap }
-      .small { font-size:0.85rem; color:#555 }
-      .controls { margin-top:12px }
-      button { padding:8px 12px; border-radius:6px; border:1px solid #ccc; background:#fff; cursor:pointer }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        h2 { margin: 20px 0 10px 0; color: #333; font-size: 1.1rem; }
+        .nav { margin-bottom: 20px; }
+        a { padding: 8px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        button { padding: 8px 15px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0052a3; }
+        select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f0f0f0; font-weight: bold; }
+        .desc { font-size: 0.9rem; color: #666; }
+        .fila-grupo td { background: #f5f5f5; font-weight: bold; }
+        .fila-metodo td:first-child { padding-left: 28px; }
+        .fila-metodo { font-size: 0.95rem; }
+        .metodo {
+            display: inline-block; padding: 2px 7px; border-radius: 3px;
+            font-size: 0.8rem; font-weight: bold; min-width: 52px;
+            text-align: center; margin-right: 6px;
+        }
+        .metodo-GET    { background: #d4edda; color: #155724; }
+        .metodo-POST   { background: #cce5ff; color: #004085; }
+        .metodo-PUT    { background: #fff3cd; color: #856404; }
+        .metodo-DELETE { background: #f8d7da; color: #721c24; }
+        .metodo-PATCH  { background: #e2d9f3; color: #4a235a; }
     </style>
-  </head>
-  <body>
-    <header>
-      <h1>Métricas del Servicio</h1>
-      <span class="small">Última actualización: <span id="updated">-</span></span>
-    </header>
+    <script>
+        (function() {
+            const p = new URLSearchParams(window.location.search);
+            const token = p.get('token') || sessionStorage.getItem('auth_token');
+            const rol   = p.get('rol')   || sessionStorage.getItem('auth_rol');
+            if (token) sessionStorage.setItem('auth_token', token);
+            if (rol)   sessionStorage.setItem('auth_rol',   rol);
+            if (!rol || rol !== 'Administrador') {
+                window.location.href = '/';
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div class="nav"><a href="javascript:void(0)" onclick="if(history.length>1){history.back();}else{location.href='http://localhost:3000/';}">← Volver</a></div>
+    <h1>Métricas del Servicio</h1>
 
-    <div class="controls">
-      <button id="refresh">Actualizar</button>
-      <label class="small">Auto-refresh cada <select id="interval"><option value="0">Off</option><option value="5000">5s</option><option value="15000">15s</option><option value="60000">60s</option></select></label>
+    <div>
+        <button id="btnActualizar">Actualizar</button>
+        <label style="margin-left: 20px;">Auto-refresh:
+            <select id="intervalo">
+                <option value="0">Off</option>
+                <option value="5000">5s</option>
+                <option value="15000">15s</option>
+                <option value="60000">1 min</option>
+            </select>
+        </label>
+        <span id="ultimaActualizacion" style="margin-left: 20px; font-size: 0.9rem;">-</span>
     </div>
 
-    <div class="card">
-      <div id="summary" class="small">Cargando métricas...</div>
-    </div>
+    <h2>Sistema</h2>
+    <table id="tabla-sistema">
+        <thead><tr><th>Métrica</th><th>Valor</th><th>Descripción</th></tr></thead>
+        <tbody><tr><td colspan="3">Cargando...</td></tr></tbody>
+    </table>
 
-    <div class="card">
-      <pre id="json">Cargando...</pre>
-    </div>
+    <h2>Solicitudes por Endpoint</h2>
+    <table id="tabla-endpoints">
+        <thead><tr><th>Endpoint</th><th>Total</th><th>Por minuto</th><th>Descripción</th></tr></thead>
+        <tbody><tr><td colspan="4">Cargando...</td></tr></tbody>
+    </table>
+
+    <h2>Solicitudes por Categoría</h2>
+    <table id="tabla-categorias">
+        <thead><tr><th>Categoría</th><th>Total</th><th>Por minuto</th><th>Descripción</th></tr></thead>
+        <tbody><tr><td colspan="4">Cargando...</td></tr></tbody>
+    </table>
+
+    <h2>Otros</h2>
+    <table id="tabla-otros">
+        <thead><tr><th>Métrica</th><th>Valor</th><th>Descripción</th></tr></thead>
+        <tbody><tr><td colspan="3">Cargando...</td></tr></tbody>
+    </table>
 
     <script>
-      async function fetchMetrics() {
-        try {
-          const res = await fetch('/metricas');
-          const data = await res.json();
-          document.getElementById('updated').textContent = new Date(data.ultima_actualizacion).toLocaleString();
-          document.getElementById('json').textContent = JSON.stringify(data, null, 2);
-          const endpoints = Object.keys(data.solicitudes_totales_por_endpoint || {});
-          const categorias = Object.keys(data.solicitudes_totales_por_categoria || {});
-          document.getElementById('summary').textContent = `Rutas: ${endpoints.length} · Categorías: ${categorias.length} · Uptime: ${Math.round(data.sistema.uptime_segundos)}s`;
-        } catch (err) {
-          document.getElementById('json').textContent = 'Error al obtener métricas: ' + (err && err.message ? err.message : String(err));
+        const token = new URLSearchParams(window.location.search).get('token') || sessionStorage.getItem('auth_token');
+        const rol   = new URLSearchParams(window.location.search).get('rol')   || sessionStorage.getItem('auth_rol');
+        if (token) sessionStorage.setItem('auth_token', token);
+        if (rol)   sessionStorage.setItem('auth_rol',   rol);
+
+        const descripcionesPorMetodoYRuta = {
+            'GET /':             'Sirve la página principal.',
+            'GET /metricas':     'Devuelve las métricas en formato JSON.',
+            'GET /metricas-ui':  'Sirve la interfaz web de métricas.',
+            'GET /vehiculos-ui':      'Sirve la UI de vehículos.',
+            'GET /dispositivos-ui':   'Sirve la UI de dispositivos GPS.',
+            'GET /traslados-ui':      'Sirve la UI de traslados.',
+            'GET /simulacion-gps-ui': 'Sirve la UI de simulación GPS.',
+
+            'GET /api/vehiculos':              'Consulta: lista todos los vehículos.',
+            'POST /api/vehiculos':             'Alta: registra un nuevo vehículo.',
+            'GET /api/vehiculos/:id':          'Consulta: obtiene un vehículo por ID.',
+            'PUT /api/vehiculos/:id':          'Modificación: actualiza un vehículo existente.',
+            'DELETE /api/vehiculos/:id':       'Baja: elimina un vehículo por ID.',
+            'GET /api/vehiculos/matricula/:matricula': 'Consulta: obtiene un vehículo por matrícula.',
+
+            'GET /api/dispositivos':                      'Consulta: lista todos los dispositivos GPS.',
+            'POST /api/dispositivos':                     'Alta: registra un nuevo dispositivo GPS.',
+            'GET /api/dispositivos/disponibles':          'Consulta: lista dispositivos GPS libres (sin asignar).',
+            'POST /api/dispositivos/recibir':             'Recibe información de posición GPS desde un dispositivo.',
+            'GET /api/dispositivos/:id':                  'Consulta: obtiene un dispositivo GPS por ID.',
+            'PUT /api/dispositivos/:id':                  'Modificación: actualiza un dispositivo GPS existente.',
+            'DELETE /api/dispositivos/:id':               'Baja: elimina un dispositivo GPS por ID.',
+            'GET /api/dispositivos/:dispositivoId/verificar': 'Verifica la información de un dispositivo GPS.',
+
+            'GET /api/zonas-rojas':                'Consulta: lista las zonas geográficas de tipo roja.',
+            'GET /api/zonas':                      'Consulta: lista todas las zonas geográficas.',
+            'GET /api/ubicaciones/ultima':         'Consulta: obtiene la última posición GPS de un vehículo.',
+            'GET /api/proxy/viajes-en-curso':      'Proxy: obtiene los viajes en curso desde ServicioGestion.',
+            'GET /api/alertas':                    'Consulta: obtiene alertas GPS de un vehículo.',
+
+            'POST /internal/simular-gps/iniciar': 'Inicia la simulación GPS para un vehículo.',
+            'POST /internal/simular-gps/detener': 'Detiene la simulación GPS de un vehículo.',
+        };
+
+        const metodosPorRuta = {
+            '/api/vehiculos':    'GET, POST',
+            '/api/vehiculos/:id':'GET, PUT, DELETE',
+            '/api/vehiculos/matricula/:matricula': 'GET',
+            '/api/dispositivos':    'GET, POST',
+            '/api/dispositivos/disponibles': 'GET',
+            '/api/dispositivos/recibir': 'POST',
+            '/api/dispositivos/:id':'GET, PUT, DELETE',
+            '/api/dispositivos/:dispositivoId/verificar': 'GET',
+        };
+
+        const descripcionGeneralPorRuta = {
+            '/api/vehiculos':    'Alta (POST) y consulta (GET) de vehículos.',
+            '/api/vehiculos/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un vehículo.',
+            '/api/vehiculos/matricula/:matricula': 'Consulta (GET) de un vehículo por matrícula.',
+            '/api/dispositivos':    'Alta (POST) y consulta (GET) de dispositivos GPS.',
+            '/api/dispositivos/disponibles': 'Consulta (GET) de dispositivos GPS libres.',
+            '/api/dispositivos/recibir': 'Recepción (POST) de información GPS.',
+            '/api/dispositivos/:id':'Consulta (GET), modificación (PUT) y baja (DELETE) de un dispositivo GPS.',
+            '/api/dispositivos/:dispositivoId/verificar': 'Verificación (GET) de dispositivo GPS.',
+        };
+
+        const descripcionesSistema = {
+            'Uptime':              'Tiempo que lleva el servidor activo desde el último inicio.',
+            'Rutas':               'Combinaciones método+ruta que han recibido al menos una solicitud.',
+            'Categorías':          'Cantidad de categorías de endpoints registradas.',
+            'Solicitudes totales': 'Total de solicitudes recibidas desde el inicio del servidor.',
+        };
+
+        const descripcionesPorCategoria = {
+            'general':     'Solicitudes a páginas UI y endpoints fuera de /api.',
+            'vehiculos':   'Solicitudes al módulo de vehículos (/api/vehiculos).',
+            'dispositivos':'Solicitudes al módulo de dispositivos GPS (/api/dispositivos).',
+            'zonas-rojas': 'Solicitudes al endpoint de zonas rojas.',
+            'zonas':       'Solicitudes al endpoint de zonas geográficas.',
+            'ubicaciones': 'Solicitudes al endpoint de ubicaciones GPS.',
+            'alertas':     'Solicitudes al endpoint de alertas GPS.',
+            'proxy':       'Solicitudes al proxy de viajes en curso.',
+            'internal':    'Llamadas internas (simulación GPS).',
+        };
+
+        const METODOS_HTTP = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'];
+
+        function parsearClave(clave) {
+            const partes = clave.split(' ');
+            if (partes.length >= 2 && METODOS_HTTP.includes(partes[0])) {
+                return { tieneMetodo: true, metodo: partes[0], ruta: partes.slice(1).join(' ') };
+            }
+            return { tieneMetodo: false, metodo: null, ruta: clave };
         }
-      }
 
-      document.getElementById('refresh').addEventListener('click', fetchMetrics);
-      document.getElementById('interval').addEventListener('change', (e) => {
-        clearInterval(window.__metricTimer);
-        const v = Number(e.target.value);
-        if (v > 0) window.__metricTimer = setInterval(fetchMetrics, v);
-      });
+        function agruparPorRuta(totales, rpms) {
+            const grupos = new Map();
+            for (const [clave, total] of Object.entries(totales)) {
+                const { tieneMetodo, metodo, ruta } = parsearClave(clave);
+                const rpm = rpms[clave] || 0;
+                if (!grupos.has(ruta)) grupos.set(ruta, []);
+                grupos.get(ruta).push({ metodo, total, rpm, clave, tieneMetodo });
+            }
+            return grupos;
+        }
 
-      // initial
-      fetchMetrics();
+        function badgeMetodo(metodo) {
+            return `<span class="metodo metodo-${metodo}">${metodo}</span>`;
+        }
+
+        function renderizarTablaEndpoints(totales, rpms) {
+            const grupos = agruparPorRuta(totales, rpms);
+            const filas = [];
+
+            for (const [ruta, entradas] of grupos.entries()) {
+                const totalGrupo = entradas.reduce((acc, e) => acc + e.total, 0);
+                const rpmGrupo   = entradas.reduce((acc, e) => acc + e.rpm, 0);
+                const tieneMetodo = entradas[0].tieneMetodo;
+
+                if (tieneMetodo) {
+                    filas.push(`<tr class="fila-grupo"><td><code>${ruta}</code></td><td>${totalGrupo}</td><td>${rpmGrupo.toFixed(1)}</td><td></td></tr>`);
+                    for (const { metodo, total, rpm, clave } of entradas) {
+                        const desc = descripcionesPorMetodoYRuta[clave] || '—';
+                        filas.push(`<tr class="fila-metodo"><td>${badgeMetodo(metodo)}</td><td>${total}</td><td>${rpm.toFixed(1)}</td><td class="desc">${desc}</td></tr>`);
+                    }
+                } else {
+                    const descGeneral = descripcionGeneralPorRuta[ruta] || '—';
+                    const metodosDisponibles = metodosPorRuta[ruta] || null;
+                    filas.push(`<tr class="fila-grupo"><td><code>${ruta}</code></td><td>${totalGrupo}</td><td>${rpmGrupo.toFixed(1)}</td><td class="desc">${descGeneral}</td></tr>`);
+                    if (metodosDisponibles) {
+                        for (const metodo of metodosDisponibles.split(', ')) {
+                            const claveCompleta = `${metodo} ${ruta}`;
+                            const desc = descripcionesPorMetodoYRuta[claveCompleta] || '—';
+                            filas.push(`<tr class="fila-metodo"><td>${badgeMetodo(metodo)}</td><td>—</td><td>—</td><td class="desc">${desc}</td></tr>`);
+                        }
+                    }
+                }
+            }
+
+            return filas.join('') || '<tr><td colspan="4">Sin datos</td></tr>';
+        }
+
+        async function cargarMetricas() {
+            try {
+                const respuesta = await fetch('/metricas');
+                const datos = await respuesta.json();
+
+                document.getElementById('ultimaActualizacion').textContent =
+                    new Date(datos.ultima_actualizacion).toLocaleString('es-ES');
+
+                const uptime = datos.sistema.uptime_segundos;
+                const textoUptime = uptime > 3600 ? (uptime / 3600).toFixed(1) + ' h'
+                                  : uptime > 60   ? (uptime / 60).toFixed(1) + ' m'
+                                  : uptime.toFixed(0) + ' s';
+
+                const totalSolicitudes = Object.values(datos.solicitudes_totales_por_endpoint || {})
+                    .reduce((a, b) => a + b, 0);
+
+                const filasSistema = [
+                    { etiqueta: 'Uptime',              valor: textoUptime },
+                    { etiqueta: 'Rutas',               valor: datos.sistema.rutas_registradas },
+                    { etiqueta: 'Categorías',          valor: datos.sistema.categorias_registradas },
+                    { etiqueta: 'Solicitudes totales', valor: totalSolicitudes },
+                ];
+                document.querySelector('#tabla-sistema tbody').innerHTML = filasSistema.map(f => `
+                    <tr>
+                        <td>${f.etiqueta}</td>
+                        <td><strong>${f.valor}</strong></td>
+                        <td class="desc">${descripcionesSistema[f.etiqueta] || '—'}</td>
+                    </tr>
+                `).join('');
+
+                document.querySelector('#tabla-endpoints tbody').innerHTML = renderizarTablaEndpoints(
+                    datos.solicitudes_totales_por_endpoint || {},
+                    datos.solicitudes_por_minuto_por_endpoint || {}
+                );
+
+                const categorias = Object.entries(datos.solicitudes_totales_por_categoria || {});
+                document.querySelector('#tabla-categorias tbody').innerHTML = categorias.map(([cat, total]) => {
+                    const rpm = datos.solicitudes_por_minuto_por_categoria?.[cat] || 0;
+                    return `<tr><td>${cat}</td><td>${total}</td><td>${rpm.toFixed(1)}</td><td class="desc">${descripcionesPorCategoria[cat] || '—'}</td></tr>`;
+                }).join('') || '<tr><td colspan="4">Sin datos</td></tr>';
+
+                document.querySelector('#tabla-otros tbody').innerHTML = `
+                    <tr>
+                        <td>Consultas BD</td>
+                        <td><strong>${datos.consultas_bd_totales || 0}</strong></td>
+                        <td class="desc">Cantidad de veces que el servicio consultó la base de datos.</td>
+                    </tr>
+                `;
+
+            } catch (err) {
+                alert('Error al cargar métricas: ' + (err && err.message ? err.message : String(err)));
+            }
+        }
+
+        document.getElementById('btnActualizar').addEventListener('click', cargarMetricas);
+        document.getElementById('intervalo').addEventListener('change', (e) => {
+            clearInterval(window.__temporizador);
+            const intervalo = Number(e.target.value);
+            if (intervalo > 0) window.__temporizador = setInterval(cargarMetricas, intervalo);
+        });
+
+        cargarMetricas();
     </script>
-  </body>
+</body>
 </html>

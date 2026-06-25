@@ -1,7 +1,7 @@
 import { ClienteEmpresaDTO } from "../DTOs/ClienteEmpresaDTO";
 
 export interface IServicioClienteEmpresa {
-  crearClienteEmpresa(cedula: string, nombre: string): Promise<ClienteEmpresaDTO>;
+  crearClienteEmpresa(cedula: string, nombre: string, email?: string): Promise<ClienteEmpresaDTO>;
   obtenerClienteEmpresas(): Promise<ClienteEmpresaDTO[]>;
   obtenerClienteEmpresaPorId(id: string): Promise<ClienteEmpresaDTO>;
   actualizarClienteEmpresa(id: string, cedula: string, nombre: string): Promise<ClienteEmpresaDTO>;

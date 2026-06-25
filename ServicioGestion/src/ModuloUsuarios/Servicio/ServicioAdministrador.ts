@@ -5,11 +5,11 @@ import { IServicioAdministrador } from "../IServicio/IServicioAdministrador";
 export class ServicioAdministrador implements IServicioAdministrador {
   constructor(private repositorio: IRepositorioAdministrador) {}
 
-  async crearAdministrador(cedula: string, nombre: string): Promise<AdministradorDTO> {
+  async crearAdministrador(cedula: string, nombre: string, email?: string): Promise<AdministradorDTO> {
     this.validarCedula(cedula);
     this.validarNombre(nombre);
 
-    const administrador = await this.repositorio.crearAdministrador(cedula, nombre);
+    const administrador = await this.repositorio.crearAdministrador(cedula, nombre, email);
     return AdministradorDTO.fromEntity(administrador);
   }
 

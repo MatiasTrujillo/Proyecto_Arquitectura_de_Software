@@ -5,40 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ServicioOperacion</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: white;
-        }
-        h1 {
-            margin-top: 0;
-            color: #333;
-        }
-        .nav {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-        }
-        a {
-            padding: 10px 15px;
-            background: #0066cc;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-        a:hover {
-            background: #0052a3;
-        }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
+        h1 { margin-top: 0; color: #333; }
+        .nav { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        a { padding: 10px 15px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; }
+        a:hover { background: #0052a3; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .info-rol { font-size: 0.9em; color: #555; }
+        .btn-logout { padding: 8px 14px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+        .btn-logout:hover { background: #990000; }
+        .sin-acceso { color: #cc0000; font-size: 1.1em; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>ServicioOperacion</h1>
-    <div class="nav">
-        <a href="/vehiculos-ui">Vehículos</a>
-        <a href="/dispositivos-ui">Dispositivos GPS</a>
-        <a href="/metricas-ui">Métricas</a>
+    <div class="header">
+        <h1 style="margin:0">ServicioOperacion</h1>
+        <div style="display:flex;align-items:center;gap:12px">
+            <span class="info-rol" id="infoRol"></span>
+            <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
     </div>
-    <p>Selecciona una opción del menú para continuar.</p>
+    <div class="nav" id="menu"></div>
+    <p id="bienvenida">Selecciona una opción del menú para continuar.</p>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token') || sessionStorage.getItem('auth_token');
+        const rol   = params.get('rol')   || sessionStorage.getItem('auth_rol');
+        if (token) sessionStorage.setItem('auth_token', token);
+        if (rol)   sessionStorage.setItem('auth_rol',   rol);
+
+        if (!token) {
+            window.location.href = 'http://localhost:3002/?redirect=http://localhost:3000';
+        }
+
+        document.getElementById('infoRol').textContent = 'Sesión: ' + (rol || '—');
+
+        const MENUS = {
+            Administrador: [
+                { label: 'Vehículos',        href: '/vehiculos-ui'    },
+                { label: 'Dispositivos GPS',  href: '/dispositivos-ui' },
+                { label: 'Traslados',         href: '/traslados-ui'   },
+                { label: 'Métricas',          href: '/metricas-ui'    },
+            ],
+            Operador: [
+                { label: 'Traslados',         href: '/traslados-ui'   },
+                { label: 'Vehículos',         href: '/vehiculos-ui'   },
+                { label: 'Dispositivos GPS',  href: '/dispositivos-ui' },
+            ],
+        };
+
+        const opciones = MENUS[rol];
+        const menu = document.getElementById('menu');
+
+        if (!opciones) {
+            document.getElementById('bienvenida').remove();
+            menu.innerHTML = '<p class="sin-acceso">No tenés acceso a este servicio.</p>';
+        } else {
+            opciones.forEach(({ label, href }) => {
+                const a = document.createElement('a');
+                a.href = href;
+                a.textContent = label;
+                menu.appendChild(a);
+            });
+        }
+
+        async function logout() {
+            try {
+                await fetch('http://localhost:3002/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+            } catch (_) {}
+            sessionStorage.removeItem('auth_token');
+            sessionStorage.removeItem('auth_rol');
+            window.location.href = 'http://localhost:3002/?redirect=http://localhost:3000';
+        }
+    </script>
 </body>
 </html>

@@ -1,0 +1,2 @@
+ALTER TABLE cliente_personal ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE cliente_empresa  ADD COLUMN IF NOT EXISTS email TEXT;
