@@ -12,9 +12,10 @@ const BASE_OPERACION = __ENV.BASE_OPERACION || 'http://localhost:3000';
 
 // Dispositivos GPS de prueba (deben estar registrados en la BD)
 // IDs numéricos de dispositivos registrados en la BD
+// GPS-001 a GPS-004 son seedeados por defecto en ServicioOperacion (IDs 1-4 en BD limpia)
 const DISPOSITIVOS = __ENV.DISPOSITIVO_ID
   ? [__ENV.DISPOSITIVO_ID]
-  : ['6', '7'];
+  : ['1', '2', '3', '4'];
 
 export const options = {
   scenarios: {
