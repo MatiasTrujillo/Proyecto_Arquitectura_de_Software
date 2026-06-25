@@ -5,25 +5,20 @@ import pool from './DatabaseConnection';
 export async function seedCategorias(): Promise<void> {
   try {
     const csvPath = path.join(process.cwd(), 'product-categories(in).csv');
-    if (!fs.existsSync(csvPath)) {
-      console.log('CSV de categorías no encontrado, omitiendo seed');
-      return;
-    }
+    if (!fs.existsSync(csvPath)) return;
 
-    // El CSV está en ISO-8859-1; leerlo como latin1 y reinterpretar como UTF-8 evita el mojibake
+    // El CSV está en ISO-8859-1; releer como latin1→utf8 evita el mojibake
     const rawContent = fs.readFileSync(csvPath, 'latin1');
     const content = Buffer.from(rawContent, 'latin1').toString('utf8');
-    const lines = content.split('\n').slice(1); // skip header
+    const lines = content.split('\n').slice(1);
 
-    let insertadas = 0;
     for (const rawLine of lines) {
       const line = rawLine.trim();
       if (!line) continue;
 
-      // Remove outer wrapping quote and trailing ;; or ";
       const inner = line.replace(/^"/, '').replace(/"[;]*$/, '');
 
-      // Split only on first 3 commas
+      // Remove outer wrapping quote and trailing ;; or ";
       const first  = inner.indexOf(',');
       const second = inner.indexOf(',', first + 1);
       const third  = inner.indexOf(',', second + 1);
@@ -41,11 +36,8 @@ export async function seedCategorias(): Promise<void> {
          ON CONFLICT (nombre) DO UPDATE SET nombre_es = EXCLUDED.nombre_es, descripcion = EXCLUDED.descripcion`,
         [nombre, nombreEs, descripcion || null]
       );
-      insertadas++;
     }
-
-    console.log(`Seed categorías: ${insertadas} filas procesadas desde CSV`);
-  } catch (e) {
-    console.error('Error en seed de categorías:', e);
+  } catch {
+    // seed no bloquea el arranque
   }
 }

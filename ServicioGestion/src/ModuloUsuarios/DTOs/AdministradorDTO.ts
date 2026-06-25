@@ -15,9 +15,9 @@ export class AdministradorDTO {
 
   static fromEntity(entidad: Administrador): AdministradorDTO {
     return new AdministradorDTO(
-      entidad.getId(),
-      entidad.getCedula(),
-      entidad.getNombre()
+      entidad.obtenerId(),
+      entidad.obtenerCedula(),
+      entidad.obtenerNombre()
     );
   }
 

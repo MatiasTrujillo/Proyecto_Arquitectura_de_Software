@@ -35,15 +35,15 @@ export class ViajeDTO {
 
   static fromEntity(entidad: Viaje): ViajeDTO {
     return new ViajeDTO(
-      entidad.getId(),
-      entidad.getReservaId(),
-      entidad.getOrigen(),
-      entidad.getDestino(),
-      entidad.getFecha(),
-      entidad.getEstado(),
-      entidad.getConductor(),
-      entidad.getVehiculo(),
-      entidad.getTieneAlertas(),
+      entidad.obtenerId(),
+      entidad.obtenerReservaId(),
+      entidad.obtenerOrigen(),
+      entidad.obtenerDestino(),
+      entidad.obtenerFecha(),
+      entidad.obtenerEstado(),
+      entidad.obtenerConductor(),
+      entidad.obtenerVehiculo(),
+      entidad.obtenerTieneAlertas(),
     );
   }
 

@@ -9,11 +9,11 @@ export class Incidente {
     private conductorId: string
   ) {}
 
-  getId(): string { return this.id; }
-  getDescripcion(): string { return this.descripcion; }
-  getFecha(): Date { return this.fecha; }
-  getReservaId(): string { return this.reservaId; }
-  getEstado(): string { return this.estado; }
-  getSeveridad(): string { return this.severidad; }
-  getConductorId(): string { return this.conductorId; }
+  obtenerId(): string { return this.id; }
+  obtenerDescripcion(): string { return this.descripcion; }
+  obtenerFecha(): Date { return this.fecha; }
+  obtenerReservaId(): string { return this.reservaId; }
+  obtenerEstado(): string { return this.estado; }
+  obtenerSeveridad(): string { return this.severidad; }
+  obtenerConductorId(): string { return this.conductorId; }
 }

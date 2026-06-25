@@ -25,7 +25,7 @@ export class ControladorOperador {
     this.servicioOperador = servicioOperador ?? new ServicioOperador(new RepositorioOperador());
   }
 
-  async crearOperador(req: Request, res: Response): Promise<void> {
+  crearOperador = async (req: Request, res: Response): Promise<void> => {
     try {
       const { cedula, nombre, password } = req.body;
       if (!password) {
@@ -40,7 +40,7 @@ export class ControladorOperador {
     }
   }
 
-  async obtenerOperador(req: Request, res: Response): Promise<void> {
+  obtenerOperador = async (req: Request, res: Response): Promise<void> => {
     try {
       const operadores = await this.servicioOperador.obtenerOperadores();
       res.status(200).json({ data: operadores });
@@ -49,7 +49,7 @@ export class ControladorOperador {
     }
   }
 
-  async obtenerOperadorPorId(req: Request, res: Response): Promise<void> {
+  obtenerOperadorPorId = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const operador = await this.servicioOperador.obtenerOperadorPorId(id as string);
@@ -59,7 +59,7 @@ export class ControladorOperador {
     }
   }
 
-  async actualizarOperador(req: Request, res: Response): Promise<void> {
+  actualizarOperador = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
@@ -70,7 +70,7 @@ export class ControladorOperador {
     }
   }
 
-  async eliminarOperador(req: Request, res: Response): Promise<void> {
+  eliminarOperador = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       await this.servicioOperador.eliminarOperador(id as string);
@@ -80,7 +80,7 @@ export class ControladorOperador {
     }
   }
 
-  asignarReserva(req: Request, res: Response): void {
+  asignarReserva = (req: Request, res: Response): void => {
     try {
       const { reservaId } = req.params;
       res.status(200).json({ mensaje: "Reserva asignada" });
@@ -89,7 +89,7 @@ export class ControladorOperador {
     }
   }
 
-  consultarTraslado(req: Request, res: Response): void {
+  consultarTraslado = (req: Request, res: Response): void => {
     try {
       const { trasladoId } = req.params;
       res.status(200).json({ data: {} });
@@ -98,7 +98,7 @@ export class ControladorOperador {
     }
   }
 
-  reservaNoReconocida(req: Request, res: Response): void {
+  reservaNoReconocida = (req: Request, res: Response): void => {
     try {
       const { reservaId } = req.params;
       res.status(200).json({ mensaje: "Reserva marcada como no reconocida" });
@@ -107,7 +107,7 @@ export class ControladorOperador {
     }
   }
 
-  private manejarError(res: Response, error: unknown): void {
+  private manejarError = (res: Response, error: unknown): void => {
     const mensaje = error instanceof Error ? error.message : String(error);
 
     if (/no se encontr|no encontrado/i.test(mensaje)) {

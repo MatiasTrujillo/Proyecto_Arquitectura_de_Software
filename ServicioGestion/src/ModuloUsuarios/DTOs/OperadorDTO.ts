@@ -15,9 +15,9 @@ export class OperadorDTO {
 
   static fromEntity(entidad: Operador): OperadorDTO {
     return new OperadorDTO(
-      entidad.getId(),
-      entidad.getCedula(),
-      entidad.getNombre()
+      entidad.obtenerId(),
+      entidad.obtenerCedula(),
+      entidad.obtenerNombre()
     );
   }
 

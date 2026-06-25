@@ -45,17 +45,17 @@ export class ReservaDTO {
 
   static fromEntity(entidad: Reserva, prioridad: Prioridad | null = null): ReservaDTO {
     return new ReservaDTO(
-      entidad.getId(),
-      entidad.getCliente(),
-      entidad.getOrigen(),
-      entidad.getDestino(),
-      entidad.getFecha(),
-      entidad.getEstado(),
-      entidad.getCosto(),
-      entidad.getVehiculo(),
-      entidad.getProductos(),
-      entidad.getConductor(),
-      entidad.getCategorias(),
+      entidad.obtenerId(),
+      entidad.obtenerCliente(),
+      entidad.obtenerOrigen(),
+      entidad.obtenerDestino(),
+      entidad.obtenerFecha(),
+      entidad.obtenerEstado(),
+      entidad.obtenerCosto(),
+      entidad.obtenerVehiculo(),
+      entidad.obtenerProductos(),
+      entidad.obtenerConductor(),
+      entidad.obtenerCategorias(),
       prioridad
     );
   }

@@ -10,7 +10,7 @@ export class ControladorVehiculo {
     this.servicio = servicio ?? new ServicioVehiculo(new RepositorioVehiculo());
   }
 
-  async crearVehiculo(req: Request, res: Response): Promise<void> {
+  crearVehiculo = async (req: Request, res: Response): Promise<void> => {
     try {
       const { matricula, tipo, capacidad, dispositivoGps, caracteristicas } = req.body;
       const vehiculoDTO = await this.servicio.crearVehiculo(matricula, tipo, Number(capacidad), dispositivoGps, caracteristicas ?? []);
@@ -20,7 +20,7 @@ export class ControladorVehiculo {
     }
   }
 
-  async obtenerVehiculos(req: Request, res: Response): Promise<void> {
+  obtenerVehiculos = async (_req: Request, res: Response): Promise<void> => {
     try {
       const vehiculos = await this.servicio.obtenerVehiculos();
       res.status(200).json({ data: vehiculos });
@@ -29,7 +29,7 @@ export class ControladorVehiculo {
     }
   }
 
-  async obtenerVehiculoPorId(req: Request, res: Response): Promise<void> {
+  obtenerVehiculoPorId = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const vehiculo = await this.servicio.obtenerVehiculoPorId(Number(id));
@@ -39,7 +39,7 @@ export class ControladorVehiculo {
     }
   }
 
-  async actualizarVehiculo(req: Request, res: Response): Promise<void> {
+  actualizarVehiculo = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const { matricula, tipo, capacidad, dispositivoGps, caracteristicas } = req.body;
@@ -50,7 +50,7 @@ export class ControladorVehiculo {
     }
   }
 
-  async obtenerVehiculoPorMatricula(req: Request, res: Response): Promise<void> {
+  obtenerVehiculoPorMatricula = async (req: Request, res: Response): Promise<void> => {
     try {
       const vehiculo = await this.servicio.obtenerVehiculoPorMatricula(req.params.matricula);
       res.status(200).json({ data: vehiculo });
@@ -59,7 +59,7 @@ export class ControladorVehiculo {
     }
   }
 
-  async eliminarVehiculo(req: Request, res: Response): Promise<void> {
+  eliminarVehiculo = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       await this.servicio.eliminarVehiculo(Number(id));
@@ -69,7 +69,7 @@ export class ControladorVehiculo {
     }
   }
 
-  private manejarError(res: Response, error: any): void {
+  private manejarError = (res: Response, error: any): void => {
     if (error instanceof Error) {
       res.status(400).json({ error: error.message });
     } else {

@@ -15,9 +15,9 @@ export class ClienteEmpresaDTO {
 
   static fromEntity(entidad: ClienteEmpresa): ClienteEmpresaDTO {
     return new ClienteEmpresaDTO(
-      entidad.getId(),
-      entidad.getCedula(),
-      entidad.getNombre()
+      entidad.obtenerId(),
+      entidad.obtenerCedula(),
+      entidad.obtenerNombre()
     );
   }
 

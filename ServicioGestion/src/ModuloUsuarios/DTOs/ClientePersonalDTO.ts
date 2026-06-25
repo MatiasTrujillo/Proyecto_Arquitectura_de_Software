@@ -15,9 +15,9 @@ export class ClientePersonalDTO {
 
   static fromEntity(entidad: ClientePersonal): ClientePersonalDTO {
     return new ClientePersonalDTO(
-      entidad.getId(),
-      entidad.getCedula(),
-      entidad.getNombre()
+      entidad.obtenerId(),
+      entidad.obtenerCedula(),
+      entidad.obtenerNombre()
     );
   }
 

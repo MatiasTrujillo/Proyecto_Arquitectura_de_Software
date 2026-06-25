@@ -11,19 +11,19 @@ export class Categoria {
     this.descripcion = descripcion;
   }
 
-  getId(): number {
+  obtenerId(): number {
     return this.id;
   }
 
-  getNombre(): string {
+  obtenerNombre(): string {
     return this.nombre;
   }
 
-  getNombreEs(): string {
+  obtenerNombreEs(): string {
     return this.nombreEs;
   }
 
-  getDescripcion(): string {
+  obtenerDescripcion(): string {
     return this.descripcion;
   }
 }

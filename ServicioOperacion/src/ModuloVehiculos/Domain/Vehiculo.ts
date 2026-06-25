@@ -15,10 +15,10 @@ export class Vehiculo {
     this.caracteristicas = caracteristicas;
   }
 
-  getId(): number { return this.id; }
-  getMatricula(): string { return this.matricula; }
-  getTipo(): string { return this.tipo; }
-  getCapacidad(): number { return this.capacidad; }
-  getDispositivoGps(): string { return this.dispositivoGps; }
-  getCaracteristicas(): string[] { return this.caracteristicas; }
+  obtenerId(): number { return this.id; }
+  obtenerMatricula(): string { return this.matricula; }
+  obtenerTipo(): string { return this.tipo; }
+  obtenerCapacidad(): number { return this.capacidad; }
+  obtenerDispositivoGps(): string { return this.dispositivoGps; }
+  obtenerCaracteristicas(): string[] { return this.caracteristicas; }
 }

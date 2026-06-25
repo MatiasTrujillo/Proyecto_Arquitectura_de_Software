@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { ServicioIncidente } from "../../Servicio/ServicioIncidente";
 import { RepositorioIncidente } from "../../DataAccess/RepositorioIncidente";
 import { IServicioIncidente } from "../../IServicio/IServicioIncidente";
+import { SolicitudAuth } from "../../../Shared/Auth/SolicitudAuth";
 
 export class ControladorIncidente {
   private servicioIncidente: IServicioIncidente;
@@ -10,11 +11,11 @@ export class ControladorIncidente {
     this.servicioIncidente = servicioIncidente ?? new ServicioIncidente(new RepositorioIncidente());
   }
 
-  async crearIncidente(req: Request, res: Response): Promise<void> {
+  crearIncidente = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
       const { descripcion, fecha, reservaId, estado, severidad } = req.body;
       // Si no viene conductorId en el body, se toma del token (caso conductor reportando)
-      const conductorId = req.body.conductorId || (req as any).usuario?.cedula || '';
+      const conductorId = req.body.conductorId || req.usuario?.cedula || '';
       const incidenteCreado = await this.servicioIncidente.crearIncidente(descripcion, fecha, reservaId, estado, severidad, conductorId);
       res.status(201).json({ data: incidenteCreado });
     } catch (error) {
@@ -22,7 +23,7 @@ export class ControladorIncidente {
     }
   }
 
-  async obtenerIncidente(req: Request, res: Response): Promise<void> {
+  obtenerIncidente = async (req: Request, res: Response): Promise<void> => {
     try {
       const incidentes = await this.servicioIncidente.obtenerIncidentes();
       res.status(200).json({ data: incidentes });
@@ -31,7 +32,7 @@ export class ControladorIncidente {
     }
   }
 
-  async obtenerIncidentePorId(req: Request, res: Response): Promise<void> {
+  obtenerIncidentePorId = async (req: Request, res: Response): Promise<void> => {
     try {
       const incidente = await this.servicioIncidente.obtenerIncidentePorId(req.params.id as string);
       res.status(200).json({ data: incidente });
@@ -40,7 +41,7 @@ export class ControladorIncidente {
     }
   }
 
-  async actualizarIncidente(req: Request, res: Response): Promise<void> {
+  actualizarIncidente = async (req: Request, res: Response): Promise<void> => {
     try {
       const { descripcion, fecha, reservaId, estado, severidad, conductorId } = req.body;
       const incidenteActualizado = await this.servicioIncidente.actualizarIncidente(req.params.id as string, descripcion, fecha, reservaId, estado, severidad, conductorId ?? '');
@@ -50,7 +51,7 @@ export class ControladorIncidente {
     }
   }
 
-  async eliminarIncidente(req: Request, res: Response): Promise<void> {
+  eliminarIncidente = async (req: Request, res: Response): Promise<void> => {
     try {
       await this.servicioIncidente.eliminarIncidente(req.params.id as string);
       res.status(204).send();
@@ -59,7 +60,7 @@ export class ControladorIncidente {
     }
   }
 
-  private manejarError(res: Response, error: unknown): void {
+  private manejarError = (res: Response, error: unknown): void => {
     const mensaje = error instanceof Error ? error.message : String(error);
     if (/no se encontr|no encontrado/i.test(mensaje)) {
       res.status(404).json({ error: mensaje });

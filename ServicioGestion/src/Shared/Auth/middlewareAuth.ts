@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import registrador from '../Logging/logger';
+import { SolicitudAuth } from './SolicitudAuth';
 
-// Federated Identity: cada servicio verifica el JWT localmente con el secreto compartido.
-// No se necesita llamar a ServicioAutenticacion en cada request.
+// Cada servicio verifica el JWT localmente con el secreto compartido — sin llamadas HTTP a ServicioAutenticacion.
 const JWT_SECRET             = process.env.JWT_SECRET             || 'clave-secreta-jwt-dev';
 const INTERNAL_SERVICE_TOKEN = process.env.INTERNAL_SERVICE_TOKEN || '';
 
@@ -24,27 +24,19 @@ const ACCESO_POR_PREFIJO: Record<string, string[]> = {
   '/incidentes':         ['Administrador', 'Operador', 'Conductor'],
 };
 
-// Rutas donde solo el Administrador puede hacer la operación,
-// independientemente de lo que permita el prefijo general.
 const SOLO_ADMIN_EXACTO: Array<{ metodo: string; ruta: string }> = [
-  { metodo: 'POST',   ruta: '/clientes-personales' },
-  { metodo: 'POST',   ruta: '/clientes-empresariales' },
-  { metodo: 'POST',   ruta: '/conductores' },
+  { metodo: 'POST', ruta: '/clientes-personales' },
+  { metodo: 'POST', ruta: '/clientes-empresariales' },
+  { metodo: 'POST', ruta: '/conductores' },
 ];
 
-// Operador puede leer conductores pero no modificarlos
 const OPERADOR_SOLO_LECTURA_PREFIJOS = ['/conductores'];
 
-export async function verificarAutorizacion(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function verificarAutorizacion(req: SolicitudAuth, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith('Bearer ')) {
-    registrador.warn('acceso_no_autorizado', {
-      motivo: 'token_ausente',
-      ruta: req.path,
-      metodo: req.method,
-      ip: req.ip,
-    });
+    registrador.warn('acceso_no_autorizado', { motivo: 'token_ausente', ruta: req.path, metodo: req.method, ip: req.ip });
     res.status(401).json({ error: 'Token requerido. Incluí Authorization: Bearer {token}' });
     return;
   }
@@ -53,13 +45,12 @@ export async function verificarAutorizacion(req: Request, res: Response, next: N
 
   // Token de servicio interno: acceso total sin verificación JWT
   if (INTERNAL_SERVICE_TOKEN && token === INTERNAL_SERVICE_TOKEN) {
-    (req as any).usuario = { cedula: 'sistema', rol: 'Administrador' };
+    req.usuario = { cedula: 'sistema', rol: 'Administrador' };
     next();
     return;
   }
 
   try {
-    // Verificación local del JWT — no requiere llamada HTTP a ServicioAutenticacion
     let payload: JwtPayload;
     try {
       payload = jwt.verify(token, JWT_SECRET) as JwtPayload;
@@ -70,25 +61,17 @@ export async function verificarAutorizacion(req: Request, res: Response, next: N
     }
 
     const usuario = { cedula: payload.cedula, rol: payload.rol };
-    (req as any).usuario = usuario;
+    req.usuario = usuario;
 
-    // Operador no puede modificar conductores
     const esSoloLectura = OPERADOR_SOLO_LECTURA_PREFIJOS.some(p => req.path.startsWith(p));
     if (esSoloLectura && usuario.rol === 'Operador' && req.method !== 'GET') {
       res.status(403).json({ error: `El rol 'Operador' solo puede consultar este recurso` });
       return;
     }
 
-    const esRutaSoloAdmin = SOLO_ADMIN_EXACTO.some(
-      r => r.metodo === req.method && r.ruta === req.path
-    );
+    const esRutaSoloAdmin = SOLO_ADMIN_EXACTO.some(r => r.metodo === req.method && r.ruta === req.path);
     if (esRutaSoloAdmin && usuario.rol !== 'Administrador') {
-      registrador.warn('acceso_denegado_por_rol', {
-        cedula: usuario.cedula,
-        rol: usuario.rol,
-        ruta: req.path,
-        metodo: req.method,
-      });
+      registrador.warn('acceso_denegado_por_rol', { cedula: usuario.cedula, rol: usuario.rol, ruta: req.path, metodo: req.method });
       res.status(403).json({ error: `El rol '${usuario.rol}' no tiene permiso para crear usuarios` });
       return;
     }
@@ -97,24 +80,13 @@ export async function verificarAutorizacion(req: Request, res: Response, next: N
     if (prefijo) {
       const rolesPermitidos = ACCESO_POR_PREFIJO[prefijo];
       if (!rolesPermitidos.includes(usuario.rol)) {
-        registrador.warn('acceso_denegado_por_rol', {
-          cedula: usuario.cedula,
-          rol: usuario.rol,
-          ruta: req.path,
-          metodo: req.method,
-        });
+        registrador.warn('acceso_denegado_por_rol', { cedula: usuario.cedula, rol: usuario.rol, ruta: req.path, metodo: req.method });
         res.status(403).json({ error: `El rol '${usuario.rol}' no tiene permiso para acceder a este recurso` });
         return;
       }
     }
 
-    registrador.info('acceso_autorizado', {
-      cedula: usuario.cedula,
-      rol: usuario.rol,
-      ruta: req.path,
-      metodo: req.method,
-    });
-
+    registrador.info('acceso_autorizado', { cedula: usuario.cedula, rol: usuario.rol, ruta: req.path, metodo: req.method });
     next();
   } catch {
     res.status(500).json({ error: 'Error interno de autorización' });

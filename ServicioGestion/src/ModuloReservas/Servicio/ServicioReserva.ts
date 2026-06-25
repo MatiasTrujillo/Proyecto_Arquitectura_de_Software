@@ -125,7 +125,7 @@ export class ServicioReserva implements IServicioReserva {
     this.validarCampo(reservaId, "reservaId");
     const reserva = await this.repositorio.obtenerReservaPorId(reservaId);
     if (!reserva) throw new Error(`No se encontró la reserva con id ${reservaId}`);
-    return reserva.getEstado();
+    return reserva.obtenerEstado();
   }
 
   private validarCampo(valor: string, campo: string): void {

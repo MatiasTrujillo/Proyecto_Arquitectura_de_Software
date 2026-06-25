@@ -10,7 +10,7 @@ export class DispositivoGPSDTO {
   }
 
   static fromEntity(entidad: DispositivoGPS): DispositivoGPSDTO {
-    return new DispositivoGPSDTO(entidad.getId(), entidad.getNombre());
+    return new DispositivoGPSDTO(entidad.obtenerId(), entidad.obtenerNombre());
   }
 
   toEntity(): DispositivoGPS {

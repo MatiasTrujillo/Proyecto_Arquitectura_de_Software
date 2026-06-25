@@ -50,13 +50,13 @@ export class ServicioViaje implements IServicioViaje {
     this.validarTexto(conductorId, "conductorId");
     const viaje = await this.repositorio.obtenerViajePorId(id);
     if (!viaje) throw new Error(`No se encontró el viaje con id ${id}`);
-    if (viaje.getConductor() !== conductorId) throw new Error("El conductor no corresponde a este traslado");
-    if (viaje.getEstado() === "En curso") throw new Error("El traslado ya está en curso");
-    if (viaje.getEstado() === "Finalizado") throw new Error("El traslado ya fue finalizado");
+    if (viaje.obtenerConductor() !== conductorId) throw new Error("El conductor no corresponde a este traslado");
+    if (viaje.obtenerEstado() === "En curso") throw new Error("El traslado ya está en curso");
+    if (viaje.obtenerEstado() === "Finalizado") throw new Error("El traslado ya fue finalizado");
     const actualizado = await this.repositorio.actualizarEstadoViaje(id, "En curso");
 
     // Arrancar simulación GPS automática para el vehículo (fire-and-forget)
-    const vehiculo = viaje.getVehiculo();
+    const vehiculo = viaje.obtenerVehiculo();
     if (vehiculo) {
       fetch(`${OPERACION_URL}/internal/simular-gps/iniciar`, {
         method: 'POST',
@@ -73,13 +73,13 @@ export class ServicioViaje implements IServicioViaje {
     this.validarTexto(conductorId, "conductorId");
     const viaje = await this.repositorio.obtenerViajePorId(id);
     if (!viaje) throw new Error(`No se encontró el viaje con id ${id}`);
-    if (viaje.getConductor() !== conductorId) throw new Error("El conductor no corresponde a este traslado");
-    if (viaje.getEstado() === "Finalizado") throw new Error("El traslado ya fue finalizado");
-    if (viaje.getEstado() !== "En curso") throw new Error("El traslado debe estar en curso para poder finalizarlo");
+    if (viaje.obtenerConductor() !== conductorId) throw new Error("El conductor no corresponde a este traslado");
+    if (viaje.obtenerEstado() === "Finalizado") throw new Error("El traslado ya fue finalizado");
+    if (viaje.obtenerEstado() !== "En curso") throw new Error("El traslado debe estar en curso para poder finalizarlo");
     const actualizado = await this.repositorio.actualizarEstadoViaje(id, "Finalizado");
 
     // Detener simulación GPS automática (fire-and-forget)
-    const vehiculo = viaje.getVehiculo();
+    const vehiculo = viaje.obtenerVehiculo();
     if (vehiculo) {
       fetch(`${OPERACION_URL}/internal/simular-gps/detener`, {
         method: 'POST',

@@ -7,15 +7,15 @@ export class DispositivoGPS {
     this.nombre = nombre;
   }
 
-  getId(): number {
+  obtenerId(): number {
     return this.id;
   }
 
-  getNombre(): string {
+  obtenerNombre(): string {
     return this.nombre;
   }
 
-  setNombre(nombre: string): void {
+  asignarNombre(nombre: string): void {
     this.nombre = nombre;
   }
 }

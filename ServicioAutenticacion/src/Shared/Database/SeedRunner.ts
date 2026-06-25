@@ -1,8 +1,3 @@
-// El usuario admin se crea en Auth0 via Management API al primer arranque.
-// Cédula: admin | Email: admin@move.internal | Rol: Administrador
-// La contraseña se configura en .env como ADMIN_PASSWORD
-// (debe cumplir la política de Auth0: 8+ chars, mayúscula, número, ej: Admin123!)
-
 const AUTH0_DOMAIN        = process.env.AUTH0_DOMAIN        || '';
 const AUTH0_CLIENT_ID     = process.env.AUTH0_CLIENT_ID     || '';
 const AUTH0_CLIENT_SECRET = process.env.AUTH0_CLIENT_SECRET || '';
@@ -27,28 +22,19 @@ async function obtenerTokenManagement(): Promise<string> {
 }
 
 export async function ejecutarSeed(): Promise<void> {
-  if (!AUTH0_DOMAIN || !AUTH0_CLIENT_ID || !AUTH0_CLIENT_SECRET) {
-    console.log('[seed] Variables AUTH0_* no configuradas — omitiendo seed de admin');
-    return;
-  }
+  if (!AUTH0_DOMAIN || !AUTH0_CLIENT_ID || !AUTH0_CLIENT_SECRET) return;
 
   try {
     const token = await obtenerTokenManagement();
 
-    // Verificar si ya existe
     const searchRes = await fetch(
       `https://${AUTH0_DOMAIN}/api/v2/users-by-email?email=${encodeURIComponent(ADMIN_EMAIL)}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const usuarios: any[] = await searchRes.json();
+    if (Array.isArray(usuarios) && usuarios.length > 0) return;
 
-    if (Array.isArray(usuarios) && usuarios.length > 0) {
-      console.log(`[seed] Admin ya existe en Auth0 (${ADMIN_EMAIL})`);
-      return;
-    }
-
-    // Crear admin en Auth0
-    const createRes = await fetch(`https://${AUTH0_DOMAIN}/api/v2/users`, {
+    await fetch(`https://${AUTH0_DOMAIN}/api/v2/users`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({
@@ -58,14 +44,7 @@ export async function ejecutarSeed(): Promise<void> {
         user_metadata: { cedula: ADMIN_CEDULA, rol: 'Administrador' },
       }),
     });
-
-    if (createRes.ok) {
-      console.log(`[seed] Admin creado en Auth0 — email: "${ADMIN_EMAIL}", cedula: "${ADMIN_CEDULA}"`);
-    } else {
-      const err: any = await createRes.json();
-      console.warn(`[seed] No se pudo crear admin en Auth0: ${err.message}`);
-    }
-  } catch (e) {
-    console.warn('[seed] Error al conectar con Auth0 Management API:', String(e));
+  } catch {
+    // Auth0 no disponible al arrancar — admin puede crearse manualmente
   }
 }

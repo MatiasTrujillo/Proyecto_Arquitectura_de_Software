@@ -38,47 +38,47 @@ export class Reserva {
   }
 
   // Getters
-  getId(): string {
+  obtenerId(): string {
     return this.id;
   }
 
-  getCliente(): string {
+  obtenerCliente(): string {
     return this.cliente;
   }
 
-  getOrigen(): string {
+  obtenerOrigen(): string {
     return this.origen;
   }
 
-  getDestino(): string {
+  obtenerDestino(): string {
     return this.destino;
   }
 
-  getFecha(): Date {
+  obtenerFecha(): Date {
     return this.fecha;
   }
 
-  getEstado(): string {
+  obtenerEstado(): string {
     return this.estado;
   }
 
-  getCosto(): number {
+  obtenerCosto(): number {
     return this.costo;
   }
 
-  getVehiculo(): string | null {
+  obtenerVehiculo(): string | null {
     return this.vehiculo;
   }
 
-  getProductos(): string[] {
+  obtenerProductos(): string[] {
     return this.productos;
   }
 
-  getConductor(): string | null {
+  obtenerConductor(): string | null {
     return this.conductor;
   }
 
-  getCategorias(): string[] {
+  obtenerCategorias(): string[] {
     return this.categorias;
   }
 

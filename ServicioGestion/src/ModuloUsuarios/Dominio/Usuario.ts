@@ -9,15 +9,15 @@ export abstract class Usuario {
     this.nombre = nombre;
   }
 
-  getId(): string {
+  obtenerId(): string {
     return this.id;
   }
 
-  getCedula(): string {
+  obtenerCedula(): string {
     return this.cedula;
   }
 
-  getNombre(): string {
+  obtenerNombre(): string {
     return this.nombre;
   }
 
