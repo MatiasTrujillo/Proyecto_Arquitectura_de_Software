@@ -1,9 +1,9 @@
 const AUTH0_DOMAIN        = process.env.AUTH0_DOMAIN        || '';
 const AUTH0_CLIENT_ID     = process.env.AUTH0_CLIENT_ID     || '';
 const AUTH0_CLIENT_SECRET = process.env.AUTH0_CLIENT_SECRET || '';
-const ADMIN_CEDULA        = process.env.ADMIN_CEDULA        || 'admin';
+const ADMIN_EMAIL         = process.env.ADMIN_EMAIL         || 'admin@move.internal';
 const ADMIN_PASSWORD      = process.env.ADMIN_PASSWORD      || 'Admin123!';
-const ADMIN_EMAIL         = `${ADMIN_CEDULA}@move.internal`;
+const ADMIN_CEDULA        = ADMIN_EMAIL.split('@')[0];
 
 async function obtenerTokenManagement(): Promise<string> {
   const res = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {

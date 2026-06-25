@@ -12,7 +12,7 @@ async function cargarCategorias(): Promise<Categoria[]> {
   return res.rows.map((r: any) => ({ nombre: r.nombre, nombreEs: r.nombre_es, descripcion: r.descripcion }));
 }
 
-// Stemmer mínimo para español: quita plurales comunes (mesas→mesa, sillas→silla)
+// Quita plurales comunes (mesas→mesa, sillas→silla)
 function stemEsp(w: string): string {
   if (w.length > 4 && w.endsWith('es')) return w.slice(0, -2);
   if (w.length > 3 && w.endsWith('s')) return w.slice(0, -1);
