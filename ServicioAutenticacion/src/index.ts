@@ -130,7 +130,6 @@ app.get('/', (_req, res) => {
     const redirect = params.get('redirect');
     const token    = params.get('token');
     const rol      = params.get('rol') || '';
-    const destino  = params.get('destino');
 
     if (token) {
       _qs = '?token=' + encodeURIComponent(token) + '&rol=' + encodeURIComponent(rol);
@@ -154,17 +153,8 @@ app.get('/', (_req, res) => {
         contenedor.appendChild(b);
       }
 
-      if (destino) {
-        fetch(destino, { signal: AbortSignal.timeout(1500) })
-          .then(() => { window.location.href = destino + '/' + _qs; })
-          .catch(() => {
-            document.getElementById('panel-login').style.display = 'none';
-            document.getElementById('panel-logueado').style.display = 'block';
-          });
-      } else {
-        document.getElementById('panel-login').style.display = 'none';
-        document.getElementById('panel-logueado').style.display = 'block';
-      }
+      document.getElementById('panel-login').style.display = 'none';
+      document.getElementById('panel-logueado').style.display = 'block';
     } else if (redirect) {
       document.getElementById('btn-login-oauth').href = '/api/auth/oauth/iniciar?redirect=' + encodeURIComponent(redirect);
     }
