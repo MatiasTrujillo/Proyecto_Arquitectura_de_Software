@@ -99,14 +99,6 @@
     </div>
 
     <div class="accion">
-        <strong>Consultar Traslado</strong>
-        <label>ID de Traslado</label>
-        <input type="text" id="consultarTrasladoId" placeholder="ID del traslado">
-        <button onclick="consultarTraslado()">Consultar</button>
-        <div id="resultadoConsultar" class="resultado oculto"></div>
-    </div>
-
-    <div class="accion">
         <strong>Marcar Reserva No Reconocida</strong>
         <label>ID de Reserva</label>
         <input type="text" id="noReconocidaReservaId" placeholder="ID de la reserva">
@@ -287,15 +279,25 @@
                     return;
                 }
                 const conductores = json.data || [];
+
+                let ocupados = new Set();
+                try {
+                    const resOcup = await apiFetch('/api/viajes/conductores-ocupados');
+                    if (resOcup.ok) ocupados = new Set((await resOcup.json()).data || []);
+                } catch (_) {}
+
                 sel.innerHTML = '<option value="">— Seleccioná un conductor —</option>';
                 if (conductores.length === 0) {
                     sel.innerHTML += '<option disabled>No hay conductores disponibles</option>';
                     return;
                 }
                 conductores.forEach(c => {
-                    const opt = document.createElement('option');
+                    const enUso = ocupados.has(c.cedula);
+                    const opt   = document.createElement('option');
                     opt.value       = c.cedula;
-                    opt.textContent = `${c.nombre} (cédula: ${c.cedula})`;
+                    opt.textContent = `${c.nombre} (cédula: ${c.cedula})${enUso ? ' — EN USO' : ''}`;
+                    opt.disabled    = enUso;
+                    if (enUso) opt.style.color = '#aaa';
                     sel.appendChild(opt);
                 });
             } catch (e) {
@@ -380,21 +382,6 @@
             }
         }
 
-        async function consultarTraslado() {
-            const id = document.getElementById('consultarTrasladoId').value;
-            if (!id) return;
-            try {
-                const res = await apiFetch(`/api/operadores/${id}/consultar-traslado`);
-                const json = await res.json();
-                const el = document.getElementById('resultadoConsultar');
-                el.classList.remove('oculto');
-                el.textContent = JSON.stringify(json, null, 2);
-            } catch (err) {
-                const el = document.getElementById('resultadoConsultar');
-                el.classList.remove('oculto');
-                el.textContent = 'Error: ' + err.message;
-            }
-        }
 
         async function reservaNoReconocida() {
             const id = document.getElementById('noReconocidaReservaId').value;
