@@ -68,7 +68,6 @@ app.get('/api/operadores/:id', operadorController.obtenerOperadorPorId);
 app.put('/api/operadores/:id', operadorController.actualizarOperador);
 app.delete('/api/operadores/:id', operadorController.eliminarOperador);
 app.post('/api/operadores/:reservaId/asignar-reserva',    operadorController.asignarReserva);
-app.get('/api/operadores/:trasladoId/consultar-traslado', operadorController.consultarTraslado);
 app.post('/api/operadores/:reservaId/reserva-no-reconocida', operadorController.reservaNoReconocida);
 
 // â”€â”€â”€ Conductores â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -209,6 +208,20 @@ app.get('/api/viajes/vehiculos-ocupados', async (_req, res) => {
          AND (v.id IS NULL OR v.estado NOT IN ('Finalizado', 'Cancelado'))`
     );
     res.json({ data: result.rows.map((r: any) => r.vehiculo) });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+app.get('/api/viajes/conductores-ocupados', async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT r.conductor FROM reserva r
+       LEFT JOIN viaje v ON v.reserva_id = r.id::text
+       WHERE r.conductor IS NOT NULL AND r.conductor != ''
+         AND r.estado != 'Cancelado'
+         AND (v.id IS NULL OR v.estado NOT IN ('Finalizado', 'Cancelado'))`
+    );
+    res.json({ data: result.rows.map((r: any) => r.conductor) });
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }

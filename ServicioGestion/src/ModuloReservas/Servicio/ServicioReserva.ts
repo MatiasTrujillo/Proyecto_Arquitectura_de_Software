@@ -84,6 +84,9 @@ export class ServicioReserva implements IServicioReserva {
     this.validarCampo(reservaId, 'reservaId');
     this.validarCampo(vehiculo,  'vehiculo');
     this.validarCampo(conductor, 'conductor');
+    const reservaExistente = await this.repositorio.obtenerReservaPorId(reservaId);
+    if (!reservaExistente) throw new Error(`No se encontró la reserva con id ${reservaId}`);
+    if (reservaExistente.obtenerEstado() !== 'Pagado') throw new Error('Solo se pueden asignar recursos a reservas pagadas');
     await this.validarCapacidadVehiculo(reservaId, vehiculo);
     await this.validarVehiculoDisponible(vehiculo);
     const reserva = await this.repositorio.asignarYCrearViajeAtomico(reservaId, vehiculo, conductor);

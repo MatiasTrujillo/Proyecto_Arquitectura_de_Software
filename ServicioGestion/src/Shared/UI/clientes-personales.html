@@ -87,8 +87,6 @@
         <input type="text" id="resDestino" placeholder="Ej: Zona Sur">
         <label>Fecha</label>
         <input type="date" id="resFecha">
-        <label>Costo</label>
-        <input type="number" id="resCosto" placeholder="Ej: 500" min="0">
 
         <label>Bienes a transportar <span style="font-weight:normal;color:#666;font-size:0.85em">(agregá al menos uno)</span></label>
         <div style="margin-top:6px;padding:10px;background:#fff;border:1px solid #ddd;border-radius:4px">
@@ -113,6 +111,14 @@
 
     <div class="accion">
         <strong>Mis Reservas</strong>
+        <div style="margin-bottom:10px;margin-top:4px">
+            <label style="display:inline;font-weight:bold">Método de pago:</label>
+            <select id="metodoPagoSel" style="width:auto;display:inline-block;margin-left:8px;padding:6px">
+                <option value="pm_card_visa">Visa (aceptado)</option>
+                <option value="pm_card_visa_chargeDeclined">Visa declinada (rechazado)</option>
+                <option value="pm_card_authenticationRequired">Autenticación requerida (pendiente)</option>
+            </select>
+        </div>
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px;margin-top:8px">
             <div>
                 <label style="display:block;font-size:0.85em;color:#555">Desde</label>
@@ -416,8 +422,7 @@
             const origen  = document.getElementById('resOrigen').value;
             const destino = document.getElementById('resDestino').value;
             const fecha   = document.getElementById('resFecha').value;
-            const costo   = parseFloat(document.getElementById('resCosto').value);
-            if (!origen || !destino || !fecha || isNaN(costo)) {
+            if (!origen || !destino || !fecha) {
                 mostrar('resultadoReserva', { error: 'Completá todos los campos de la reserva' });
                 return;
             }
@@ -429,17 +434,18 @@
                 const res = await apiFetch('/api/clientes-personales/realizar-reserva', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ origen, destino, fecha, costo, bienes: bienesAgregados })
+                    body: JSON.stringify({ origen, destino, fecha, bienes: bienesAgregados })
                 });
                 const json = await res.json();
-                mostrar('resultadoReserva', json);
                 if (res.ok) {
+                    mostrar('resultadoReserva', { mensaje: 'Reserva creada', id: json.data?.id, costo: json.data?.costo });
                     bienesAgregados = [];
                     renderBienes();
                     document.getElementById('resOrigen').value  = '';
                     document.getElementById('resDestino').value = '';
                     document.getElementById('resFecha').value   = '';
-                    document.getElementById('resCosto').value   = '';
+                } else {
+                    mostrar('resultadoReserva', json);
                 }
             } catch (err) {
                 mostrar('resultadoReserva', { error: err.message });
@@ -509,17 +515,25 @@
 
         async function pagarReserva(reservaId, costo) {
             const msgEl = document.getElementById('mensajePago');
+            const metodoPago = document.getElementById('metodoPagoSel').value;
             if (!confirm(`¿Confirmar pago de $${costo} para la reserva ${reservaId}?`)) return;
+            msgEl.innerHTML = '<div style="color:#555">Procesando pago con Stripe...</div>';
             try {
                 const res = await apiFetch('/api/clientes-personales/realizar-pago', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reservaId })
+                    body: JSON.stringify({ reservaId, metodoPago })
                 });
                 const json = await res.json();
                 if (res.ok) {
-                    msgEl.innerHTML = `<div class="exito">Pago realizado correctamente (ID: ${json.data?.id})</div>`;
-                    verMisReservas();
+                    const estado = json.data?.pago?.estado;
+                    const mensajes = {
+                        aceptado: `<div class="exito">✓ Pago aceptado · Transacción: ${json.data?.transaccionId}</div>`,
+                        rechazado: `<div class="error">✗ Pago rechazado. Tu tarjeta no fue aceptada, intentá con otro método de pago.</div>`,
+                        pendiente: `<div style="color:#b06000">⏳ Pago pendiente. Tu banco requiere autenticación adicional. Revisá tu aplicación bancaria.</div>`,
+                    };
+                    await verMisReservas();
+                    msgEl.innerHTML = mensajes[estado] ?? `<div class="exito">Pago ${estado}</div>`;
                 } else {
                     msgEl.innerHTML = `<div class="error">Error: ${json.error}</div>`;
                 }

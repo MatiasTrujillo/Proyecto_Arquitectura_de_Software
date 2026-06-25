@@ -89,15 +89,6 @@ export class ControladorOperador {
     }
   }
 
-  consultarTraslado = (req: Request, res: Response): void => {
-    try {
-      const { trasladoId } = req.params;
-      res.status(200).json({ data: {} });
-    } catch (error) {
-      this.manejarError(res, error);
-    }
-  }
-
   reservaNoReconocida = (req: Request, res: Response): void => {
     try {
       const { reservaId } = req.params;
