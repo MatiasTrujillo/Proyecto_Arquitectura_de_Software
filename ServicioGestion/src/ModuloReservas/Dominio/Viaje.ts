@@ -31,13 +31,13 @@ export class Viaje {
     this.tieneAlertas = tieneAlertas;
   }
 
-  getId(): string { return this.id; }
-  getReservaId(): string { return this.reservaId; }
-  getOrigen(): string { return this.origen; }
-  getDestino(): string { return this.destino; }
-  getFecha(): Date { return this.fecha; }
-  getEstado(): string { return this.estado; }
-  getConductor(): string { return this.conductor; }
-  getVehiculo(): string { return this.vehiculo; }
-  getTieneAlertas(): boolean { return this.tieneAlertas; }
+  obtenerId(): string { return this.id; }
+  obtenerReservaId(): string { return this.reservaId; }
+  obtenerOrigen(): string { return this.origen; }
+  obtenerDestino(): string { return this.destino; }
+  obtenerFecha(): Date { return this.fecha; }
+  obtenerEstado(): string { return this.estado; }
+  obtenerConductor(): string { return this.conductor; }
+  obtenerVehiculo(): string { return this.vehiculo; }
+  obtenerTieneAlertas(): boolean { return this.tieneAlertas; }
 }

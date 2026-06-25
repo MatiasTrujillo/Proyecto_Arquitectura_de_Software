@@ -1,8 +1,8 @@
 import pool from '../../Shared/Database/DatabaseConnection';
 import { ResultadoClasificacion } from '../../Shared/Eventos/BusEventos';
 
-const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'tinyllama';
+const OLLAMA_URL        = process.env.OLLAMA_URL    || 'http://localhost:11434';
+const OLLAMA_MODEL      = process.env.OLLAMA_MODEL  || 'tinyllama';
 const OLLAMA_TIMEOUT_MS = 8000;
 
 interface Categoria { nombre: string; nombreEs: string; descripcion: string | null }
@@ -11,10 +11,6 @@ async function cargarCategorias(): Promise<Categoria[]> {
   const res = await pool.query('SELECT nombre, nombre_es, descripcion FROM categoria');
   return res.rows.map((r: any) => ({ nombre: r.nombre, nombreEs: r.nombre_es, descripcion: r.descripcion }));
 }
-
-// ── Método 1: Keyword matching ────────────────────────────────────────────────
-// Tokeniza descripción y categorías, cuenta palabras en común.
-// Complejidad O(n*m), ~1ms para 250 categorías.
 
 // Stemmer mínimo para español: quita plurales comunes (mesas→mesa, sillas→silla)
 function stemEsp(w: string): string {
@@ -63,9 +59,6 @@ export async function clasificarConKeyword(descripcion: string): Promise<Resulta
   }
 }
 
-// ── Método 2: TF-IDF cosine similarity ────────────────────────────────────────
-// Modelo clásico de recuperación de información.
-// Cada categoría = documento. La descripción = query. Coseno del ángulo entre vectores TF-IDF.
 function buildIDF(docs: string[][]): Map<string, number> {
   const N = docs.length;
   const df = new Map<string, number>();
@@ -73,7 +66,7 @@ function buildIDF(docs: string[][]): Map<string, number> {
     for (const t of new Set(doc)) df.set(t, (df.get(t) ?? 0) + 1);
   }
   const idf = new Map<string, number>();
-  for (const [t, count] of df) idf.set(t, Math.log((N + 1) / (count + 1)) + 1); // suavizado
+  for (const [t, count] of df) idf.set(t, Math.log((N + 1) / (count + 1)) + 1); // suavizado IDF
   return idf;
 }
 
@@ -82,8 +75,7 @@ function buildTFIDF(tokens: string[], idf: Map<string, number>): Map<string, num
   for (const t of tokens) tf.set(t, (tf.get(t) ?? 0) + 1);
   const vec = new Map<string, number>();
   for (const [t, freq] of tf) {
-    const idfVal = idf.get(t) ?? 0;
-    vec.set(t, (freq / tokens.length) * idfVal);
+    vec.set(t, (freq / tokens.length) * (idf.get(t) ?? 0));
   }
   return vec;
 }
@@ -110,15 +102,13 @@ export async function clasificarConTFIDF(descripcion: string): Promise<Resultado
     let mejorCategoria: string | null = null;
 
     categorias.forEach((cat, i) => {
-      const docVec = buildTFIDF(docs[i], idf);
-      const score = coseno(queryVec, docVec);
+      const score = coseno(queryVec, buildTFIDF(docs[i], idf));
       if (score > mejorScore) { mejorScore = score; mejorCategoria = cat.nombreEs; }
     });
 
-    const umbral = 0.15;
     return {
       metodo: 'tfidf',
-      categoria: mejorScore >= umbral ? mejorCategoria : null,
+      categoria: mejorScore >= 0.15 ? mejorCategoria : null,
       confianza: mejorScore,
       tiempoMs: Date.now() - t0,
     };
@@ -127,9 +117,6 @@ export async function clasificarConTFIDF(descripcion: string): Promise<Resultado
   }
 }
 
-// ── Método 3: IA Generativa local (Ollama) ─────────────────────────────────────
-// Llama a Ollama con un prompt que lista las categorías y pide identificar la correcta.
-// Timeout configurable (default 800ms) para no bloquear el flujo principal.
 export async function clasificarConIA(descripcion: string): Promise<ResultadoClasificacion> {
   const t0 = Date.now();
   try {
@@ -178,30 +165,10 @@ export async function clasificarConIA(descripcion: string): Promise<ResultadoCla
   }
 }
 
-// ── Comparador: corre los 3 en paralelo y retorna todos los resultados ─────────
 export async function compararMetodos(descripcion: string): Promise<ResultadoClasificacion[]> {
   return Promise.all([
     clasificarConKeyword(descripcion),
     clasificarConTFIDF(descripcion),
     clasificarConIA(descripcion),
   ]);
-}
-
-// ── Clasificador principal: usa keyword+TF-IDF rápido, IA como fallback async ──
-// Retorna el mejor resultado inmediato (< 100ms) y dispara Ollama en background.
-export async function clasificarRapido(
-  descripcion: string,
-  onIaResultado?: (r: ResultadoClasificacion) => void
-): Promise<ResultadoClasificacion[]> {
-  const [kwResult, tfidfResult] = await Promise.all([
-    clasificarConKeyword(descripcion),
-    clasificarConTFIDF(descripcion),
-  ]);
-
-  // Lanzar IA en background sin bloquear
-  clasificarConIA(descripcion).then(iaResult => {
-    if (onIaResultado) onIaResultado(iaResult);
-  }).catch(() => {});
-
-  return [kwResult, tfidfResult];
 }

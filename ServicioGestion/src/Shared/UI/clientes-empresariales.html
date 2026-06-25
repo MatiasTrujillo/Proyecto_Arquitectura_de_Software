@@ -81,15 +81,6 @@
         <a href="/preregistro-empresa-ui" target="_blank" style="display:inline-block;margin-top:8px;padding:7px 14px;background:#0066cc;color:white;border-radius:4px;text-decoration:none">Ir a Pre-registro →</a>
     </div>
 
-    <div class="accion solo-admin">
-        <strong>Calcular Traslado</strong>
-        <label>Origen</label>
-        <input type="text" id="calcOrigen" placeholder="Ej: Av. Corrientes 100">
-        <label>Destino</label>
-        <input type="text" id="calcDestino" placeholder="Ej: Av. 9 de Julio 500">
-        <button onclick="calcularTraslado()">Calcular</button>
-        <div id="resultadoCalculo" class="resultado oculto"></div>
-    </div>
 
     <div class="accion">
         <strong>Realizar Reserva</strong>
@@ -323,22 +314,6 @@
                 if (res.ok) cargarClientes();
             } catch (err) {
                 alert('Error: ' + err.message);
-            }
-        }
-
-        async function calcularTraslado() {
-            const origen = document.getElementById('calcOrigen').value;
-            const destino = document.getElementById('calcDestino').value;
-            if (!origen || !destino) return;
-            try {
-                const res = await apiFetch('/api/clientes-empresariales/calcular-traslado', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ origen, destino })
-                });
-                mostrar('resultadoCalculo', await res.json());
-            } catch (err) {
-                mostrar('resultadoCalculo', { error: err.message });
             }
         }
 

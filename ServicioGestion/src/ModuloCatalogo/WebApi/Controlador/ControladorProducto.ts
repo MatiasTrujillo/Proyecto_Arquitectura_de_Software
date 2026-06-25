@@ -9,7 +9,7 @@ export class ControladorProducto {
     this.servicio = new ServicioProducto(new RepositorioProducto());
   }
 
-  async crearProducto(req: Request, res: Response): Promise<void> {
+  crearProducto = async (req: Request, res: Response): Promise<void> => {
     try {
       const { nombre } = req.body;
       const producto = await this.servicio.crearProducto(nombre);
@@ -19,7 +19,7 @@ export class ControladorProducto {
     }
   }
 
-  async obtenerProducto(_req: Request, res: Response): Promise<void> {
+  obtenerProducto = async (_req: Request, res: Response): Promise<void> => {
     try {
       const productos = await this.servicio.obtenerProductos();
       res.status(200).json({ data: productos });
@@ -28,7 +28,7 @@ export class ControladorProducto {
     }
   }
 
-  async obtenerProductoPorId(req: Request, res: Response): Promise<void> {
+  obtenerProductoPorId = async (req: Request, res: Response): Promise<void> => {
     try {
       const producto = await this.servicio.obtenerProductoPorId(Number(req.params.id));
       res.status(200).json({ data: producto });
@@ -37,7 +37,7 @@ export class ControladorProducto {
     }
   }
 
-  async actualizarProducto(req: Request, res: Response): Promise<void> {
+  actualizarProducto = async (req: Request, res: Response): Promise<void> => {
     try {
       const { nombre } = req.body;
       const producto = await this.servicio.actualizarProducto(Number(req.params.id), nombre);
@@ -47,7 +47,7 @@ export class ControladorProducto {
     }
   }
 
-  async eliminarProducto(req: Request, res: Response): Promise<void> {
+  eliminarProducto = async (req: Request, res: Response): Promise<void> => {
     try {
       await this.servicio.eliminarProducto(Number(req.params.id));
       res.status(204).send();

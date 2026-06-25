@@ -25,7 +25,7 @@ export class ControladorConductor {
     this.servicioConductor = servicioConductor ?? new ServicioConductor(new RepositorioConductor());
   }
 
-  async crearConductor(req: Request, res: Response): Promise<void> {
+  crearConductor = async (req: Request, res: Response): Promise<void> => {
     try {
       const { cedula, nombre, password } = req.body;
       if (!password) {
@@ -40,7 +40,7 @@ export class ControladorConductor {
     }
   }
 
-  async obtenerConductor(req: Request, res: Response): Promise<void> {
+  obtenerConductor = async (_req: Request, res: Response): Promise<void> => {
     try {
       const conductores = await this.servicioConductor.obtenerConductores();
       res.status(200).json({ data: conductores });
@@ -49,7 +49,7 @@ export class ControladorConductor {
     }
   }
 
-  async obtenerConductoresDisponibles(_req: Request, res: Response): Promise<void> {
+  obtenerConductoresDisponibles = async (_req: Request, res: Response): Promise<void> => {
     try {
       const conductores = await this.servicioConductor.obtenerConductoresDisponibles();
       res.status(200).json({ data: conductores });
@@ -58,7 +58,7 @@ export class ControladorConductor {
     }
   }
 
-  async obtenerConductorPorId(req: Request, res: Response): Promise<void> {
+  obtenerConductorPorId = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const conductor = await this.servicioConductor.obtenerConductorPorId(id as string);
@@ -68,7 +68,7 @@ export class ControladorConductor {
     }
   }
 
-  async actualizarConductor(req: Request, res: Response): Promise<void> {
+  actualizarConductor = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
@@ -79,7 +79,7 @@ export class ControladorConductor {
     }
   }
 
-  async eliminarConductor(req: Request, res: Response): Promise<void> {
+  eliminarConductor = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       await this.servicioConductor.eliminarConductor(id as string);
@@ -91,7 +91,7 @@ export class ControladorConductor {
 
   //TODO: Crear endpoints para IniciarTraslado y FinalizarTraslado
 
-  private manejarError(res: Response, error: unknown): void {
+  private manejarError = (res: Response, error: unknown): void => {
     const mensaje = error instanceof Error ? error.message : String(error);
 
     if (/no se encontr|no encontrado/i.test(mensaje)) {

@@ -75,16 +75,6 @@
 
     <h2 style="margin-top:30px">Acciones</h2>
 
-    <div class="accion solo-admin">
-        <strong>Calcular Traslado</strong>
-        <label>Origen</label>
-        <input type="text" id="calcOrigen" placeholder="Ej: Av. Corrientes 100">
-        <label>Destino</label>
-        <input type="text" id="calcDestino" placeholder="Ej: Av. 9 de Julio 500">
-        <button onclick="calcularTraslado()">Calcular</button>
-        <div id="resultadoCalculo" class="resultado oculto"></div>
-    </div>
-
     <div class="accion">
         <strong>Realizar Reserva</strong>
         <label>Origen</label>
@@ -292,23 +282,6 @@
                 if (res.ok) cargarClientes();
             } catch (err) {
                 alert('Error: ' + err.message);
-            }
-        }
-
-        async function calcularTraslado() {
-            const origen = document.getElementById('calcOrigen').value;
-            const destino = document.getElementById('calcDestino').value;
-            if (!origen || !destino) return;
-            try {
-                const res = await apiFetch('/api/clientes-personales/calcular-traslado', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ origen, destino })
-                });
-                const json = await res.json();
-                mostrar('resultadoCalculo', json);
-            } catch (err) {
-                mostrar('resultadoCalculo', { error: err.message });
             }
         }
 

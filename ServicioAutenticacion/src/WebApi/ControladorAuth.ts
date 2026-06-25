@@ -44,8 +44,6 @@ export class ControladorAuth {
     this.servicio = new ServicioAuth(new RepositorioSesion());
   }
 
-  // ── F1: Registro de clientes (crea en Auth0 + sincroniza con ServicioGestion) ──
-
   async registrar(req: Request, res: Response): Promise<void> {
     try {
       const { cedula, nombre, email, password, rol } = req.body;
@@ -76,7 +74,7 @@ export class ControladorAuth {
     }
   }
 
-  // Llamado internamente por ServicioGestion cuando el admin crea conductores/operadores/admins
+  // Llamado por ServicioGestion cuando el admin crea conductores/operadores/admins internos
   async registrarInterno(req: Request, res: Response): Promise<void> {
     try {
       const { cedula, password, rol } = req.body;
@@ -127,12 +125,10 @@ export class ControladorAuth {
         return;
       }
       res.status(200).json(usuario);
-    } catch (error) {
+    } catch {
       res.status(500).json({ error: 'Error al verificar el token' });
     }
   }
-
-  // ── Token de prueba para carga (solo TEST_MODE=true) ─────────────────────────
 
   generarTokenTest(req: Request, res: Response): void {
     const { cedula, rol } = req.body;
@@ -143,8 +139,6 @@ export class ControladorAuth {
     const resultado = this.servicio.emitirTokenOAuth(String(cedula), String(rol));
     res.status(200).json(resultado);
   }
-
-  // ── OAuth 2.0 con Auth0 ──────────────────────────────────────────────────────
 
   iniciarOAuth(_req: Request, res: Response): void {
     const domain   = process.env.AUTH0_DOMAIN       || '';
@@ -171,7 +165,6 @@ export class ControladorAuth {
     const { code, error } = req.query as Record<string, string>;
 
     if (error) {
-      // Si el usuario rechazó o canceló, volver al inicio para que pueda intentar con otro usuario
       if (error === 'access_denied' || error === 'login_required') {
         res.redirect('/');
         return;
@@ -226,14 +219,7 @@ export class ControladorAuth {
       const { token } = this.servicio.emitirTokenOAuth(cedula, rol);
       registrador.info('login_oauth_exitoso', { cedula, rol, ip: req.ip });
 
-      const paginas: Record<string, string> = {
-        Administrador:   'http://localhost:3001/',
-        Operador:        'http://localhost:3001/',
-        Conductor:       'http://localhost:3001/',
-        ClientePersonal: 'http://localhost:3001/',
-        ClienteEmpresa:  'http://localhost:3001/',
-      };
-      const destino = paginas[rol] ?? 'http://localhost:3001/';
+      const destino = 'http://localhost:3001/';
       res.redirect(`${destino}?token=${encodeURIComponent(token)}&rol=${encodeURIComponent(rol)}`);
 
     } catch (e) {

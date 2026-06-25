@@ -15,10 +15,10 @@ export class ZonaGeograficaDTO {
 
   static fromEntity(entidad: ZonaGeografica): ZonaGeograficaDTO {
     return new ZonaGeograficaDTO(
-      entidad.getId(),
-      entidad.getNombre(),
-      entidad.getDelimitacionGeografica(),
-      entidad.getTipo()
+      entidad.obtenerId(),
+      entidad.obtenerNombre(),
+      entidad.obtenerDelimitacionGeografica(),
+      entidad.obtenerTipo()
     );
   }
 }

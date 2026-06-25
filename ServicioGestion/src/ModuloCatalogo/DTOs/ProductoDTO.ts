@@ -10,7 +10,7 @@ export class ProductoDTO {
   }
 
   static fromEntity(entidad: Producto): ProductoDTO {
-    return new ProductoDTO(entidad.getId(), entidad.getNombre());
+    return new ProductoDTO(entidad.obtenerId(), entidad.obtenerNombre());
   }
 
   toEntity(): Producto {

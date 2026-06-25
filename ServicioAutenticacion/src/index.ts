@@ -11,18 +11,15 @@ const controlador = new ControladorAuth();
 
 app.use(express.json());
 
-// ─── Rutas de autenticación ───────────────────────────────────────────────────
 app.post('/api/auth/registrar',         controlador.registrar.bind(controlador));
 app.post('/api/auth/registrar-interno', controlador.registrarInterno.bind(controlador));
 app.post('/api/auth/logout',            controlador.logout.bind(controlador));
 app.get('/api/auth/verificar',          controlador.verificar.bind(controlador));
 app.post('/api/auth/token-test',        controlador.generarTokenTest.bind(controlador));
 
-// ─── OAuth 2.0 con Auth0 ─────────────────────────────────────────────────────
 app.get('/api/auth/oauth/iniciar', controlador.iniciarOAuth.bind(controlador));
 app.get('/api/auth/callback',      controlador.callbackOAuth.bind(controlador));
 
-// ─── Página de inicio ─────────────────────────────────────────────────────────
 app.get('/', (_req, res) => {
   res.send(`<!DOCTYPE html>
 <html lang="es">
@@ -151,7 +148,6 @@ app.get('/', (_req, res) => {
       } catch (e) { mostrarRes('resLogout', { error: e.message }, false); }
     }
 
-    // Auto-abrir registro si viene con ?modo=registrar
     if (new URLSearchParams(location.search).get('modo') === 'registrar') mostrar('registrar');
   </script>
 </body>
@@ -160,12 +156,5 @@ app.get('/', (_req, res) => {
 
 ejecutarMigraciones()
   .then(() => ejecutarSeed())
-  .then(() => {
-    app.listen(port, () => {
-      console.log(`ServicioAutenticacion escuchando en http://localhost:${port}`);
-    });
-  })
-  .catch(err => {
-    console.error('Error al iniciar ServicioAutenticacion:', err);
-    process.exit(1);
-  });
+  .then(() => { app.listen(port); })
+  .catch(() => process.exit(1));

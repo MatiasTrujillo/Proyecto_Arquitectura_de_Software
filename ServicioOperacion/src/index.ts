@@ -1,4 +1,4 @@
-import 'dotenv/config';
+﻿import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { ControladorVehiculo } from './ModuloVehiculos/WebApi/Controlador/ControladorVehiculo';
@@ -14,16 +14,17 @@ import pool from './Shared/Database/DatabaseConnection';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Auto-simulación GPS por vehículo (se activa al iniciar traslado)
 const simulacionesActivas = new Map<string, ReturnType<typeof setInterval>>();
+
+// Ruta predefinida que atraviesa una zona roja para demostrar las alertas GPS
 const RUTA_AUTO_GPS = [
   { lat: -34.9000, lng: -56.1910, velocidad: 40 },
   { lat: -34.9010, lng: -56.1890, velocidad: 38 },
   { lat: -34.9020, lng: -56.1872, velocidad: 35 },
-  { lat: -34.9030, lng: -56.1860, velocidad: 32 }, // entra a zona roja
-  { lat: -34.9040, lng: -56.1843, velocidad: 25 }, // dentro zona roja
-  { lat: -34.9050, lng: -56.1833, velocidad: 20 }, // dentro zona roja
-  { lat: -34.9060, lng: -56.1815, velocidad: 28 }, // sale de zona roja
+  { lat: -34.9030, lng: -56.1860, velocidad: 32 },
+  { lat: -34.9040, lng: -56.1843, velocidad: 25 },
+  { lat: -34.9050, lng: -56.1833, velocidad: 20 },
+  { lat: -34.9060, lng: -56.1815, velocidad: 28 },
   { lat: -34.9075, lng: -56.1795, velocidad: 38 },
   { lat: -34.9090, lng: -56.1770, velocidad: 42 },
   { lat: -34.9080, lng: -56.1745, velocidad: 40 },
@@ -31,7 +32,7 @@ const RUTA_AUTO_GPS = [
   { lat: -34.9045, lng: -56.1800, velocidad: 32 },
 ];
 
-const vehiculoController = new ControladorVehiculo();
+const vehiculoController    = new ControladorVehiculo();
 const dispositivoController = new ControladorDispositivoGPS();
 
 app.use(express.json());
@@ -44,23 +45,22 @@ app.use((req, res, next) => {
 });
 app.use(registradorSolicitudes);
 
-app.post('/api/vehiculos', vehiculoController.crearVehiculo.bind(vehiculoController));
-app.get('/api/vehiculos', vehiculoController.obtenerVehiculos.bind(vehiculoController));
-app.get('/api/vehiculos/matricula/:matricula', vehiculoController.obtenerVehiculoPorMatricula.bind(vehiculoController));
-app.get('/api/vehiculos/:id', vehiculoController.obtenerVehiculoPorId.bind(vehiculoController));
-app.put('/api/vehiculos/:id', vehiculoController.actualizarVehiculo.bind(vehiculoController));
-app.delete('/api/vehiculos/:id', vehiculoController.eliminarVehiculo.bind(vehiculoController));
+app.post('/api/vehiculos',                    vehiculoController.crearVehiculo);
+app.get('/api/vehiculos',                     vehiculoController.obtenerVehiculos);
+app.get('/api/vehiculos/matricula/:matricula', vehiculoController.obtenerVehiculoPorMatricula);
+app.get('/api/vehiculos/:id',                 vehiculoController.obtenerVehiculoPorId);
+app.put('/api/vehiculos/:id',                 vehiculoController.actualizarVehiculo);
+app.delete('/api/vehiculos/:id',              vehiculoController.eliminarVehiculo);
 
-app.post('/api/dispositivos', dispositivoController.crearDispositivoGPS.bind(dispositivoController));
-app.get('/api/dispositivos', dispositivoController.obtenerDispositivoGPS.bind(dispositivoController));
-// Dispositivos no asignados a ningún vehículo (para el dropdown al crear/editar vehículo)
+app.post('/api/dispositivos',          dispositivoController.crearDispositivoGPS);
+app.get('/api/dispositivos',           dispositivoController.obtenerDispositivoGPS);
 app.get('/api/dispositivos/disponibles', async (req, res) => {
   try {
     const { excluirMatricula } = req.query;
     let query: string;
     let params: any[];
     if (excluirMatricula) {
-      // Al editar: mostrar dispositivos libres + el que ya tiene este vehículo
+      // Al editar: mostrar dispositivos libres + el que ya tiene este vehÃ­culo
       query = `SELECT d.id, d.nombre FROM dispositivo_gps d
                WHERE CAST(d.id AS TEXT) NOT IN (
                  SELECT v.dispositivo_gps FROM vehiculo v
@@ -69,7 +69,6 @@ app.get('/api/dispositivos/disponibles', async (req, res) => {
                ) ORDER BY d.id`;
       params = [excluirMatricula];
     } else {
-      // Al crear: solo dispositivos sin vehículo asignado
       query = `SELECT d.id, d.nombre FROM dispositivo_gps d
                WHERE CAST(d.id AS TEXT) NOT IN (
                  SELECT v.dispositivo_gps FROM vehiculo v
@@ -83,14 +82,14 @@ app.get('/api/dispositivos/disponibles', async (req, res) => {
     res.status(500).json({ error: String(e) });
   }
 });
-app.post('/api/dispositivos/recibir', dispositivoController.recibirInformacion.bind(dispositivoController));
-app.get('/api/dispositivos/:id', dispositivoController.obtenerDispositivoGPSPorId.bind(dispositivoController));
-app.put('/api/dispositivos/:id', dispositivoController.actualizarDispositivoGPS.bind(dispositivoController));
-app.delete('/api/dispositivos/:id', dispositivoController.eliminarDispositivoGPS.bind(dispositivoController));
-app.get('/api/dispositivos/:dispositivoId/verificar', dispositivoController.verificarInformacion.bind(dispositivoController));
+app.post('/api/dispositivos/recibir',                  dispositivoController.recibirInformacion);
+app.get('/api/dispositivos/:id',                       dispositivoController.obtenerDispositivoGPSPorId);
+app.put('/api/dispositivos/:id',                       dispositivoController.actualizarDispositivoGPS);
+app.delete('/api/dispositivos/:id',                    dispositivoController.eliminarDispositivoGPS);
+app.get('/api/dispositivos/:dispositivoId/verificar',  dispositivoController.verificarInformacion);
 
-// Proxy: zonas rojas reales desde ServicioGestion (para la simulación UI)
 const GESTION_URL = process.env.GESTION_URL || 'http://localhost:3001';
+
 app.get('/api/zonas-rojas', async (_req, res) => {
   try {
     const resp = await fetch(`${GESTION_URL}/internal/zonas-geograficas`);
@@ -105,7 +104,6 @@ app.get('/api/zonas-rojas', async (_req, res) => {
   }
 });
 
-// Proxy: todas las zonas geográficas (para el mapa de monitoreo)
 app.get('/api/zonas', async (_req, res) => {
   try {
     const resp = await fetch(`${GESTION_URL}/internal/zonas-geograficas`);
@@ -117,31 +115,32 @@ app.get('/api/zonas', async (_req, res) => {
   }
 });
 
-// Iniciar auto-simulación GPS cuando el conductor inicia un traslado
 app.post('/internal/simular-gps/iniciar', async (req, res) => {
   const { vehiculoMatricula } = req.body;
   if (!vehiculoMatricula) { res.status(400).json({ error: 'vehiculoMatricula requerido' }); return; }
 
   if (simulacionesActivas.has(vehiculoMatricula)) {
-    res.json({ mensaje: 'Simulación ya activa para este vehículo' });
+    res.json({ mensaje: 'SimulaciÃ³n ya activa para este vehÃ­culo' });
     return;
   }
 
-  // Obtener dispositivo GPS asociado al vehículo
   let dispositivoId: number | null = null;
   try {
     const repo = new RepositorioVehiculo();
     const vehiculo = await repo.obtenerPorMatricula(vehiculoMatricula);
-    const gpsStr = vehiculo?.getDispositivoGps();
+    const gpsStr = vehiculo?.obtenerDispositivoGps();
     if (gpsStr) dispositivoId = Number(gpsStr);
-  } catch {}
+  } catch {
+    // si el vehículo no existe la matrícula queda null
+  }
 
-  // Fallback: primer dispositivo disponible
   if (!dispositivoId || isNaN(dispositivoId)) {
     try {
       const r = await pool.query('SELECT id FROM dispositivo_gps ORDER BY id LIMIT 1');
       dispositivoId = r.rows[0]?.id ?? null;
-    } catch {}
+    } catch {
+      // si no hay dispositivos registrados la simulación no inicia
+    }
   }
 
   if (!dispositivoId) {
@@ -161,16 +160,17 @@ app.post('/internal/simular-gps/iniciar', async (req, res) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dispositivoId: devId, vehiculoMatricula, ...punto }),
       });
-    } catch {}
+    } catch {
+      // si el endpoint GPS no está disponible se reintenta en el siguiente tick
+    }
   };
 
-  enviarTick(); // primera posición inmediata
+  enviarTick();
   const intervalo = setInterval(enviarTick, 10000);
   simulacionesActivas.set(vehiculoMatricula, intervalo);
-  res.json({ mensaje: `Simulación GPS iniciada para ${vehiculoMatricula}`, dispositivoId: devId });
+  res.json({ mensaje: `SimulaciÃ³n GPS iniciada para ${vehiculoMatricula}`, dispositivoId: devId });
 });
 
-// Detener auto-simulación GPS cuando el conductor finaliza el traslado
 app.post('/internal/simular-gps/detener', (req, res) => {
   const { vehiculoMatricula } = req.body;
   if (!vehiculoMatricula) { res.status(400).json({ error: 'vehiculoMatricula requerido' }); return; }
@@ -179,17 +179,16 @@ app.post('/internal/simular-gps/detener', (req, res) => {
   if (intervalo) {
     clearInterval(intervalo);
     simulacionesActivas.delete(vehiculoMatricula);
-    res.json({ mensaje: `Simulación GPS detenida para ${vehiculoMatricula}` });
+    res.json({ mensaje: `SimulaciÃ³n GPS detenida para ${vehiculoMatricula}` });
   } else {
-    res.json({ mensaje: 'No había simulación activa para este vehículo' });
+    res.json({ mensaje: 'No habÃ­a simulaciÃ³n activa para este vehÃ­culo' });
   }
 });
 
-// Última posición GPS por matrícula de vehículo (para el mapa de monitoreo)
 app.get('/api/ubicaciones/ultima', async (req, res) => {
   try {
     const { vehiculo } = req.query;
-    if (!vehiculo) { res.status(400).json({ error: 'Parámetro vehiculo requerido' }); return; }
+    if (!vehiculo) { res.status(400).json({ error: 'ParÃ¡metro vehiculo requerido' }); return; }
     const repo = new RepositorioUbicacionGPS();
     const pos = await repo.obtenerUltimaByMatricula(String(vehiculo));
     res.json({ data: pos });
@@ -198,7 +197,6 @@ app.get('/api/ubicaciones/ultima', async (req, res) => {
   }
 });
 
-// Proxy: viajes en curso desde ServicioGestion (para el mapa de monitoreo del operador)
 app.get('/api/proxy/viajes-en-curso', async (req, res) => {
   try {
     const params = new URLSearchParams();
@@ -216,7 +214,6 @@ app.get('/api/proxy/viajes-en-curso', async (req, res) => {
   }
 });
 
-// F16: Consulta de alertas generadas
 app.get('/api/alertas', async (req, res) => {
   try {
     const { vehiculo } = req.query;
@@ -225,42 +222,24 @@ app.get('/api/alertas', async (req, res) => {
       const alertas = await repo.obtenerPorVehiculo(String(vehiculo));
       res.json({ data: alertas });
     } else {
-      res.status(400).json({ error: 'Parámetro vehiculo requerido' });
+      res.status(400).json({ error: 'ParÃ¡metro vehiculo requerido' });
     }
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }
 });
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'home.html'));
-});
-app.get('/vehiculos-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'vehiculos.html'));
-});
-app.get('/dispositivos-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'dispositivos.html'));
-});
-app.get('/simulacion-gps-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'simulacion-gps.html'));
-});
-app.get('/traslados-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'traslados.html'));
-});
+app.get('/',                  (_req, res) => res.sendFile(path.join(__dirname, 'Shared', 'UI', 'home.html')));
+app.get('/vehiculos-ui',      (_req, res) => res.sendFile(path.join(__dirname, 'Shared', 'UI', 'vehiculos.html')));
+app.get('/dispositivos-ui',   (_req, res) => res.sendFile(path.join(__dirname, 'Shared', 'UI', 'dispositivos.html')));
+app.get('/simulacion-gps-ui', (_req, res) => res.sendFile(path.join(__dirname, 'Shared', 'UI', 'simulacion-gps.html')));
+app.get('/traslados-ui',      (_req, res) => res.sendFile(path.join(__dirname, 'Shared', 'UI', 'traslados.html')));
+app.get('/metricas',          manejadorMetricas);
+app.get('/metricas-ui',       (_req, res) => res.sendFile(path.join(__dirname, 'Shared', 'UI', 'metricas.html')));
 
-app.get('/metricas', manejadorMetricas);
-app.get('/metricas-ui', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Shared', 'UI', 'metricas.html'));
-});
 app.use(manejadorErrores);
 
 ejecutarMigraciones()
-  .then(() => {
-    app.listen(port, () => {
-      console.log(`ServicioOperacion escuchando en http://localhost:${port}`);
-    });
-  })
-  .catch(err => {
-    console.error('Error al iniciar ServicioOperacion:', err);
-    process.exit(1);
-  });
+  .then(() => { app.listen(port); })
+  .catch(() => process.exit(1));
+

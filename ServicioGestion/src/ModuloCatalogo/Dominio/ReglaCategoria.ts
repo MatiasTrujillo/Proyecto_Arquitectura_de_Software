@@ -6,9 +6,9 @@ export class ReglaCategoria {
     private generaAlertas: boolean,
     private recargoPorcentaje: number
   ) {}
-  getId()                  { return this.id; }
-  getCategoriaId()         { return this.categoriaId; }
-  getRequiereMonitoreo()   { return this.requiereMonitoreo; }
-  getGeneraAlertas()       { return this.generaAlertas; }
-  getRecargoPorcentaje()   { return this.recargoPorcentaje; }
+  obtenerId()                  { return this.id; }
+  obtenerCategoriaId()         { return this.categoriaId; }
+  obtenerRequiereMonitoreo()   { return this.requiereMonitoreo; }
+  obtenerGeneraAlertas()       { return this.generaAlertas; }
+  obtenerRecargoPorcentaje()   { return this.recargoPorcentaje; }
 }

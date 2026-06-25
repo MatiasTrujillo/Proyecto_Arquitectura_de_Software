@@ -2,15 +2,10 @@ import pool from '../../Shared/Database/DatabaseConnection';
 import { Prioridad } from '../../ModuloReservas/WebApi/Cola/ColaPrioridad';
 
 export class RepositorioClientesFrecuentes {
-  /**
-   * Recalcula los 20 clientes empresa con más reservas en los últimos 7 días
-   * y actualiza el flag es_frecuente. Ejecutar semanalmente.
-   */
   async actualizarTop20(): Promise<number> {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-
       await client.query('UPDATE cliente_empresa SET es_frecuente = false');
 
       const res = await client.query(`
@@ -37,12 +32,6 @@ export class RepositorioClientesFrecuentes {
     }
   }
 
-  /**
-   * Determina la prioridad de un cliente dado su cedula:
-   *   - 'alta'  → cliente_empresa con es_frecuente = true
-   *   - 'media' → cliente_empresa no frecuente
-   *   - 'baja'  → cliente_personal (o desconocido)
-   */
   async determinarPrioridad(cedula: string): Promise<Prioridad> {
     const res = await pool.query(
       `SELECT es_frecuente FROM cliente_empresa WHERE cedula = $1`,

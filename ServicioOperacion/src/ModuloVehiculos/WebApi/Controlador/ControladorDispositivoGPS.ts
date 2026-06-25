@@ -22,7 +22,7 @@ export class ControladorDispositivoGPS {
     this.repoAlerta = new RepositorioAlerta();
   }
 
-  async crearDispositivoGPS(req: Request, res: Response): Promise<void> {
+  crearDispositivoGPS = async (req: Request, res: Response): Promise<void> => {
     try {
       const { nombre } = req.body;
       const dispositivoDTO = await this.servicio.crearDispositivoGPS(nombre);
@@ -32,7 +32,7 @@ export class ControladorDispositivoGPS {
     }
   }
 
-  async obtenerDispositivoGPS(req: Request, res: Response): Promise<void> {
+  obtenerDispositivoGPS = async (_req: Request, res: Response): Promise<void> => {
     try {
       const dispositivos = await this.servicio.obtenerDispositivosGPS();
       res.status(200).json({ data: dispositivos });
@@ -41,7 +41,7 @@ export class ControladorDispositivoGPS {
     }
   }
 
-  async obtenerDispositivoGPSPorId(req: Request, res: Response): Promise<void> {
+  obtenerDispositivoGPSPorId = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const dispositivo = await this.servicio.obtenerDispositivoGPSPorId(Number(id));
@@ -51,7 +51,7 @@ export class ControladorDispositivoGPS {
     }
   }
 
-  async actualizarDispositivoGPS(req: Request, res: Response): Promise<void> {
+  actualizarDispositivoGPS = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const { nombre } = req.body;
@@ -62,7 +62,7 @@ export class ControladorDispositivoGPS {
     }
   }
 
-  async eliminarDispositivoGPS(req: Request, res: Response): Promise<void> {
+  eliminarDispositivoGPS = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       await this.servicio.eliminarDispositivoGPS(Number(id));
@@ -72,8 +72,7 @@ export class ControladorDispositivoGPS {
     }
   }
 
-  // F14 + F15 + F16
-  async recibirInformacion(req: Request, res: Response): Promise<void> {
+  recibirInformacion = async (req: Request, res: Response): Promise<void> => {
     try {
       const { dispositivoId, vehiculoMatricula, lat, lng, velocidad } = req.body;
 
@@ -82,29 +81,28 @@ export class ControladorDispositivoGPS {
         return;
       }
 
-      const idNum = Number(dispositivoId);
+      const idNum  = Number(dispositivoId);
       const latNum = Number(lat);
       const lngNum = Number(lng);
       const velNum = Number(velocidad ?? 0);
 
-      // F14: Verificar que el dispositivo esté registrado
       const existe = await this.repoDispositivo.existe(idNum);
       if (!existe) {
         res.status(404).json({ error: `Dispositivo ${dispositivoId} no está registrado` });
         return;
       }
 
-      // Auto-detectar el vehículo asociado al dispositivo GPS
       let matriculaResuelta: string | undefined = vehiculoMatricula ?? undefined;
       if (!matriculaResuelta) {
         try {
           const repoVehiculo = new RepositorioVehiculo();
           const vehiculo = await repoVehiculo.obtenerPorDispositivoGps(String(idNum));
-          matriculaResuelta = vehiculo?.getMatricula() ?? undefined;
-        } catch {}
+          matriculaResuelta = vehiculo?.obtenerMatricula() ?? undefined;
+        } catch {
+          // si el vehículo no existe la matrícula queda null
+        }
       }
 
-      // Guardar posición
       await this.repoUbicacion.guardar({
         dispositivoId: idNum,
         vehiculoMatricula: matriculaResuelta,
@@ -115,11 +113,11 @@ export class ControladorDispositivoGPS {
 
       const alertasGeneradas: string[] = [];
 
-      // F15: Detectar detención prolongada (últimas 6 lecturas ≈ 60 segundos)
+      // Detención prolongada: velocidad < 2 km/h durante las últimas 6 lecturas (~60 s) sin moverse más de 50 m
       const ultimas = await this.repoUbicacion.obtenerUltimas(idNum, 6);
       if (ultimas.length >= 6) {
         const todasLentas = ultimas.every(p => p.velocidad < 2);
-        const referencia = ultimas[ultimas.length - 1];
+        const referencia  = ultimas[ultimas.length - 1];
         const dist = distanciaMetros(latNum, lngNum, referencia.lat, referencia.lng);
         if (todasLentas && dist < 50) {
           await this.repoAlerta.guardar({
@@ -135,19 +133,14 @@ export class ControladorDispositivoGPS {
         }
       }
 
-      // F15: Detectar ingreso a zona roja
       try {
         const respZonas = await fetch(`${GESTION_URL}/internal/zonas-geograficas`);
         if (respZonas.ok) {
           const zonas: any[] = await respZonas.json();
-          const rojasCount = zonas.filter((z: any) => z.tipo === 'roja').length;
-          console.log(`[GPS] Zonas recibidas: ${zonas.length}, zonas rojas: ${rojasCount}, punto: (${latNum},${lngNum})`);
           for (const zona of zonas.filter((z: any) => z.tipo === 'roja')) {
             try {
               const poligono: [number, number][] = JSON.parse(zona.delimitacion);
-              const dentro = pointInPolygon(latNum, lngNum, poligono);
-              console.log(`[GPS] Zona "${zona.nombre}" (${zona.tipo}): dentro=${dentro}, polígono=${zona.delimitacion.substring(0,80)}`);
-              if (dentro) {
+              if (pointInPolygon(latNum, lngNum, poligono)) {
                 await this.repoAlerta.guardar({
                   tipo: 'zona_roja',
                   descripcion: `Vehículo ingresó a zona de riesgo: "${zona.nombre}"`,
@@ -159,15 +152,13 @@ export class ControladorDispositivoGPS {
                 alertasGeneradas.push(`zona_roja:${zona.nombre}`);
                 if (vehiculoMatricula) await this.notificarAlertaGestion(vehiculoMatricula);
               }
-            } catch (e) {
-              console.log(`[GPS] Error procesando polígono zona "${zona.nombre}":`, e);
+            } catch {
+              // polígono con formato inválido — se omite esta zona
             }
           }
-        } else {
-          console.log(`[GPS] Error al obtener zonas: HTTP ${respZonas.status}`);
         }
-      } catch (e) {
-        console.log(`[GPS] ServicioGestion no disponible (${GESTION_URL}):`, (e as Error).message);
+      } catch {
+        // ServicioGestion no disponible — se omite la verificación de zonas rojas
       }
 
       res.status(200).json({ mensaje: 'GPS procesado', alertas: alertasGeneradas });
@@ -176,8 +167,7 @@ export class ControladorDispositivoGPS {
     }
   }
 
-  // F15: Monitorear posición actual de un dispositivo
-  async verificarInformacion(req: Request, res: Response): Promise<void> {
+  verificarInformacion = async (req: Request, res: Response): Promise<void> => {
     try {
       const idNum = Number(req.params.dispositivoId);
       const existe = await this.repoDispositivo.existe(idNum);
@@ -198,7 +188,7 @@ export class ControladorDispositivoGPS {
     }
   }
 
-  private async notificarAlertaGestion(vehiculoMatricula: string): Promise<void> {
+  private notificarAlertaGestion = async (vehiculoMatricula: string): Promise<void> => {
     try {
       await fetch(
         `${GESTION_URL}/internal/viajes/vehiculo/${encodeURIComponent(vehiculoMatricula)}/alertas`,
@@ -209,7 +199,7 @@ export class ControladorDispositivoGPS {
     }
   }
 
-  private manejarError(res: Response, error: any): void {
+  private manejarError = (res: Response, error: any): void => {
     if (error instanceof Error) {
       res.status(400).json({ error: error.message });
     } else {

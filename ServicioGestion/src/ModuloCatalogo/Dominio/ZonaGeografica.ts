@@ -6,8 +6,8 @@ export class ZonaGeografica {
     private tipo: string
   ) {}
 
-  getId(): string { return this.id; }
-  getNombre(): string { return this.nombre; }
-  getDelimitacionGeografica(): string { return this.delimitacionGeografica; }
-  getTipo(): string { return this.tipo; }
+  obtenerId(): string { return this.id; }
+  obtenerNombre(): string { return this.nombre; }
+  obtenerDelimitacionGeografica(): string { return this.delimitacionGeografica; }
+  obtenerTipo(): string { return this.tipo; }
 }

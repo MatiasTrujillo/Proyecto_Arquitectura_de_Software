@@ -11,7 +11,7 @@ export class ControladorAdministrador {
   }
 
   // CRUD ADMINISTRADORES
-  async crearAdministrador(req: Request, res: Response): Promise<void> {
+  crearAdministrador = async (req: Request, res: Response): Promise<void> => {
     try {
       const { cedula, nombre } = req.body;
       const administradorCreado = await this.servicioAdministrador.crearAdministrador(cedula, nombre);
@@ -21,7 +21,7 @@ export class ControladorAdministrador {
     }
   }
 
-  async obtenerAdministradores(req: Request, res: Response): Promise<void> {
+  obtenerAdministradores = async (req: Request, res: Response): Promise<void> => {
     try {
       const administradores = await this.servicioAdministrador.obtenerAdministradores();
       res.status(200).json({ data: administradores });
@@ -30,7 +30,7 @@ export class ControladorAdministrador {
     }
   }
 
-  async obtenerAdministradorPorId(req: Request, res: Response): Promise<void> {
+  obtenerAdministradorPorId = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const administrador = await this.servicioAdministrador.obtenerAdministradorPorId(id as string);
@@ -40,7 +40,7 @@ export class ControladorAdministrador {
     }
   }
 
-  async actualizarAdministrador(req: Request, res: Response): Promise<void> {
+  actualizarAdministrador = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
@@ -51,7 +51,7 @@ export class ControladorAdministrador {
     }
   }
 
-  async eliminarAdministrador(req: Request, res: Response): Promise<void> {
+  eliminarAdministrador = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       await this.servicioAdministrador.eliminarAdministrador(id as string);
@@ -62,7 +62,7 @@ export class ControladorAdministrador {
   }
 
   // CRUD ZONAS GEOGRAFICAS
-  crearZonaGeografica(req: Request, res: Response): void {
+  crearZonaGeografica = (req: Request, res: Response): void => {
     try {
       // Lógica para crear zona geográfica
       res.status(201).json({ mensaje: "Zona geográfica creada" });
@@ -71,7 +71,7 @@ export class ControladorAdministrador {
     }
   }
 
-  actualizarZonaGeografica(req: Request, res: Response): void {
+  actualizarZonaGeografica = (req: Request, res: Response): void => {
     try {
       const { id } = req.params;
       // Lógica para actualizar zona geográfica
@@ -81,7 +81,7 @@ export class ControladorAdministrador {
     }
   }
 
-  eliminarZonaGeografica(req: Request, res: Response): void {
+  eliminarZonaGeografica = (req: Request, res: Response): void => {
     try {
       const { id } = req.params;
       // Lógica para eliminar zona geográfica
@@ -92,7 +92,7 @@ export class ControladorAdministrador {
   }
 
   // CRUD USUARIOS
-  crearUsuario(req: Request, res: Response): void {
+  crearUsuario = (req: Request, res: Response): void => {
     try {
       // Lógica para crear usuario
       res.status(201).json({ mensaje: "Usuario creado" });
@@ -101,7 +101,7 @@ export class ControladorAdministrador {
     }
   }
 
-  actualizarUsuario(req: Request, res: Response): void {
+  actualizarUsuario = (req: Request, res: Response): void => {
     try {
       const { id } = req.params;
       // Lógica para actualizar usuario
@@ -111,7 +111,7 @@ export class ControladorAdministrador {
     }
   }
 
-  eliminarUsuario(req: Request, res: Response): void {
+  eliminarUsuario = (req: Request, res: Response): void => {
     try {
       const { id } = req.params;
       // Lógica para eliminar usuario
@@ -122,7 +122,7 @@ export class ControladorAdministrador {
   }
 
   // REGISTRO Y MODIFICACION DE VEHICULOS
-  registrarVehiculo(req: Request, res: Response): void {
+  registrarVehiculo = (req: Request, res: Response): void => {
     try {
       // Lógica para registrar vehículo
       res.status(201).json({ mensaje: "Vehículo registrado" });
@@ -131,7 +131,7 @@ export class ControladorAdministrador {
     }
   }
 
-  modificarVehiculo(req: Request, res: Response): void {
+  modificarVehiculo = (req: Request, res: Response): void => {
     try {
       const { id } = req.params;
       // Lógica para modificar vehículo
@@ -141,7 +141,7 @@ export class ControladorAdministrador {
     }
   }
 
-  configurarCategoria(req: Request, res: Response): void {
+  configurarCategoria = (req: Request, res: Response): void => {
     try {
         const { id } = req.params;
         // Lógica para configurar categoría
@@ -151,7 +151,7 @@ export class ControladorAdministrador {
     }
   }
 
-  private manejarError(res: Response, error: unknown): void {
+  private manejarError = (res: Response, error: unknown): void => {
     const mensaje = error instanceof Error ? error.message : String(error);
 
     if (/no se encontr|no encontrado/i.test(mensaje)) {

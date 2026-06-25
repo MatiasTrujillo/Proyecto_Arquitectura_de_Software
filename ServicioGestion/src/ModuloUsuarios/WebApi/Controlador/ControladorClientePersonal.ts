@@ -12,6 +12,7 @@ import { busEventos, EVENTO_RESERVA_CREADA } from "../../../Shared/Eventos/BusEv
 import { RepositorioProductoReserva } from "../../../ModuloReservas/DataAccess/RepositorioProductoReserva";
 import { PasarelaStripe } from "../../../ModuloPagos/Pasarela/PasarelaStripe";
 import { calcularCosto } from "../../../ModuloCotizacion/ServicioCotizacion";
+import { SolicitudAuth } from "../../../Shared/Auth/SolicitudAuth";
 
 export class ControladorClientePersonal {
   private servicioClientePersonal: IServicioClientePersonal;
@@ -28,7 +29,7 @@ export class ControladorClientePersonal {
     this.servicioPago = servicioPago ?? new ServicioPago(new RepositorioPago());
   }
 
-  async crearClientePersonal(req: Request, res: Response): Promise<void> {
+  crearClientePersonal = async (req: Request, res: Response): Promise<void> => {
     try {
       const { cedula, nombre } = req.body;
       const clienteCreado = await this.servicioClientePersonal.crearClientePersonal(cedula, nombre);
@@ -38,7 +39,7 @@ export class ControladorClientePersonal {
     }
   }
 
-  async obtenerClientePersonal(req: Request, res: Response): Promise<void> {
+  obtenerClientePersonal = async (req: Request, res: Response): Promise<void> => {
     try {
       const clientes = await this.servicioClientePersonal.obtenerClientePersonales();
       res.status(200).json({ data: clientes });
@@ -47,7 +48,7 @@ export class ControladorClientePersonal {
     }
   }
 
-  async obtenerClientePersonalPorId(req: Request, res: Response): Promise<void> {
+  obtenerClientePersonalPorId = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const cliente = await this.servicioClientePersonal.obtenerClientePersonalPorId(id as string);
@@ -57,7 +58,7 @@ export class ControladorClientePersonal {
     }
   }
 
-  async actualizarClientePersonal(req: Request, res: Response): Promise<void> {
+  actualizarClientePersonal = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
@@ -68,7 +69,7 @@ export class ControladorClientePersonal {
     }
   }
 
-  async eliminarClientePersonal(req: Request, res: Response): Promise<void> {
+  eliminarClientePersonal = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       await this.servicioClientePersonal.eliminarClientePersonal(id as string);
@@ -78,23 +79,12 @@ export class ControladorClientePersonal {
     }
   }
 
-  calcularTraslado(req: Request, res: Response): void {
+  realizarReserva = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
-      const { origen, destino } = req.body;
-      res.status(200).json({ data: { costo: 0, tiempo: 0 } });
-    } catch (error) {
-      this.manejarError(res, error);
-    }
-  }
-
-  async realizarReserva(req: Request, res: Response): Promise<void> {
-    try {
-      const clienteId = (req as any).usuario?.cedula ?? req.body.clienteId;
+      const clienteId = req.usuario?.cedula ?? req.body.clienteId;
       const { origen, destino, fecha, vehiculo, bienes, conductor } = req.body;
       const productosIds = (bienes ?? []).map((b: any) => b.productoId).filter(Boolean).map(Number);
 
-      // F5: costo calculado por el sistema (distancia simulada + recargo por categoría)
-      // Para ClientePersonal las categorías se determinan async; se usa costo base sin recargo
       const costo = await calcularCosto([]);
 
       const reserva = await this.servicioReserva.crearReserva(
@@ -110,9 +100,8 @@ export class ControladorClientePersonal {
           tamano: b.tamano != null ? Number(b.tamano) : null,
           categorias: b.categorias ?? [],
         })));
-        console.log(`[Reserva #${reserva.id}] Guardados ${(bienes ?? []).length} producto(s) en bien_reserva`);
-      } catch (e) {
-        console.error(`[Reserva #${reserva.id}] Error guardando productos en bien_reserva:`, e);
+      } catch {
+        // falla silenciosa — la reserva ya fue creada
       }
 
       busEventos.emit(EVENTO_RESERVA_CREADA, {
@@ -129,9 +118,9 @@ export class ControladorClientePersonal {
     }
   }
 
-  async obtenerReservas(req: Request, res: Response): Promise<void> {
+  obtenerReservas = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
-      const clienteId = (req as any).usuario?.cedula ?? req.params.clienteId;
+      const clienteId = req.usuario?.cedula ?? req.params.clienteId;
       const { fechaDesde, fechaHasta, estado, limit, page } = req.query as Record<string, string>;
       const limitNum  = limit ? Math.min(Number(limit), 100) : undefined;
       const offsetNum = page && limitNum ? (Number(page) - 1) * limitNum : undefined;
@@ -142,7 +131,7 @@ export class ControladorClientePersonal {
     }
   }
 
-  async consultarEstadoReserva(req: Request, res: Response): Promise<void> {
+  consultarEstadoReserva = async (req: Request, res: Response): Promise<void> => {
     try {
       const reservaId = req.params.reservaId as string;
       const estado = await this.servicioReserva.consultarEstadoReserva(reservaId);
@@ -152,7 +141,7 @@ export class ControladorClientePersonal {
     }
   }
 
-  async realizarPago(req: Request, res: Response): Promise<void> {
+  realizarPago = async (req: Request, res: Response): Promise<void> => {
     try {
       const { reservaId, metodoPago } = req.body;
       if (!reservaId)   throw new Error("reservaId es requerido");
@@ -161,7 +150,6 @@ export class ControladorClientePersonal {
       const reserva = await this.servicioReserva.obtenerReservaPorId(reservaId);
       if (reserva.estado === "Pagado") throw new Error("Esta reserva ya fue pagada");
 
-      // F6: pago via pasarela externa (Stripe)
       const pasarela = new PasarelaStripe();
       let resultado;
       try {
@@ -191,14 +179,12 @@ export class ControladorClientePersonal {
     }
   }
 
-  private manejarError(res: Response, error: unknown): void {
+  private manejarError = (res: Response, error: unknown): void => {
     const mensaje = error instanceof Error ? error.message : String(error);
-
     if (/no se encontr|no encontrado/i.test(mensaje)) {
       res.status(404).json({ error: mensaje });
       return;
     }
-
     res.status(400).json({ error: mensaje });
   }
 }

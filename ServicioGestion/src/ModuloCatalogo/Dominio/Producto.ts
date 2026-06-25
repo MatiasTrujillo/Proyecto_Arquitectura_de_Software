@@ -7,6 +7,6 @@ export class Producto {
     this.nombre = nombre;
   }
 
-  getId(): number { return this.id; }
-  getNombre(): string { return this.nombre; }
+  obtenerId(): number { return this.id; }
+  obtenerNombre(): string { return this.nombre; }
 }

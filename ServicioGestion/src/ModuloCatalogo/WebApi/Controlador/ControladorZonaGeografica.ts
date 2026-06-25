@@ -10,7 +10,7 @@ export class ControladorZonaGeografica {
     this.servicioZona = servicioZona ?? new ServicioZonaGeografica(new RepositorioZonaGeografica());
   }
 
-  async crearZona(req: Request, res: Response): Promise<void> {
+  crearZona = async (req: Request, res: Response): Promise<void> => {
     try {
       const { nombre, delimitacionGeografica, tipo } = req.body;
       const zona = await this.servicioZona.crearZona(nombre, delimitacionGeografica, tipo ?? 'roja');
@@ -20,7 +20,7 @@ export class ControladorZonaGeografica {
     }
   }
 
-  async obtenerZonas(req: Request, res: Response): Promise<void> {
+  obtenerZonas = async (_req: Request, res: Response): Promise<void> => {
     try {
       const zonas = await this.servicioZona.obtenerZonas();
       res.status(200).json({ data: zonas });
@@ -29,7 +29,7 @@ export class ControladorZonaGeografica {
     }
   }
 
-  async obtenerZonaPorId(req: Request, res: Response): Promise<void> {
+  obtenerZonaPorId = async (req: Request, res: Response): Promise<void> => {
     try {
       const zona = await this.servicioZona.obtenerZonaPorId(req.params.id as string);
       res.status(200).json({ data: zona });
@@ -38,7 +38,7 @@ export class ControladorZonaGeografica {
     }
   }
 
-  async actualizarZona(req: Request, res: Response): Promise<void> {
+  actualizarZona = async (req: Request, res: Response): Promise<void> => {
     try {
       const { nombre, delimitacionGeografica, tipo } = req.body;
       const zona = await this.servicioZona.actualizarZona(req.params.id as string, nombre, delimitacionGeografica, tipo ?? 'roja');
@@ -48,7 +48,7 @@ export class ControladorZonaGeografica {
     }
   }
 
-  async eliminarZona(req: Request, res: Response): Promise<void> {
+  eliminarZona = async (req: Request, res: Response): Promise<void> => {
     try {
       await this.servicioZona.eliminarZona(req.params.id as string);
       res.status(204).send();
@@ -57,7 +57,7 @@ export class ControladorZonaGeografica {
     }
   }
 
-  private manejarError(res: Response, error: unknown): void {
+  private manejarError = (res: Response, error: unknown): void => {
     const mensaje = error instanceof Error ? error.message : String(error);
     if (/no se encontr|no encontrado/i.test(mensaje)) {
       res.status(404).json({ error: mensaje });

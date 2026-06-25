@@ -15,10 +15,10 @@ export class CategoriaDTO {
 
   static fromEntity(entidad: Categoria): CategoriaDTO {
     return new CategoriaDTO(
-      entidad.getId(),
-      entidad.getNombre(),
-      entidad.getNombreEs(),
-      entidad.getDescripcion()
+      entidad.obtenerId(),
+      entidad.obtenerNombre(),
+      entidad.obtenerNombreEs(),
+      entidad.obtenerDescripcion()
     );
   }
 

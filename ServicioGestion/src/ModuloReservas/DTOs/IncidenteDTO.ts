@@ -21,13 +21,13 @@ export class IncidenteDTO {
 
   static fromEntity(entidad: Incidente): IncidenteDTO {
     return new IncidenteDTO(
-      entidad.getId(),
-      entidad.getDescripcion(),
-      entidad.getFecha(),
-      entidad.getReservaId(),
-      entidad.getEstado(),
-      entidad.getSeveridad(),
-      entidad.getConductorId()
+      entidad.obtenerId(),
+      entidad.obtenerDescripcion(),
+      entidad.obtenerFecha(),
+      entidad.obtenerReservaId(),
+      entidad.obtenerEstado(),
+      entidad.obtenerSeveridad(),
+      entidad.obtenerConductorId()
     );
   }
 }

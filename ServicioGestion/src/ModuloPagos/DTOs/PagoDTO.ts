@@ -20,12 +20,12 @@ export class PagoDTO {
 
   static fromEntity(entidad: Pago): PagoDTO {
     return new PagoDTO(
-      entidad.getId(),
-      entidad.getFecha(),
-      entidad.getMonto(),
-      entidad.getEstado(),
-      entidad.getReservaId(),
-      entidad.getProveedor()
+      entidad.obtenerId(),
+      entidad.obtenerFecha(),
+      entidad.obtenerMonto(),
+      entidad.obtenerEstado(),
+      entidad.obtenerReservaId(),
+      entidad.obtenerProveedor()
     );
   }
 

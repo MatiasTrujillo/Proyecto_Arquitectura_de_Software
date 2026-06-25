@@ -10,10 +10,10 @@ export class Pago {
     private proveedor: string = 'stripe'
   ) {}
 
-  getId(): number { return this.id; }
-  getFecha(): Date { return this.fecha; }
-  getMonto(): number { return this.monto; }
-  getEstado(): string { return this.estado; }
-  getReservaId(): string { return this.reservaId; }
-  getProveedor(): string { return this.proveedor; }
+  obtenerId(): number { return this.id; }
+  obtenerFecha(): Date { return this.fecha; }
+  obtenerMonto(): number { return this.monto; }
+  obtenerEstado(): string { return this.estado; }
+  obtenerReservaId(): string { return this.reservaId; }
+  obtenerProveedor(): string { return this.proveedor; }
 }

@@ -15,6 +15,7 @@ import { RepositorioProductoReserva } from "../../../ModuloReservas/DataAccess/R
 import { PasarelaStripe } from "../../../ModuloPagos/Pasarela/PasarelaStripe";
 import { calcularCosto } from "../../../ModuloCotizacion/ServicioCotizacion";
 import { RepositorioClientesFrecuentes } from "../../DataAccess/RepositorioClientesFrecuentes";
+import { SolicitudAuth } from "../../../Shared/Auth/SolicitudAuth";
 
 export class ControladorClienteEmpresa {
   private servicioClienteEmpresa: IServicioClienteEmpresa;
@@ -33,7 +34,7 @@ export class ControladorClienteEmpresa {
     this.servicioPreregistro = new ServicioPreregistroProducto(new RepositorioPreregistroProducto());
   }
 
-  async crearClienteEmpresa(req: Request, res: Response): Promise<void> {
+  crearClienteEmpresa = async (req: Request, res: Response): Promise<void> => {
     try {
       const { cedula, nombre } = req.body;
       const clienteCreado = await this.servicioClienteEmpresa.crearClienteEmpresa(cedula, nombre);
@@ -43,7 +44,7 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async obtenerClienteEmpresa(req: Request, res: Response): Promise<void> {
+  obtenerClienteEmpresa = async (req: Request, res: Response): Promise<void> => {
     try {
       const clientes = await this.servicioClienteEmpresa.obtenerClienteEmpresas();
       res.status(200).json({ data: clientes });
@@ -52,7 +53,7 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async obtenerClienteEmpresaPorId(req: Request, res: Response): Promise<void> {
+  obtenerClienteEmpresaPorId = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const cliente = await this.servicioClienteEmpresa.obtenerClienteEmpresaPorId(id as string);
@@ -62,7 +63,7 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async actualizarClienteEmpresa(req: Request, res: Response): Promise<void> {
+  actualizarClienteEmpresa = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const { cedula, nombre } = req.body;
@@ -73,7 +74,7 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async eliminarClienteEmpresa(req: Request, res: Response): Promise<void> {
+  eliminarClienteEmpresa = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       await this.servicioClienteEmpresa.eliminarClienteEmpresa(id as string);
@@ -83,19 +84,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  calcularTraslado(req: Request, res: Response): void {
+  crearPreregistro = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
-      res.status(200).json({ data: { costo: 0, tiempo: 0 } });
-    } catch (error) {
-      res.status(500).json({ error: error });
-    }
-  }
-
-  // ── Pre-registro de bienes (F3) ─────────────────────────────────────────────
-
-  async crearPreregistro(req: Request, res: Response): Promise<void> {
-    try {
-      const clienteEmpresaId = (req as any).usuario?.cedula;
+      const clienteEmpresaId = req.usuario?.cedula;
       const { productoId, productoNombre, descripcion, valor, tamano } = req.body;
       if (!productoId) { res.status(400).json({ error: 'productoId es requerido' }); return; }
       const preregistro = await this.servicioPreregistro.crearPreregistro(
@@ -112,9 +103,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async obtenerPreregistros(req: Request, res: Response): Promise<void> {
+  obtenerPreregistros = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
-      const clienteEmpresaId = (req as any).usuario?.cedula;
+      const clienteEmpresaId = req.usuario?.cedula;
       const preregistros = await this.servicioPreregistro.obtenerPreregistros(clienteEmpresaId);
       res.status(200).json({ data: preregistros });
     } catch (error) {
@@ -122,9 +113,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async obtenerPreregistroPorProducto(req: Request, res: Response): Promise<void> {
+  obtenerPreregistroPorProducto = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
-      const clienteEmpresaId = (req as any).usuario?.cedula;
+      const clienteEmpresaId = req.usuario?.cedula;
       const productoId = Number(req.params.productoId);
       const preregistro = await this.servicioPreregistro.obtenerPreregistroPorProducto(clienteEmpresaId, productoId);
       res.status(200).json({ data: preregistro ?? null });
@@ -133,9 +124,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async eliminarPreregistro(req: Request, res: Response): Promise<void> {
+  eliminarPreregistro = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
-      const clienteEmpresaId = (req as any).usuario?.cedula;
+      const clienteEmpresaId = req.usuario?.cedula;
       await this.servicioPreregistro.eliminarPreregistro(Number(req.params.id), clienteEmpresaId);
       res.status(204).send();
     } catch (error) {
@@ -143,16 +134,12 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  // ── Reservas ────────────────────────────────────────────────────────────────
-
-  async realizarReserva(req: Request, res: Response): Promise<void> {
+  realizarReserva = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
-      const clienteId = (req as any).usuario?.cedula ?? req.body.clienteId;
+      const clienteId = req.usuario?.cedula ?? req.body.clienteId;
       const { origen, destino, fecha, vehiculo, bienes, conductor } = req.body;
 
       const productosIds = (bienes ?? []).map((b: any) => b.productoId).filter(Boolean).map(Number);
-
-      // F5: costo = distancia simulada (random 200-1000) + recargo por categoría (F8)
       const todasLasCategorias: string[] = (bienes ?? []).flatMap((b: any) => b.categorias ?? []);
       const costo = await calcularCosto(todasLasCategorias);
 
@@ -169,9 +156,8 @@ export class ControladorClienteEmpresa {
           tamano: b.tamano != null ? Number(b.tamano) : null,
           categorias: b.categorias ?? [],
         })));
-        console.log(`[Reserva #${reserva.id}] Guardados ${(bienes ?? []).length} producto(s) en bien_reserva`);
-      } catch (e) {
-        console.error(`[Reserva #${reserva.id}] Error guardando productos en bien_reserva:`, e);
+      } catch {
+        // falla silenciosa — la reserva ya fue creada
       }
 
       busEventos.emit(EVENTO_RESERVA_CREADA, {
@@ -182,7 +168,6 @@ export class ControladorClienteEmpresa {
         esEmpresa: true,
       });
 
-      // R1: recalcular top-20 frecuentes tras cada reserva empresa (async, no bloquea respuesta)
       new RepositorioClientesFrecuentes().actualizarTop20().catch(() => {});
 
       res.status(201).json({ data: reserva });
@@ -191,9 +176,9 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async obtenerReservas(req: Request, res: Response): Promise<void> {
+  obtenerReservas = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
-      const clienteId = (req as any).usuario?.cedula ?? req.params.clienteId;
+      const clienteId = req.usuario?.cedula ?? req.params.clienteId;
       const { fechaDesde, fechaHasta, estado, limit, page } = req.query as Record<string, string>;
       const limitNum  = limit ? Math.min(Number(limit), 100) : undefined;
       const offsetNum = page && limitNum ? (Number(page) - 1) * limitNum : undefined;
@@ -204,7 +189,7 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async consultarEstadoReserva(req: Request, res: Response): Promise<void> {
+  consultarEstadoReserva = async (req: Request, res: Response): Promise<void> => {
     try {
       const reservaId = req.params.reservaId as string;
       const estado = await this.servicioReserva.consultarEstadoReserva(reservaId);
@@ -214,7 +199,7 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async realizarPago(req: Request, res: Response): Promise<void> {
+  realizarPago = async (req: Request, res: Response): Promise<void> => {
     try {
       const { reservaId, metodoPago } = req.body;
       if (!reservaId)  throw new Error("reservaId es requerido");
@@ -223,7 +208,6 @@ export class ControladorClienteEmpresa {
       const reserva = await this.servicioReserva.obtenerReservaPorId(reservaId);
       if (reserva.estado === "Pagado") throw new Error("Esta reserva ya fue pagada");
 
-      // F6: pago via pasarela externa (Stripe)
       const pasarela = new PasarelaStripe();
       let resultado;
       try {
@@ -247,12 +231,12 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async registrarOrigenFrecuente(req: Request, res: Response): Promise<void> {
+  registrarOrigenFrecuente = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
-      const cedula = (req as any).usuario?.cedula;
+      const cedula = req.usuario?.cedula;
       const { origen } = req.body;
       if (!origen) { res.status(400).json({ error: 'Origen requerido' }); return; }
-      const repo = new (await import('../../DataAccess/RepositorioClienteEmpresa')).RepositorioClienteEmpresa();
+      const repo = new RepositorioClienteEmpresa();
       await repo.agregarOrigenFrecuente(cedula, origen);
       res.status(201).json({ mensaje: 'Origen frecuente registrado' });
     } catch (error) {
@@ -260,12 +244,12 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async registrarDestinoFrecuente(req: Request, res: Response): Promise<void> {
+  registrarDestinoFrecuente = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
-      const cedula = (req as any).usuario?.cedula;
+      const cedula = req.usuario?.cedula;
       const { destino } = req.body;
       if (!destino) { res.status(400).json({ error: 'Destino requerido' }); return; }
-      const repo = new (await import('../../DataAccess/RepositorioClienteEmpresa')).RepositorioClienteEmpresa();
+      const repo = new RepositorioClienteEmpresa();
       await repo.agregarDestinoFrecuente(cedula, destino);
       res.status(201).json({ mensaje: 'Destino frecuente registrado' });
     } catch (error) {
@@ -273,10 +257,10 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  async obtenerFrecuentes(req: Request, res: Response): Promise<void> {
+  obtenerFrecuentes = async (req: SolicitudAuth, res: Response): Promise<void> => {
     try {
-      const cedula = (req as any).usuario?.cedula;
-      const repo = new (await import('../../DataAccess/RepositorioClienteEmpresa')).RepositorioClienteEmpresa();
+      const cedula = req.usuario?.cedula;
+      const repo = new RepositorioClienteEmpresa();
       const datos = await repo.obtenerFrecuentes(cedula);
       res.status(200).json({ data: datos });
     } catch (error) {
@@ -284,7 +268,7 @@ export class ControladorClienteEmpresa {
     }
   }
 
-  private manejarError(res: Response, error: unknown): void {
+  private manejarError = (res: Response, error: unknown): void => {
     const mensaje = error instanceof Error ? error.message : String(error);
     if (/no se encontr|no encontrado/i.test(mensaje)) {
       res.status(404).json({ error: mensaje });

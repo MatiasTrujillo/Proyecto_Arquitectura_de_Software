@@ -1,15 +1,7 @@
-/**
- * Pattern: Priority Queue
- *
- * R1 define tres niveles de SLA para procesamiento de reservas:
- *   - 'alta'  → ClienteEmpresa frecuente (top 20 por semana) → < 600 ms
- *   - 'media' → ClienteEmpresa no frecuente                  → 700–1000 ms
- *   - 'baja'  → ClientePersonal (categorización por IA)      → 5–10 s
- *
- * Bajo carga concurrente, la cola garantiza que las tareas de prioridad 'alta'
- * se ejecuten antes que las de 'media', y estas antes que las de 'baja'.
- * El nivel de concurrencia controla cuántas tareas corren en paralelo.
- */
+// Tres niveles de prioridad para SLA de reservas:
+//   alta  → ClienteEmpresa frecuente (top 20)
+//   media → ClienteEmpresa no frecuente
+//   baja  → ClientePersonal
 
 export type Prioridad = 'alta' | 'media' | 'baja';
 
@@ -60,5 +52,4 @@ export class ColaPrioridad<T> {
   }
 }
 
-// Instancia singleton para reservas — compartida por todos los controladores
 export const colaReservas = new ColaPrioridad<any>(10);

@@ -19,12 +19,12 @@ export class VehiculoDTO {
 
   static fromEntity(entidad: Vehiculo): VehiculoDTO {
     return new VehiculoDTO(
-      entidad.getId(),
-      entidad.getMatricula(),
-      entidad.getTipo(),
-      entidad.getCapacidad(),
-      entidad.getDispositivoGps(),
-      entidad.getCaracteristicas()
+      entidad.obtenerId(),
+      entidad.obtenerMatricula(),
+      entidad.obtenerTipo(),
+      entidad.obtenerCapacidad(),
+      entidad.obtenerDispositivoGps(),
+      entidad.obtenerCaracteristicas()
     );
   }
 
