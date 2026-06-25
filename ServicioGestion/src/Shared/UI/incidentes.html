@@ -35,25 +35,6 @@
     <div class="nav"><a href="/">← Volver</a></div>
     <h1>Gestión de Incidentes</h1>
 
-    <div class="formulario" id="formularioCrear">
-        <h2>Crear Incidente</h2>
-        <label>Descripción</label>
-        <input type="text" id="descripcion" placeholder="Ej: Vehículo no llegó">
-        <label>Fecha</label>
-        <input type="datetime-local" id="fecha">
-        <label>ID de Reserva</label>
-        <input type="text" id="reservaId" placeholder="ID de la reserva asociada">
-        <label>Estado</label>
-        <input type="text" id="estado" placeholder="Ej: abierto">
-        <label>Severidad</label>
-        <input type="text" id="severidad" placeholder="Ej: alta">
-        <label>Conductor (cédula)</label>
-        <input type="text" id="conductorId" placeholder="Cédula del conductor que reporta">
-        <br>
-        <button onclick="crearIncidente()">Crear</button>
-        <div id="mensajeCrear"></div>
-    </div>
-
     <div class="formulario oculto" id="formularioEditar">
         <h2>Editar Incidente <span id="tituloIdEditar"></span></h2>
         <input type="hidden" id="editarId">
@@ -132,40 +113,9 @@
             }
         }
 
-        async function crearIncidente() {
-            const descripcion = document.getElementById('descripcion').value;
-            const fecha = document.getElementById('fecha').value;
-            const reservaId = document.getElementById('reservaId').value;
-            const estado = document.getElementById('estado').value;
-            const severidad = document.getElementById('severidad').value;
-            const conductorId = document.getElementById('conductorId').value;
-            if (!descripcion || !fecha || !reservaId || !estado || !severidad) {
-                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Completá todos los campos</div>';
-                return;
-            }
-            try {
-                const res = await apiFetch('/api/incidentes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ descripcion, fecha: new Date(fecha).toISOString(), reservaId, estado, severidad, conductorId })
-                });
-                if (res.ok) {
-                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Incidente creado</div>';
-                    ['descripcion','fecha','reservaId','estado','severidad','conductorId'].forEach(id => document.getElementById(id).value = '');
-                    cargarIncidentes();
-                } else {
-                    const err = await res.json();
-                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
-                }
-            } catch (err) {
-                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
-            }
-        }
-
         function abrirEdicion(indice) {
             const item = items[indice];
             document.getElementById('formularioEditar').classList.remove('oculto');
-            document.getElementById('formularioCrear').classList.add('oculto');
             document.getElementById('tituloIdEditar').textContent = `#${item.id}`;
             document.getElementById('editarId').value = item.id;
             document.getElementById('editarDescripcion').value = item.descripcion;
@@ -180,7 +130,6 @@
 
         function cancelarEdicion() {
             document.getElementById('formularioEditar').classList.add('oculto');
-            document.getElementById('formularioCrear').classList.remove('oculto');
         }
 
         async function guardarEdicion() {

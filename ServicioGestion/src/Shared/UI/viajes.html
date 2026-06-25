@@ -43,24 +43,6 @@
     <div class="nav"><a href="/">← Volver</a></div>
     <h1>Gestión de Viajes</h1>
 
-    <div class="formulario" id="formularioCrear">
-        <h2>Crear Viaje</h2>
-        <label>Reserva disponible</label>
-        <select id="selectReserva" onchange="onSeleccionarReserva()">
-            <option value="">— Seleccioná una reserva —</option>
-        </select>
-        <div class="info-reserva" id="infoReserva">
-            <p><strong>Origen:</strong> <span id="infoOrigen"></span></p>
-            <p><strong>Destino:</strong> <span id="infoDestino"></span></p>
-            <p><strong>Fecha:</strong> <span id="infoFecha"></span></p>
-            <p><strong>Conductor asignado:</strong> <span id="infoConductor"></span></p>
-            <p><strong>Vehículo asignado:</strong> <span id="infoVehiculo"></span></p>
-        </div>
-        <br>
-        <button onclick="crearViaje()">Crear Viaje</button>
-        <div id="mensajeCrear"></div>
-    </div>
-
     <div class="formulario oculto" id="formularioEditar">
         <h2>Editar Viaje <span id="tituloIdEditar"></span></h2>
         <input type="hidden" id="editarId">
@@ -103,82 +85,6 @@
         }
 
         let items = [];
-        let reservasDisponibles = [];
-
-        async function cargarReservasDisponibles() {
-            try {
-                const res = await apiFetch('/api/reservas/sin-viaje');
-                const json = await res.json();
-                reservasDisponibles = json.data || [];
-                const sel = document.getElementById('selectReserva');
-                sel.innerHTML = '<option value="">— Seleccioná una reserva —</option>';
-                reservasDisponibles.forEach(r => {
-                    const fecha = new Date(r.fecha).toLocaleDateString('es-AR');
-                    const opt = document.createElement('option');
-                    opt.value = r.id;
-                    opt.textContent = `#${r.id} · ${r.origen} → ${r.destino} (${fecha})`;
-                    sel.appendChild(opt);
-                });
-                if (reservasDisponibles.length === 0) {
-                    const opt = document.createElement('option');
-                    opt.disabled = true;
-                    opt.textContent = 'No hay reservas disponibles';
-                    sel.appendChild(opt);
-                }
-            } catch (err) {
-                console.error('Error cargando reservas:', err);
-            }
-        }
-
-        function onSeleccionarReserva() {
-            const id = document.getElementById('selectReserva').value;
-            const panel = document.getElementById('infoReserva');
-            if (!id) { panel.style.display = 'none'; return; }
-            const r = reservasDisponibles.find(x => String(x.id) === String(id));
-            if (!r) { panel.style.display = 'none'; return; }
-            document.getElementById('infoOrigen').textContent    = r.origen;
-            document.getElementById('infoDestino').textContent   = r.destino;
-            document.getElementById('infoFecha').textContent     = new Date(r.fecha).toLocaleString('es-AR');
-            document.getElementById('infoConductor').textContent = r.conductor || '(sin asignar)';
-            document.getElementById('infoVehiculo').textContent  = r.vehiculo  || '(sin asignar)';
-            panel.style.display = 'block';
-        }
-
-        async function crearViaje() {
-            const reservaId = document.getElementById('selectReserva').value;
-            if (!reservaId) {
-                document.getElementById('mensajeCrear').innerHTML = '<div class="error">Seleccioná una reserva</div>';
-                return;
-            }
-            const r = reservasDisponibles.find(x => String(x.id) === String(reservaId));
-            try {
-                const res = await apiFetch('/api/viajes', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        reservaId,
-                        origen:    r.origen,
-                        destino:   r.destino,
-                        fecha:     new Date(r.fecha).toISOString(),
-                        estado:    'Pendiente',
-                        conductor: r.conductor || '',
-                        vehiculo:  r.vehiculo  || ''
-                    })
-                });
-                if (res.ok) {
-                    document.getElementById('mensajeCrear').innerHTML = '<div class="exito">Viaje creado</div>';
-                    document.getElementById('selectReserva').value = '';
-                    document.getElementById('infoReserva').style.display = 'none';
-                    cargarReservasDisponibles();
-                    cargarViajes();
-                } else {
-                    const err = await res.json();
-                    document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.error}</div>`;
-                }
-            } catch (err) {
-                document.getElementById('mensajeCrear').innerHTML = `<div class="error">Error: ${err.message}</div>`;
-            }
-        }
 
         function fechaParaInput(fecha) {
             if (!fecha) return '';
@@ -220,7 +126,6 @@
         function abrirEdicion(indice) {
             const item = items[indice];
             document.getElementById('formularioEditar').classList.remove('oculto');
-            document.getElementById('formularioCrear').classList.add('oculto');
             document.getElementById('tituloIdEditar').textContent = `#${item.id}`;
             document.getElementById('editarId').value        = item.id;
             document.getElementById('editarReservaId').value = item.reservaId;
@@ -235,7 +140,6 @@
 
         function cancelarEdicion() {
             document.getElementById('formularioEditar').classList.add('oculto');
-            document.getElementById('formularioCrear').classList.remove('oculto');
         }
 
         async function guardarEdicion() {
@@ -273,15 +177,14 @@
             if (!confirm('¿Eliminar este viaje?')) return;
             try {
                 const res = await apiFetch(`/api/viajes/${id}`, { method: 'DELETE' });
-                if (res.ok) { cargarViajes(); cargarReservasDisponibles(); }
+                if (res.ok) { cargarViajes(); }
             } catch (err) {
                 alert('Error: ' + err.message);
             }
         }
 
-        cargarReservasDisponibles();
         cargarViajes();
-        setInterval(() => { cargarViajes(); cargarReservasDisponibles(); }, 5000);
+        setInterval(cargarViajes, 5000);
     </script>
 </body>
 </html>
