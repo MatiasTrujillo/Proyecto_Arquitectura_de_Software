@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+ import { Request, Response } from 'express';
 import { ServicioDispositivoGPS } from '../../Servicio/ServicioDispositivoGPS';
 import { RepositorioDispositivoGPS } from '../../DataAccess/RepositorioDispositivoGPS';
 import { IServicioDispositivoGPS } from '../../IServicio/IServicioDispositivoGPS';

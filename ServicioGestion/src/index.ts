@@ -24,7 +24,7 @@ import ejecutarMigraciones from './Shared/Database/MigracionesRunner';
 import { seedCategorias } from './Shared/Database/SeedCategorias';
 import { ejecutarSeed } from './Shared/Database/SeedRunner';
 import { RepositorioClientesFrecuentes } from './ModuloUsuarios/DataAccess/RepositorioClientesFrecuentes';
-import { colaReservas } from './ModuloReservas/WebApi/Cola/ColaPrioridad';
+import { colaReservas } from './ModuloReservas/Servicio/ColaPrioridad';
 import pool from './Shared/Database/DatabaseConnection';
 
 const app = express();

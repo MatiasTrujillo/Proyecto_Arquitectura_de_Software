@@ -1,7 +1,7 @@
 import { ReservaDTO } from "../DTOs/ReservaDTO";
 import { IRepositorioReserva } from "../IDataAccess/IRepositorioReserva";
 import { IServicioReserva } from "../IServicio/IServicioReserva";
-import { colaReservas, Prioridad } from "../WebApi/Cola/ColaPrioridad";
+import { colaReservas, Prioridad } from "./ColaPrioridad";
 import { RepositorioClientesFrecuentes } from "../../ModuloUsuarios/DataAccess/RepositorioClientesFrecuentes";
 
 const repoFrecuentes = new RepositorioClientesFrecuentes();
