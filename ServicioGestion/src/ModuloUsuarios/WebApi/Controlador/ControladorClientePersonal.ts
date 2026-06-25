@@ -11,7 +11,7 @@ import { RepositorioPago } from "../../../ModuloPagos/DataAccess/RepositorioPago
 import { busEventos, EVENTO_RESERVA_CREADA } from "../../../Shared/Eventos/BusEventos";
 import { RepositorioProductoReserva } from "../../../ModuloReservas/DataAccess/RepositorioProductoReserva";
 import { PasarelaStripe } from "../../../ModuloPagos/Pasarela/PasarelaStripe";
-import { calcularCostoConDesglose } from "../../../ModuloCotizacion/ServicioCotizacion";
+import { calcularCostoConDesglose } from "../../../ModuloPagos/Servicio/ServicioCotizacion";
 import { clasificarConKeyword } from "../../../ModuloCatalogo/Servicio/ServicioClasificacion";
 import { SolicitudAuth } from "../../../Shared/Auth/SolicitudAuth";
 

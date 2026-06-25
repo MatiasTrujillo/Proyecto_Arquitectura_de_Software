@@ -1,4 +1,4 @@
-import pool from '../Shared/Database/DatabaseConnection';
+import pool from '../../Shared/Database/DatabaseConnection';
 
 export interface DesgloseCosto {
   total: number;
